@@ -2,8 +2,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-extern  void printVector2i(struct Vector2i vector);
-
 const int16_t sinTable[256] = {
     0, 6, 12, 18, 25, 31, 37, 43, 49, 56, 62, 68, 74, 80, 86, 92,
     97, 103, 109, 115, 120, 126, 131, 136, 142, 147, 152, 157, 162, 167, 171, 176,
@@ -24,9 +22,23 @@ const int16_t sinTable[256] = {
     -86, -80, -74, -68, -62, -56, -49, -43, -37, -31, -25, -18, -12, -6, 0
 };
 
+#ifdef GLLM_DEBUG
+void printVector2ui(const struct Vector2ui vector) {
+    printf("%p: (%u, %u)\n", (void*) &vector, vector.x, vector.y);
+}
+
+void printVector2uis(const struct Vector2uis vector) {
+    printf("%p: (%u, %u)\n", (void*) &vector, vector.x, vector.y);
+}
+
+void printVector2i(const struct Vector2ui vector) {
+    printf("%p: (%u, %u)\n", (void*) &vector, vector.x, vector.y);
+}
+
 uint16_t map(uint16_t x, uint16_t in_min, uint16_t in_max, uint16_t out_min, uint16_t out_max) {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
+#endif
 
 fixed16_t makeFixed16(int8_t integer, uint8_t fractional) {
     fixed16_t result = integer << FRACTIONAL_SMALL_BITS;

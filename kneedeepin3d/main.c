@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "gllm/gllm.h"
+#include "../gllm/gllm.h"
 
 //Memory Mapping Macros
 #define ADDRESS_TO_PTR(ADDR) ((volatile unsigned char*)ADDR)
@@ -30,7 +30,7 @@
 #define SPRITE_4_COLOR 			0xD02B
 #define SPRITE_5_COLOR 			0xD02C
 #define SPRITE_6_COLOR 			0xD02D
-#define SPRITE_7_COLOR 			0xD02E<
+#define SPRITE_7_COLOR 			0xD02E
 
 #define SPRITE_0_POSITION 0xD000
 
@@ -38,8 +38,10 @@
 #define SPRITE_SIZE 64
 #define SPRITE_BITMAP_ADDRESS(SPRITE_BLOCK) (SPRITE_BLOCK * SPRITE_SIZE)
 #define POINT_SPRITE(SPRITE_NR, BLOCK) *ADDRESS_TO_PTR(SPRITE_##SPRITE_NR##_PTR) = SPRITE_##BLOCK##_BLOCK;
-#define ENABLE_SPRITE(SPRITE_NR) SPRITES_ENABLE = SPRITES_ENABLE | (1<<SPRITE_NR)
-#define DISABLE_SPRITE(SPRITE_NR) SPRITES_ENABLE = SPRITES_ENABLE & ~(1<<SPRITE_NR)
+#define SET_BIT(BYTE_ADDR, BIT_NR) *ADDRESS_TO_PTR(BYTE_ADDR) | (1<<BIT_NR)
+#define CLEAR_BIT(BYTE_ADDR, BIT_NR) *ADDRESS_TO_PTR(BYTE_ADDR) & ~(1<<BIT_NR)
+#define ENABLE_SPRITE(SPRITE_NR) SET_BIT(SPRITES_ENABLE, SPRITE_NR)
+#define DISABLE_SPRITE(SPRITE_NR) CLEAR_BIT(SPRITES_ENABLE, SPRITE_NR)
 
 #define SPRITE_0_BLOCK 252
 #define SPRITE_1_BLOCK 253
@@ -86,7 +88,7 @@ struct Object3lf {
 struct SpriteBase {
     struct Vector2ui position;
     uint8_t color;
-    volatile unsigned char* bitmapBlockPtr;
+    volatile unsigned char* bitmapPtr;
 };
 
 struct Sprite3d {
@@ -98,6 +100,11 @@ void fillMemory(volatile unsigned char* memoryPtr, uint16_t length, uint8_t fill
 	for(uint16_t currentByte = 0; currentByte < length; currentByte++) {
 		memoryPtr[currentByte] = fillByte;
 	}
+}
+
+volatile unsigned char* bitmapPtrFromSpriteBlock(uint8_t block) {
+    uint16_t addressValue = block * SPRITE_SIZE;
+    return (volatile unsigned char*) addressValue;
 }
 
 struct BitmapPosition spritePixelPositionToBitmapPosition(const struct Vector2uis position) {
@@ -183,19 +190,39 @@ void positionSprite(const uint8_t spriteNr, const struct Vector2ui posiition) {
     *spriteYpositionRegisterAddress = posiition.y;
 }
 
+uint8_t getSpriteBlock(const uint8_t spriteNr) {
+    volatile unsigned char* spriteBlockPointers = ADDRESS_TO_PTR(SPRITE_0_BLOCK);
+    return spriteBlockPointers[spriteNr];
+}
+
+void setSpriteBlock(const uint8_t spriteNr, const uint8_t block) {
+    volatile unsigned char* spriteBlockPointers = ADDRESS_TO_PTR(SPRITE_0_BLOCK);
+    spriteBlockPointers[spriteNr] = block;
+}
+
 void copySpriteBitmap(volatile unsigned char* to, volatile unsigned char* from) {
 	for(uint16_t currentByte = 0; currentByte < SPRITE_SIZE; currentByte++) {
 		to[currentByte] = from[currentByte];
 	}
 }
 
-void copyByteArray(unsigned char* to, unsigned char* from, uint16_t size) {
+void copyByteArray(unsigned char* to, const unsigned char* from, uint16_t size) {
     for(uint16_t currentByte = 0; currentByte < size; currentByte++) {
         to[currentByte] = from[currentByte];
     }
 }
 
-volatile unsigned char* backbufferBufferPTR = ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_7_BLOCK));
+volatile unsigned char* backbufferBitmapPtr = ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_7_BLOCK));
+void swapSpriteWithBackbuffer(const uint8_t spriteNr, struct SpriteBase* sprite) {
+    uint8_t backbufferBlock = getSpriteBlock(7);
+    uint8_t tempBlock = getSpriteBlock(spriteNr);
+    setSpriteBlock(spriteNr, backbufferBlock);
+    setSpriteBlock(7, tempBlock);
+    volatile unsigned char* tempBitmapPtr = sprite->bitmapPtr;
+    sprite->bitmapPtr = backbufferBitmapPtr;
+    backbufferBitmapPtr = tempBitmapPtr;
+}
+
 uint8_t framecounter = 0;
 int main(void) {
 
@@ -204,7 +231,7 @@ int main(void) {
     *ADDRESS_TO_PTR(VIC_BORDER_COLOR) = COLOR_GRAY;
 
     //Enable sprites
-    *ADDRESS_TO_PTR(SPRITES_ENABLE) = 0x7f;
+    *ADDRESS_TO_PTR(SPRITES_ENABLE) = 0xff;
     POINT_SPRITE(0, 0);
     POINT_SPRITE(1, 1);
     POINT_SPRITE(2, 2);
@@ -214,6 +241,10 @@ int main(void) {
     POINT_SPRITE(6, 6);
     POINT_SPRITE(7, 7);
 
+    //Debug!!!
+    positionSprite(7, (struct Vector2ui) {160, 200});
+    *ADDRESS_TO_PTR(SPRITE_7_COLOR) = COLOR_WHITE;
+
     //Setup sprites
     struct Vector3lf cubeVertices[] = {
         // Front face (z = +1.0)
@@ -221,6 +252,7 @@ int main(void) {
         {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1)},
         {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1)},
         {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1)},
+        
         // Back face (z = -1.0)
         {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1)},
         {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1)},
@@ -265,7 +297,8 @@ int main(void) {
     bool gamerunning = true;
     while(gamerunning) {
         for(uint8_t currentSprite = 0; currentSprite < spriteCount; currentSprite++) {
-            fillMemory(sprites[currentSprite]->sprite.bitmapBlockPtr, SPRITE_SIZE, 0x00);
+            swapSpriteWithBackbuffer(currentSprite, &sprites[currentSprite]->sprite);
+            fillMemory(sprites[currentSprite]->sprite.bitmapPtr, SPRITE_SIZE, 0x00);
             copyByteArray((unsigned char*) spriteVertexBuffers[currentSprite], (unsigned char*) sprites[currentSprite]->object->mesh.vertices, sprites[currentSprite]->object->mesh.vertexCount * sizeof(struct Vector3lf));
             struct Vector3lf* templatePtr = sprites[currentSprite]->object->mesh.vertices;
             sprites[currentSprite]->object->mesh.vertices = spriteVertexBuffers[currentSprite];
@@ -273,7 +306,7 @@ int main(void) {
                 sprites[currentSprite]->object->mesh.vertices[currentVertex] = rotateVectorY(sprites[currentSprite]->object->mesh.vertices[currentVertex], framecounter);
                 sprites[currentSprite]->object->mesh.vertices[currentVertex] = translateVector(sprites[currentSprite]->object->mesh.vertices[currentVertex], sprites[currentSprite]->object->position);
             }
-            makeWireframeMeshSprite(sprites[currentSprite]->sprite.bitmapBlockPtr, &sprites[currentSprite]->object->mesh);
+            makeWireframeMeshSprite(sprites[currentSprite]->sprite.bitmapPtr, &sprites[currentSprite]->object->mesh);
             sprites[currentSprite]->object->mesh.vertices = templatePtr;
             framecounter++;
         }
