@@ -84,6 +84,12 @@ struct Vector2lf {
     fixed32_t y;
 };
 
+struct Vector3uis {
+    uint8_t x;
+    uint8_t y;
+    uint8_t z;
+};
+
 struct Vector3i {
     int16_t x;
     int16_t y;
@@ -115,7 +121,9 @@ struct Mesh3lf {
 };
 
 fixed16_t makeFixed16(int8_t integer, uint8_t fractional);
+fixed16_t twosCompliment16(fixed16_t n);
 fixed32_t makeFixed32(int16_t integer, uint16_t fractional);
+fixed32_t twosCompliment32(fixed32_t n);
 
 fixed16_t fixed16div(fixed16_t a, fixed16_t b);
 fixed32_t fixed16ToFixed32(fixed16_t v);

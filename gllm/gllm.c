@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#define GLLM_DEBUG
+
 const int16_t sinTable[256] = {
     0, 6, 12, 18, 25, 31, 37, 43, 49, 56, 62, 68, 74, 80, 86, 92,
     97, 103, 109, 115, 120, 126, 131, 136, 142, 147, 152, 157, 162, 167, 171, 176,
@@ -31,7 +33,7 @@ void printVector2uis(const struct Vector2uis vector) {
     printf("%p: (%u, %u)\n", (void*) &vector, vector.x, vector.y);
 }
 
-void printVector2i(const struct Vector2ui vector) {
+void printVector2i(const struct Vector2i vector) {
     printf("%p: (%u, %u)\n", (void*) &vector, vector.x, vector.y);
 }
 
