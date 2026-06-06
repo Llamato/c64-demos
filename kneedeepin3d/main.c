@@ -49,8 +49,8 @@
 #define SPRITE_1_FRONTBUFFER_BLOCK 254
 #define SPRITE_1_BACKBUFFER_BLOCK 255
 
-#define SPRITE_2_FRONTBUFFER_BLOCK 208
-#define SPRITE_2_BACKBUFFER_BLOCK 209
+#define SPRITE_2_FRONTBUFFER_BLOCK 237
+#define SPRITE_2_BACKBUFFER_BLOCK 238
 
 #define SPRITE_3_FRONTBUFFER_BLOCK 210
 #define SPRITE_3_BACKBUFFER_BLOCK 211
@@ -315,8 +315,8 @@ int main(void) {
     POINT_SPRITE(7, 7);
 
     //Debug!!!
-    /*positionSprite(7, (struct Vector2ui) {160, 200});
-    *ADDRESS_TO_PTR(SPRITE_7_COLOR) = COLOR_WHITE;*/
+    positionSprite(7, (struct Vector2ui) {160, 100});
+    *ADDRESS_TO_PTR(SPRITE_7_COLOR) = COLOR_WHITE;
 
     //Setup sprites
     struct Vector3lf cubeVertices[] = {
@@ -360,6 +360,8 @@ int main(void) {
         (struct SpriteBase)  {(struct Vector2ui) {160, 200}, COLOR_WHITE, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_0_FRONTBUFFER_BLOCK))},
         &cubeObject
     };
+    struct Vector3lf cubeVertexBuffer[sizeof(cubeVertices) / sizeof(struct Vector3lf)];
+    spriteVertexBuffers[0] = cubeVertexBuffer;
 
     struct Vector3lf tetrahedronVertices[] = {
     {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1)},
@@ -380,14 +382,48 @@ int main(void) {
         (struct SpriteBase) {(struct Vector2ui) {200, 200}, COLOR_RED, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_1_FRONTBUFFER_BLOCK))},
         &tetrahedronObject
     };
+    struct Vector3lf tetrahedronVertexBuffer[sizeof(tetrahedronVertices) / sizeof(struct Vector3lf)];
+    spriteVertexBuffers[1] = tetrahedronVertexBuffer;
+
+    struct Vector3lf octahedronVertices[] = {
+    // Top and bottom (the tips)
+    {INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(0)},   // Top tip
+    {INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(0)},  // Bottom tip
+    
+    // Middle square (equator)
+    {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0)},   // Right
+    {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0)},  // Left
+    {INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(1)},   // Front
+    {INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(-1)}   // Back
+    };
+    struct Edge octahedronEdges[] = {
+        // Top tip to all middle vertices (4 edges)
+        {0, 2}, {0, 3}, {0, 4}, {0, 5},
+        
+        // Bottom tip to all middle vertices (4 edges)
+        {1, 2}, {1, 3}, {1, 4}, {1, 5},
+        
+        // Middle square edges (4 edges - forms a diamond/square)
+        {2, 4}, {4, 3}, {3, 5}, {5, 2}
+    };
+    struct Object3lf octahedronObject = {
+        (struct Vector3lf){INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0), MAKE_FIXED32(1, 50)},
+        {0, 0, 0},
+        (struct Mesh3lf) {octahedronVertices, octahedronEdges, sizeof(octahedronVertices) / sizeof(struct Vector3lf), sizeof(octahedronEdges) / sizeof(struct Edge)}
+    };
+    struct Sprite3d octahedronSprite = {
+        (struct SpriteBase) {(struct Vector2ui) {240, 200}, COLOR_CYAN, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_2_FRONTBUFFER_BLOCK))},
+        &octahedronObject
+    };
+    struct Vector3lf octahedronVertexBuffer[sizeof(octahedronVertices) / sizeof(struct Vector3lf)];
+    spriteVertexBuffers[2] = octahedronVertexBuffer;
 
     uint8_t spriteBackbufferBlocks[HARDWARE_SPRITE_COUNT];
-    struct Sprite3d* sprites[] = {&cubeSprite, &tetrahedronSprite};
+    struct Sprite3d* sprites[] = {&cubeSprite, &tetrahedronSprite, &octahedronSprite};
     const uint8_t spriteCount = sizeof(sprites) / sizeof(struct Sprite3d*);
     for(uint8_t currentSprite = 0; currentSprite < spriteCount; currentSprite++) {
         positionSprite(currentSprite, sprites[currentSprite]->sprite.position);
         colorSprite(currentSprite, sprites[currentSprite]->sprite.color);
-        spriteVertexBuffers[currentSprite] = malloc(sprites[currentSprite]->object->mesh.vertexCount * sizeof(struct Vector3lf));
     }
     
     bool gamerunning = true;
@@ -396,9 +432,5 @@ int main(void) {
             sprites[currentSprite]->object->rotation.y++;
             draw3dSprite(currentSprite, sprites[currentSprite]);
         }
-    }
-    
-    for(uint8_t currentBuffer = 0; currentBuffer < spriteCount; currentBuffer++) {
-        free(spriteVertexBuffers[currentBuffer]);
     }
 }
