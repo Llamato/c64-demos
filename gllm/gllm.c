@@ -1,4 +1,5 @@
 #include "gllm.h"
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -42,20 +43,22 @@ uint16_t map(uint16_t x, uint16_t in_min, uint16_t in_max, uint16_t out_min, uin
 }
 #endif
 
-fixed16_t makeFixed16(int8_t integer, uint8_t fractional) {
+fixed16_t makeFixed16(const bool neg, const uint8_t integer, const uint8_t fractional) {
     fixed16_t result = integer << FRACTIONAL_SMALL_BITS;
     uint16_t fractionalPercent = (uint16_t)fractional;
     fractionalPercent <<= BITS_PER_BYTE; 
     fractionalPercent += 50;
     result |= (uint8_t) (fractionalPercent / 100);
+    //if(neg == true) result = result * -1;
     return result;
 }
 
-fixed32_t makeFixed32(int16_t integer, uint16_t fractional) {
+fixed32_t makeFixed32(const bool neg, const uint16_t integer, const uint16_t fractional) {
     fixed32_t result = ((uint32_t)integer) << FRACTIONAL_LARGE_BITS;
     uint32_t fractionalPercent = (uint32_t)fractional;
     fractionalPercent <<= BITS_PER_WORD;
     result |= (uint16_t) (fractionalPercent / 100);
+    //if(neg == true) result = result * -1;
     return result;
 }
 
@@ -132,22 +135,22 @@ struct Vector2i ndcToScreen(const struct Vector2uis dimensions, const struct Vec
     if(screenCoordinates.x >= dimensions.x) {
         printf("xOverflow with ");
         printVector2i(screenCoordinates);
-        //screenCoordinates.x = dimensions.x -1;
+        screenCoordinates.x = dimensions.x -1;
     }
     if(screenCoordinates.y >= dimensions.y) {
         printf("yOverflow with ");
         printVector2i(screenCoordinates);
-        //screenCoordinates.y = dimensions.y -1;
+        screenCoordinates.y = dimensions.y -1;
     }
     if(screenCoordinates.x < 0) {
         printf("xUnderflow with ");
         printVector2i(screenCoordinates);
-        //screenCoordinates.x = 0;
+        screenCoordinates.x = 0;
     }
     if(screenCoordinates.y < 0) {
         printf("yUnderflow with ");
         printVector2i(screenCoordinates);
-        //screenCoordinates.y = 0;
+        screenCoordinates.y = 0;
     }
     #endif
     return screenCoordinates;

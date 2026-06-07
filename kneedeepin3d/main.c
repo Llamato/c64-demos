@@ -298,7 +298,6 @@ void draw3dSprite(uint8_t hwSpriteSlot, struct Sprite3d *s3d) {
 }
 
 int main(void) {
-
     //Background colors
     *ADDRESS_TO_PTR(VIC_BACKGROUND_COLOR) = COLOR_BLACK;
     *ADDRESS_TO_PTR(VIC_BORDER_COLOR) = COLOR_GRAY;
@@ -379,7 +378,7 @@ int main(void) {
         (struct Mesh3lf) {tetrahedronVertices, tetrahedronEdges, sizeof(tetrahedronVertices) / sizeof(struct Vector3lf), sizeof(tetrahedronEdges) / sizeof(struct Edge)}
     };
     struct Sprite3d tetrahedronSprite = {
-        (struct SpriteBase) {(struct Vector2ui) {200, 200}, COLOR_RED, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_1_FRONTBUFFER_BLOCK))},
+        (struct SpriteBase) {(struct Vector2ui) {120, 200}, COLOR_RED, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_1_FRONTBUFFER_BLOCK))},
         &tetrahedronObject
     };
     struct Vector3lf tetrahedronVertexBuffer[sizeof(tetrahedronVertices) / sizeof(struct Vector3lf)];
@@ -412,14 +411,75 @@ int main(void) {
         (struct Mesh3lf) {octahedronVertices, octahedronEdges, sizeof(octahedronVertices) / sizeof(struct Vector3lf), sizeof(octahedronEdges) / sizeof(struct Edge)}
     };
     struct Sprite3d octahedronSprite = {
-        (struct SpriteBase) {(struct Vector2ui) {240, 200}, COLOR_CYAN, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_2_FRONTBUFFER_BLOCK))},
+        (struct SpriteBase) {(struct Vector2ui) {200, 200}, COLOR_CYAN, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_2_FRONTBUFFER_BLOCK))},
         &octahedronObject
     };
     struct Vector3lf octahedronVertexBuffer[sizeof(octahedronVertices) / sizeof(struct Vector3lf)];
     spriteVertexBuffers[2] = octahedronVertexBuffer;
 
+    struct Vector3lf dodecahedronVertices[] = {
+        // Vertices at (±1, ±1, ±1) - 8 vertices
+        {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1)},
+        {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1)},
+        {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1)},
+        {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1)},
+        {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1)},
+        {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1)},
+        {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1)},
+        {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1)},
+        
+        // Vertices at (0, ±1/φ, ±φ) - 4 vertices
+        {INT_TO_LARGE_FIXED(0), makeFixed32(false,0, 62), makeFixed32(false,1, 62)},
+        {INT_TO_LARGE_FIXED(0), makeFixed32(false,0, 62), makeFixed32(true,1, 62)},
+        {INT_TO_LARGE_FIXED(0), makeFixed32(true,0, 62), makeFixed32(false,1, 62)},
+        {INT_TO_LARGE_FIXED(0), makeFixed32(true,0, 62), makeFixed32(true,1, 62)},
+        
+        // Vertices at (±1/φ, ±φ, 0) - 4 vertices
+        {makeFixed32(false,0, 62), makeFixed32(false,1, 62), INT_TO_LARGE_FIXED(0)},
+        {makeFixed32(false,0, 62), makeFixed32(true,1, 62), INT_TO_LARGE_FIXED(0)},
+        {makeFixed32(true,0, 62), makeFixed32(false,1, 62), INT_TO_LARGE_FIXED(0)},
+        {makeFixed32(true,0, 62), makeFixed32(true,1, 62), INT_TO_LARGE_FIXED(0)},
+        
+        // Vertices at (±φ, 0, ±1/φ) - 4 vertices
+        {makeFixed32(false,1, 62), INT_TO_LARGE_FIXED(0), makeFixed32(false,0, 62)},
+        {makeFixed32(false,1, 62), INT_TO_LARGE_FIXED(0), makeFixed32(true,0, 62)},
+        {makeFixed32(true,1, 62), INT_TO_LARGE_FIXED(0), makeFixed32(false,0, 62)},
+        {makeFixed32(true,1, 62), INT_TO_LARGE_FIXED(0), makeFixed32(true,0, 62)}
+    };
+    struct Edge dodecahedronEdges[] = {
+        // Cube edges
+        {0,1}, {0,2}, {0,4}, {1,3}, {1,5}, 
+        {2,3}, {2,6}, {3,7}, {4,5}, {4,6}, 
+        {5,7}, {6,7},
+
+        // Star connections (cube to golden ratio vertices)
+        {0,8}, {0,12}, {0,16},
+        {1,9}, {1,13}, {1,17},
+        {2,10}, {2,12}, {2,16},
+        {3,11}, {3,13}, {3,17},
+        {4,8}, {4,14}, {4,18},
+        {5,9}, {5,15}, {5,19},
+        {6,10}, {6,14}, {6,18},
+        {7,11}, {7,15}, {7,19},
+
+        // Pentagon connections between middle layer
+        {8,9}, {9,15}, {15,19}, {19,18}, {18,14}, {14,8},
+        {10,11}, {11,17}, {17,16}, {16,12}, {12,13}, {13,10}
+    };
+    struct Object3lf dodecahedronObject = {
+        (struct Vector3lf){INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(3)},
+        {0, 0, 0},
+        (struct Mesh3lf) {dodecahedronVertices, dodecahedronEdges, sizeof(dodecahedronVertices) / sizeof(struct Vector3lf), sizeof(dodecahedronEdges) / sizeof(struct Edge)}
+    };
+    struct Sprite3d dodecahedronSprite = {
+        (struct SpriteBase) {(struct Vector2ui) {240, 200}, COLOR_VIOLET, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_2_FRONTBUFFER_BLOCK))},
+        &dodecahedronObject
+    };
+    struct Vector3lf dodecahedronVertexBuffer[sizeof(dodecahedronVertices) / sizeof(struct Vector3lf)];
+    spriteVertexBuffers[3] = dodecahedronVertexBuffer;
+
     uint8_t spriteBackbufferBlocks[HARDWARE_SPRITE_COUNT];
-    struct Sprite3d* sprites[] = {&cubeSprite, &tetrahedronSprite, &octahedronSprite};
+    struct Sprite3d* sprites[] = {&cubeSprite, &tetrahedronSprite, &octahedronSprite, /*&dodecahedronSprite*/};
     const uint8_t spriteCount = sizeof(sprites) / sizeof(struct Sprite3d*);
     for(uint8_t currentSprite = 0; currentSprite < spriteCount; currentSprite++) {
         positionSprite(currentSprite, sprites[currentSprite]->sprite.position);

@@ -2,7 +2,9 @@
 
 #define GLLM_MATH
 
+#include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 //Custom Types
 typedef int16_t fixed16_t;
@@ -120,9 +122,8 @@ struct Mesh3lf {
     uint16_t edgeCount;
 };
 
-fixed16_t makeFixed16(int8_t integer, uint8_t fractional);
-fixed16_t twosCompliment16(fixed16_t n);
-fixed32_t makeFixed32(int16_t integer, uint16_t fractional);
+fixed16_t makeFixed16(const bool neg, const uint8_t integer, const uint8_t fractional);
+fixed32_t makeFixed32(const bool neg, const uint16_t integer, const uint16_t fractional);
 fixed32_t twosCompliment32(fixed32_t n);
 
 fixed16_t fixed16div(fixed16_t a, fixed16_t b);
