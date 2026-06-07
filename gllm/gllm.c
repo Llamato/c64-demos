@@ -145,7 +145,6 @@ struct Vector2i ndcToScreen(const struct Vector2uis dimensions, const struct Vec
     if(screenCoordinates.x < 0) {
         printf("xUnderflow with ");
         printVector2i(screenCoordinates);
-        screenCoordinates.x = 0;
     }
     if(screenCoordinates.y < 0) {
         printf("yUnderflow with ");

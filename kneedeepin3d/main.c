@@ -317,7 +317,30 @@ int main(void) {
     positionSprite(7, (struct Vector2ui) {160, 100});
     *ADDRESS_TO_PTR(SPRITE_7_COLOR) = COLOR_WHITE;
 
-    //Setup sprites
+    //d4
+    struct Vector3lf tetrahedronVertices[] = {
+    {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1)},
+    {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1)},
+    {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1)},
+    {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1)}
+    };
+    struct Edge tetrahedronEdges[] = {
+    {0, 1}, {0, 2}, {0, 3},  // Top to base edges
+    {1, 2}, {2, 3}, {3, 1}   // Base triangle
+    };
+    struct Object3lf tetrahedronObject = {
+        (struct Vector3lf){INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0), MAKE_FIXED32(2, 50)},
+        {0, 0, 0},
+        (struct Mesh3lf) {tetrahedronVertices, tetrahedronEdges, sizeof(tetrahedronVertices) / sizeof(struct Vector3lf), sizeof(tetrahedronEdges) / sizeof(struct Edge)}
+    };
+    struct Sprite3d tetrahedronSprite = {
+        (struct SpriteBase) {(struct Vector2ui) {120, 200}, COLOR_RED, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_0_FRONTBUFFER_BLOCK))},
+        &tetrahedronObject
+    };
+    struct Vector3lf tetrahedronVertexBuffer[sizeof(tetrahedronVertices) / sizeof(struct Vector3lf)];
+    spriteVertexBuffers[0] = tetrahedronVertexBuffer;
+
+    //d6
     struct Vector3lf cubeVertices[] = {
         // Front face (z = +1.0)
         {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1)},
@@ -356,34 +379,14 @@ int main(void) {
         (struct Mesh3lf) { cubeVertices, cubeEdges, sizeof(cubeVertices) / sizeof(struct Vector3lf), sizeof(cubeEdges) / sizeof(struct Edge)},
     };
     struct Sprite3d cubeSprite = {
-        (struct SpriteBase)  {(struct Vector2ui) {160, 200}, COLOR_WHITE, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_0_FRONTBUFFER_BLOCK))},
+        (struct SpriteBase) {(struct Vector2ui) {160, 200}, COLOR_WHITE, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_1_FRONTBUFFER_BLOCK))},
         &cubeObject
     };
     struct Vector3lf cubeVertexBuffer[sizeof(cubeVertices) / sizeof(struct Vector3lf)];
-    spriteVertexBuffers[0] = cubeVertexBuffer;
+    spriteVertexBuffers[1] = cubeVertexBuffer;
 
-    struct Vector3lf tetrahedronVertices[] = {
-    {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1)},
-    {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1)},
-    {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1)},
-    {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1)}
-    };
-    struct Edge tetrahedronEdges[] = {
-    {0, 1}, {0, 2}, {0, 3},  // Top to base edges
-    {1, 2}, {2, 3}, {3, 1}   // Base triangle
-    };
-    struct Object3lf tetrahedronObject = {
-        (struct Vector3lf){INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0), MAKE_FIXED32(2, 50)},
-        {0, 0, 0},
-        (struct Mesh3lf) {tetrahedronVertices, tetrahedronEdges, sizeof(tetrahedronVertices) / sizeof(struct Vector3lf), sizeof(tetrahedronEdges) / sizeof(struct Edge)}
-    };
-    struct Sprite3d tetrahedronSprite = {
-        (struct SpriteBase) {(struct Vector2ui) {120, 200}, COLOR_RED, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_1_FRONTBUFFER_BLOCK))},
-        &tetrahedronObject
-    };
-    struct Vector3lf tetrahedronVertexBuffer[sizeof(tetrahedronVertices) / sizeof(struct Vector3lf)];
-    spriteVertexBuffers[1] = tetrahedronVertexBuffer;
 
+    //d8
     struct Vector3lf octahedronVertices[] = {
     // Top and bottom (the tips)
     {INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(0)},   // Top tip
@@ -417,57 +420,63 @@ int main(void) {
     struct Vector3lf octahedronVertexBuffer[sizeof(octahedronVertices) / sizeof(struct Vector3lf)];
     spriteVertexBuffers[2] = octahedronVertexBuffer;
 
+    //d12
     struct Vector3lf dodecahedronVertices[] = {
-        // Vertices at (±1, ±1, ±1) - 8 vertices
-        {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1)},
-        {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1)},
-        {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1)},
-        {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1)},
-        {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1)},
-        {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1)},
-        {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1)},
-        {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1)},
+        // (±5, ±5, ±5) - cube vertices
+        {INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED( 5)},
+        {INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED(-5)},
+        {INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED( 5)},
+        {INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED(-5)},
+        {INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED( 5)},
+        {INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED(-5)},
+        {INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED( 5)},
+        {INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED(-5)},
         
-        // Vertices at (0, ±1/φ, ±φ) - 4 vertices
-        {INT_TO_LARGE_FIXED(0), makeFixed32(false,0, 62), makeFixed32(false,1, 62)},
-        {INT_TO_LARGE_FIXED(0), makeFixed32(false,0, 62), makeFixed32(true,1, 62)},
-        {INT_TO_LARGE_FIXED(0), makeFixed32(true,0, 62), makeFixed32(false,1, 62)},
-        {INT_TO_LARGE_FIXED(0), makeFixed32(true,0, 62), makeFixed32(true,1, 62)},
+        // (0, ±3, ±8) - 4 vertices (since 5/φ ≈ 3, 5*φ ≈ 8)
+        {INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED( 3), INT_TO_LARGE_FIXED( 8)},
+        {INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED( 3), INT_TO_LARGE_FIXED(-8)},
+        {INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED(-3), INT_TO_LARGE_FIXED( 8)},
+        {INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED(-3), INT_TO_LARGE_FIXED(-8)},
         
-        // Vertices at (±1/φ, ±φ, 0) - 4 vertices
-        {makeFixed32(false,0, 62), makeFixed32(false,1, 62), INT_TO_LARGE_FIXED(0)},
-        {makeFixed32(false,0, 62), makeFixed32(true,1, 62), INT_TO_LARGE_FIXED(0)},
-        {makeFixed32(true,0, 62), makeFixed32(false,1, 62), INT_TO_LARGE_FIXED(0)},
-        {makeFixed32(true,0, 62), makeFixed32(true,1, 62), INT_TO_LARGE_FIXED(0)},
+        // (±3, ±8, 0) - 4 vertices
+        {INT_TO_LARGE_FIXED( 3), INT_TO_LARGE_FIXED( 8), INT_TO_LARGE_FIXED( 0)},
+        {INT_TO_LARGE_FIXED( 3), INT_TO_LARGE_FIXED(-8), INT_TO_LARGE_FIXED( 0)},
+        {INT_TO_LARGE_FIXED(-3), INT_TO_LARGE_FIXED( 8), INT_TO_LARGE_FIXED( 0)},
+        {INT_TO_LARGE_FIXED(-3), INT_TO_LARGE_FIXED(-8), INT_TO_LARGE_FIXED( 0)},
         
-        // Vertices at (±φ, 0, ±1/φ) - 4 vertices
-        {makeFixed32(false,1, 62), INT_TO_LARGE_FIXED(0), makeFixed32(false,0, 62)},
-        {makeFixed32(false,1, 62), INT_TO_LARGE_FIXED(0), makeFixed32(true,0, 62)},
-        {makeFixed32(true,1, 62), INT_TO_LARGE_FIXED(0), makeFixed32(false,0, 62)},
-        {makeFixed32(true,1, 62), INT_TO_LARGE_FIXED(0), makeFixed32(true,0, 62)}
+        // (±8, 0, ±3) - 4 vertices
+        {INT_TO_LARGE_FIXED( 8), INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED( 3)},
+        {INT_TO_LARGE_FIXED( 8), INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED(-3)},
+        {INT_TO_LARGE_FIXED(-8), INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED( 3)},
+        {INT_TO_LARGE_FIXED(-8), INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED(-3)}
     };
     struct Edge dodecahedronEdges[] = {
-        // Cube edges
-        {0,1}, {0,2}, {0,4}, {1,3}, {1,5}, 
-        {2,3}, {2,6}, {3,7}, {4,5}, {4,6}, 
-        {5,7}, {6,7},
-
-        // Star connections (cube to golden ratio vertices)
-        {0,8}, {0,12}, {0,16},
-        {1,9}, {1,13}, {1,17},
-        {2,10}, {2,12}, {2,16},
-        {3,11}, {3,13}, {3,17},
-        {4,8}, {4,14}, {4,18},
-        {5,9}, {5,15}, {5,19},
-        {6,10}, {6,14}, {6,18},
-        {7,11}, {7,15}, {7,19},
-
-        // Pentagon connections between middle layer
-        {8,9}, {9,15}, {15,19}, {19,18}, {18,14}, {14,8},
-        {10,11}, {11,17}, {17,16}, {16,12}, {12,13}, {13,10}
+        // Cube edges (8 cube vertices)
+        {0, 1}, {0, 2}, {0, 4},
+        {1, 3}, {1, 5},
+        {2, 3}, {2, 6},
+        {3, 7},
+        {4, 5}, {4, 6},
+        {5, 7},
+        {6, 7},
+        
+        // Connections to middle-layer vertices (simplified - you'll need all)
+        {0, 8}, {0, 12}, {0, 16},
+        {1, 9}, {1, 13}, {1, 17},
+        {2, 10}, {2, 12}, {2, 16},
+        {3, 11}, {3, 13}, {3, 17},
+        {4, 8}, {4, 14}, {4, 18},
+        {5, 9}, {5, 15}, {5, 19},
+        {6, 10}, {6, 14}, {6, 18},
+        {7, 11}, {7, 15}, {7, 19},
+        
+        // Pentagon edges (connecting middle vertices)
+        {8, 9}, {8, 14}, {9, 15}, {10, 11}, {10, 16},
+        {11, 17}, {12, 13}, {12, 18}, {13, 19}, {14, 15},
+        {16, 17}, {18, 19}
     };
     struct Object3lf dodecahedronObject = {
-        (struct Vector3lf){INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(3)},
+        (struct Vector3lf){INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(-110), INT_TO_LARGE_FIXED(110)},
         {0, 0, 0},
         (struct Mesh3lf) {dodecahedronVertices, dodecahedronEdges, sizeof(dodecahedronVertices) / sizeof(struct Vector3lf), sizeof(dodecahedronEdges) / sizeof(struct Edge)}
     };
@@ -479,7 +488,7 @@ int main(void) {
     spriteVertexBuffers[3] = dodecahedronVertexBuffer;
 
     uint8_t spriteBackbufferBlocks[HARDWARE_SPRITE_COUNT];
-    struct Sprite3d* sprites[] = {&cubeSprite, &tetrahedronSprite, &octahedronSprite, /*&dodecahedronSprite*/};
+    struct Sprite3d* sprites[] = {&tetrahedronSprite, &cubeSprite, &octahedronSprite, &dodecahedronSprite};
     const uint8_t spriteCount = sizeof(sprites) / sizeof(struct Sprite3d*);
     for(uint8_t currentSprite = 0; currentSprite < spriteCount; currentSprite++) {
         positionSprite(currentSprite, sprites[currentSprite]->sprite.position);
