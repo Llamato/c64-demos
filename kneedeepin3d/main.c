@@ -52,8 +52,8 @@
 #define SPRITE_2_FRONTBUFFER_BLOCK 237
 #define SPRITE_2_BACKBUFFER_BLOCK 238
 
-#define SPRITE_3_FRONTBUFFER_BLOCK 210
-#define SPRITE_3_BACKBUFFER_BLOCK 211
+#define SPRITE_3_FRONTBUFFER_BLOCK 239
+#define SPRITE_3_BACKBUFFER_BLOCK 240
 
 #define SPRITE_4_FRONTBUFFER_BLOCK 212
 #define SPRITE_4_BACKBUFFER_BLOCK 213
@@ -64,8 +64,8 @@
 #define SPRITE_6_FRONTBUFFER_BLOCK 224
 #define SPRITE_6_BACKBUFFER_BLOCK 225
 
-#define SPRITE_7_FRONTBUFFER_BLOCK 240
-#define SPRITE_7_BACKBUFFER_BLOCK 241
+#define SPRITE_7_FRONTBUFFER_BLOCK 250
+#define SPRITE_7_BACKBUFFER_BLOCK 251
 
 //Hardware limitations
 #define BITS_PER_BYTE 8
@@ -205,7 +205,7 @@ void makeWireframeMeshSprite(volatile unsigned char* bitmapPointer, const struct
 void positionSprite(const uint8_t spriteNr, const struct Vector2ui posiition) {
     volatile unsigned char* spriteXlowPositionRegisterAddress = ADDRESS_TO_PTR(SPRITE_0_POSITION + spriteNr * 2);
     uint8_t positionXlow = posiition.x & 0xFF;
-    bool positionXhigh = posiition.y & 0x100;
+    bool positionXhigh = posiition.x & 0x100;
     *spriteXlowPositionRegisterAddress = positionXlow;
     *ADDRESS_TO_PTR(SPRITES_X_HIGH) = (SPRITES_X_HIGH & ~(1 << spriteNr) | (positionXhigh << spriteNr));
     volatile unsigned char* spriteYpositionRegisterAddress = spriteXlowPositionRegisterAddress+1;
@@ -421,34 +421,37 @@ int main(void) {
     spriteVertexBuffers[2] = octahedronVertexBuffer;
 
     //d12
+    #define PHI 1.618034f
+    #define INV_PHI 0.618034f  // 1/phi
+
     struct Vector3lf dodecahedronVertices[] = {
-        // (±5, ±5, ±5) - cube vertices
-        {INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED( 5)},
-        {INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED(-5)},
-        {INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED( 5)},
-        {INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED(-5)},
-        {INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED( 5)},
-        {INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED( 5), INT_TO_LARGE_FIXED(-5)},
-        {INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED( 5)},
-        {INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED(-5), INT_TO_LARGE_FIXED(-5)},
+        // Vertices at (±1, ±1, ±1) - 8 vertices
+        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED( 1.0f)},
+        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(-1.0f)},
+        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED( 1.0f)},
+        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(-1.0f)},
+        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED( 1.0f)},
+        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(-1.0f)},
+        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED( 1.0f)},
+        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(-1.0f)},
         
-        // (0, ±3, ±8) - 4 vertices (since 5/φ ≈ 3, 5*φ ≈ 8)
-        {INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED( 3), INT_TO_LARGE_FIXED( 8)},
-        {INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED( 3), INT_TO_LARGE_FIXED(-8)},
-        {INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED(-3), INT_TO_LARGE_FIXED( 8)},
-        {INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED(-3), INT_TO_LARGE_FIXED(-8)},
+        // Vertices at (0, ±1/φ, ±φ) - 4 vertices
+        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( INV_PHI), FLOAT_TO_LARGE_FIXED( PHI)},
+        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( INV_PHI), FLOAT_TO_LARGE_FIXED(-PHI)},
+        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-INV_PHI), FLOAT_TO_LARGE_FIXED( PHI)},
+        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-INV_PHI), FLOAT_TO_LARGE_FIXED(-PHI)},
         
-        // (±3, ±8, 0) - 4 vertices
-        {INT_TO_LARGE_FIXED( 3), INT_TO_LARGE_FIXED( 8), INT_TO_LARGE_FIXED( 0)},
-        {INT_TO_LARGE_FIXED( 3), INT_TO_LARGE_FIXED(-8), INT_TO_LARGE_FIXED( 0)},
-        {INT_TO_LARGE_FIXED(-3), INT_TO_LARGE_FIXED( 8), INT_TO_LARGE_FIXED( 0)},
-        {INT_TO_LARGE_FIXED(-3), INT_TO_LARGE_FIXED(-8), INT_TO_LARGE_FIXED( 0)},
+        // Vertices at (±1/φ, ±φ, 0) - 4 vertices
+        {FLOAT_TO_LARGE_FIXED( INV_PHI), FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED(0.0f)},
+        {FLOAT_TO_LARGE_FIXED( INV_PHI), FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED(0.0f)},
+        {FLOAT_TO_LARGE_FIXED(-INV_PHI), FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED(0.0f)},
+        {FLOAT_TO_LARGE_FIXED(-INV_PHI), FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED(0.0f)},
         
-        // (±8, 0, ±3) - 4 vertices
-        {INT_TO_LARGE_FIXED( 8), INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED( 3)},
-        {INT_TO_LARGE_FIXED( 8), INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED(-3)},
-        {INT_TO_LARGE_FIXED(-8), INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED( 3)},
-        {INT_TO_LARGE_FIXED(-8), INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED(-3)}
+        // Vertices at (±φ, 0, ±1/φ) - 4 vertices
+        {FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( INV_PHI)},
+        {FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-INV_PHI)},
+        {FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( INV_PHI)},
+        {FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-INV_PHI)}
     };
     struct Edge dodecahedronEdges[] = {
         // Cube edges (8 cube vertices)
@@ -476,12 +479,12 @@ int main(void) {
         {16, 17}, {18, 19}
     };
     struct Object3lf dodecahedronObject = {
-        (struct Vector3lf){INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(-110), INT_TO_LARGE_FIXED(110)},
+        (struct Vector3lf){INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(2)},
         {0, 0, 0},
         (struct Mesh3lf) {dodecahedronVertices, dodecahedronEdges, sizeof(dodecahedronVertices) / sizeof(struct Vector3lf), sizeof(dodecahedronEdges) / sizeof(struct Edge)}
     };
     struct Sprite3d dodecahedronSprite = {
-        (struct SpriteBase) {(struct Vector2ui) {240, 200}, COLOR_VIOLET, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_2_FRONTBUFFER_BLOCK))},
+        (struct SpriteBase) {(struct Vector2ui) {240, 200}, COLOR_VIOLET, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_3_FRONTBUFFER_BLOCK))},
         &dodecahedronObject
     };
     struct Vector3lf dodecahedronVertexBuffer[sizeof(dodecahedronVertices) / sizeof(struct Vector3lf)];

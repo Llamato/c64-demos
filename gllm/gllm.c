@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define GLLM_DEBUG
+//#define GLLM_DEBUG
 
 const int16_t sinTable[256] = {
     0, 6, 12, 18, 25, 31, 37, 43, 49, 56, 62, 68, 74, 80, 86, 92,

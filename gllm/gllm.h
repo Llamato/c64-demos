@@ -36,6 +36,7 @@ typedef int32_t fixed32_t;
 #define MAKE_FIXED32(integ, frac_percent) ((fixed32_t)(((uint32_t)(integ) << FRACTIONAL_LARGE_BITS ) | ((uint32_t)((frac_percent) * 65536 + 50) / 100 )))
 
 #define INT_TO_LARGE_FIXED(i) ((fixed32_t)(((int64_t)(i) * 65536)))
+#define FLOAT_TO_LARGE_FIXED(f) ((fixed32_t)((f) * 65536.0))
 #define FIXED32_TO_INT(f) ((f) >> FRACTIONAL_LARGE_BITS)
 
 //Broken
