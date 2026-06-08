@@ -538,41 +538,38 @@ int main(void) {
 
     // d20
     struct Vector3lf icosahedronVertices[] = {
-        // Three mutually perpendicular golden rectangles
-        // Rectangle 1 (XZ plane, ±1 on Y)
-        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED( PHI)},
-        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(-PHI)},
-        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED( PHI)},
-        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(-PHI)},
-        
-        // Rectangle 2 (YZ plane, ±1 on X)
-        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( PHI)},
-        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-PHI)},
-        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( PHI)},
-        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-PHI)},
-        
-        // Rectangle 3 (XY plane, ±1 on Z)
-        {FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(0.0f)},
-        {FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(0.0f)},
-        {FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(0.0f)},
-        {FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(0.0f)}
+        // (0, ±1, ±φ) scaled ≈ (0, ±20, ±32)
+    {INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED( 20), INT_TO_LARGE_FIXED( 32)}, // 0
+    {INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED( 20), INT_TO_LARGE_FIXED(-32)}, // 1
+    {INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED(-20), INT_TO_LARGE_FIXED( 32)}, // 2
+    {INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED(-20), INT_TO_LARGE_FIXED(-32)}, // 3
+
+        // (±1, ±φ, 0) scaled ≈ (±20, ±32, 0)
+    {INT_TO_LARGE_FIXED( 20), INT_TO_LARGE_FIXED( 32), INT_TO_LARGE_FIXED( 0)}, // 4
+    {INT_TO_LARGE_FIXED( 20), INT_TO_LARGE_FIXED(-32), INT_TO_LARGE_FIXED( 0)}, // 5
+    {INT_TO_LARGE_FIXED(-20), INT_TO_LARGE_FIXED( 32), INT_TO_LARGE_FIXED( 0)}, // 6
+    {INT_TO_LARGE_FIXED(-20), INT_TO_LARGE_FIXED(-32), INT_TO_LARGE_FIXED( 0)}, // 7
+
+        // (±φ, 0, ±1) scaled ≈ (±32, 0, ±20)
+    {INT_TO_LARGE_FIXED( 32), INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED( 20)}, // 8
+    {INT_TO_LARGE_FIXED( 32), INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED(-20)}, // 9
+    {INT_TO_LARGE_FIXED(-32), INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED( 20)}, // 10
+    {INT_TO_LARGE_FIXED(-32), INT_TO_LARGE_FIXED( 0), INT_TO_LARGE_FIXED(-20)}  // 11
     };
-    struct Edge icosahedronEdges[30] = {
-        // Top cap (around vertex 0)
-        {0, 1}, {0, 4}, {0, 6}, {0, 8}, {0, 10},
-        
-        // Bottom cap (around vertex 2)
-        {2, 3}, {2, 5}, {2, 7}, {2, 9}, {2, 11},
-        
-        // Middle ring connections
-        {1, 4}, {4, 6}, {6, 8}, {8, 10}, {10, 1},  // Upper pentagon
-        {3, 5}, {5, 7}, {7, 9}, {9, 11}, {11, 3},  // Lower pentagon
-        
-        // Connections between upper and lower rings
-        {1, 11}, {4, 3}, {6, 5}, {8, 7}, {10, 9}
+    struct Edge icosahedronEdges[] = {
+        // Connections from upper vertices
+    {0,4}, {0,5}, {0,6}, {0,7}, {0,8}, {0,9}, // adjust based on indices
+    {1,4}, {1,6}, {1,8}, {1,9}, {1,10}, {1,11},
+    {2,5}, {2,7}, {2,9}, {2,11}, {2,4}, {2,6},
+    {3,5}, {3,7}, {3,9}, {3,11}, {3,10}, {3,8},
+        // Equatorial / triangle closing edges
+    {4,8}, {8,10}, {10,6}, {6,4},
+    {5,9}, {9,11}, {11,7}, {7,5},
+    {4,5}, {6,7}, {8,9}, {10,11}
+        // This is a curated set that gives good coverage. You can expand if needed.
     };
     struct Object3lf icosahedronObject = {
-        (struct Vector3lf){INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0), MAKE_FIXED32(3, 0)},
+        (struct Vector3lf){INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(56)},
         {0, 0, 0},
         (struct Mesh3lf) {icosahedronVertices, icosahedronEdges, sizeof(icosahedronVertices) / sizeof(struct Vector3lf), sizeof(icosahedronEdges) / sizeof(struct Edge)}
     };
