@@ -317,7 +317,7 @@ int main(void) {
     positionSprite(7, (struct Vector2ui) {160, 100});
     *ADDRESS_TO_PTR(SPRITE_7_COLOR) = COLOR_WHITE;
 
-    //d4
+    // d4
     struct Vector3lf tetrahedronVertices[] = {
     {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(1)},
     {INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1)},
@@ -340,7 +340,7 @@ int main(void) {
     struct Vector3lf tetrahedronVertexBuffer[sizeof(tetrahedronVertices) / sizeof(struct Vector3lf)];
     spriteVertexBuffers[0] = tetrahedronVertexBuffer;
 
-    //d6
+    // d6
     struct Vector3lf cubeVertices[] = {
         // Front face (z = +1.0)
         {INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(-1), INT_TO_LARGE_FIXED(1)},
@@ -386,7 +386,7 @@ int main(void) {
     spriteVertexBuffers[1] = cubeVertexBuffer;
 
 
-    //d8
+    // d8
     struct Vector3lf octahedronVertices[] = {
     // Top and bottom (the tips)
     {INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(1), INT_TO_LARGE_FIXED(0)},   // Top tip
@@ -420,7 +420,7 @@ int main(void) {
     struct Vector3lf octahedronVertexBuffer[sizeof(octahedronVertices) / sizeof(struct Vector3lf)];
     spriteVertexBuffers[2] = octahedronVertexBuffer;
 
-    //d12
+    // d12
     #define PHI 1.618034f
     #define INV_PHI 0.618034f  // 1/phi
 
@@ -490,8 +490,55 @@ int main(void) {
     struct Vector3lf dodecahedronVertexBuffer[sizeof(dodecahedronVertices) / sizeof(struct Vector3lf)];
     spriteVertexBuffers[3] = dodecahedronVertexBuffer;
 
+    // d20
+    struct Vector3lf icosahedronVertices[] = {
+        // Three mutually perpendicular golden rectangles
+        // Rectangle 1 (XZ plane, ±1 on Y)
+        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED( PHI)},
+        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(-PHI)},
+        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED( PHI)},
+        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(-PHI)},
+        
+        // Rectangle 2 (YZ plane, ±1 on X)
+        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( PHI)},
+        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-PHI)},
+        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( PHI)},
+        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-PHI)},
+        
+        // Rectangle 3 (XY plane, ±1 on Z)
+        {FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(0.0f)},
+        {FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(0.0f)},
+        {FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(0.0f)},
+        {FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(0.0f)}
+    };
+    struct Edge icosahedronEdges[30] = {
+        // Top cap (around vertex 0)
+        {0, 1}, {0, 4}, {0, 6}, {0, 8}, {0, 10},
+        
+        // Bottom cap (around vertex 2)
+        {2, 3}, {2, 5}, {2, 7}, {2, 9}, {2, 11},
+        
+        // Middle ring connections
+        {1, 4}, {4, 6}, {6, 8}, {8, 10}, {10, 1},  // Upper pentagon
+        {3, 5}, {5, 7}, {7, 9}, {9, 11}, {11, 3},  // Lower pentagon
+        
+        // Connections between upper and lower rings
+        {1, 11}, {4, 3}, {6, 5}, {8, 7}, {10, 9}
+    };
+    struct Object3lf icosahedronObject = {
+        (struct Vector3lf){INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(2)},
+        {0, 0, 0},
+        (struct Mesh3lf) {icosahedronVertices, icosahedronEdges, sizeof(icosahedronVertices) / sizeof(struct Vector3lf), sizeof(icosahedronEdges) / sizeof(struct Edge)}
+    };
+    struct Sprite3d icosahedronSprite = {
+        (struct SpriteBase) {(struct Vector2ui) {280, 200}, COLOR_GREEN, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_4_FRONTBUFFER_BLOCK))},
+        &icosahedronObject
+    };
+    struct Vector3lf icosahedronVertexBuffer[sizeof(icosahedronVertices) / sizeof(struct Vector3lf)];
+    spriteVertexBuffers[4] = icosahedronVertexBuffer;
+
     uint8_t spriteBackbufferBlocks[HARDWARE_SPRITE_COUNT];
-    struct Sprite3d* sprites[] = {&tetrahedronSprite, &cubeSprite, &octahedronSprite, &dodecahedronSprite};
+    struct Sprite3d* sprites[] = {&tetrahedronSprite, &cubeSprite, &octahedronSprite, &dodecahedronSprite, &icosahedronSprite}; 
     const uint8_t spriteCount = sizeof(sprites) / sizeof(struct Sprite3d*);
     for(uint8_t currentSprite = 0; currentSprite < spriteCount; currentSprite++) {
         positionSprite(currentSprite, sprites[currentSprite]->sprite.position);
