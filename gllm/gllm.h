@@ -1,6 +1,6 @@
 #ifndef GLLM_MATH
 
-#define GLLM_MATH
+//#define GLLM_MATH
 
 #include <stdbool.h>
 #include <stdint.h>
