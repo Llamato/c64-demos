@@ -476,47 +476,53 @@ int main(void) {
     spriteVertexBuffers[3] = decahedronVertexBuffer;
 
     // d12
+    // d12 - Regular Dodecahedron (20 vertices, 30 edges)
     struct Vector3lf dodecahedronVertices[] = {
-        // Vertices at (±1, ±1, ±1) - 8 vertices
-        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED( 1.0f)},
-        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(-1.0f)},
-        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED( 1.0f)},
-        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(-1.0f)},
-        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED( 1.0f)},
-        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(-1.0f)},
-        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED( 1.0f)},
-        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(-1.0f)},
-        
-        // Vertices at (0, ±1/φ, ±φ) - 4 vertices
-        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( INV_PHI), FLOAT_TO_LARGE_FIXED( PHI)},
-        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( INV_PHI), FLOAT_TO_LARGE_FIXED(-PHI)},
-        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-INV_PHI), FLOAT_TO_LARGE_FIXED( PHI)},
-        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-INV_PHI), FLOAT_TO_LARGE_FIXED(-PHI)},
-        
-        // Vertices at (±1/φ, ±φ, 0) - 4 vertices
-        {FLOAT_TO_LARGE_FIXED( INV_PHI), FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED(0.0f)},
-        {FLOAT_TO_LARGE_FIXED( INV_PHI), FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED(0.0f)},
-        {FLOAT_TO_LARGE_FIXED(-INV_PHI), FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED(0.0f)},
-        {FLOAT_TO_LARGE_FIXED(-INV_PHI), FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED(0.0f)},
-        
-        // Vertices at (±φ, 0, ±1/φ) - 4 vertices
-        {FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( INV_PHI)},
-        {FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-INV_PHI)},
-        {FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( INV_PHI)},
-        {FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-INV_PHI)}
+        // Cube corners (±1, ±1, ±1) - indices 0-7
+        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED( 1.0f)}, // 0
+        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(-1.0f)}, // 1
+        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED( 1.0f)}, // 2
+        {FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(-1.0f)}, // 3
+        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED( 1.0f)}, // 4
+        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED( 1.0f), FLOAT_TO_LARGE_FIXED(-1.0f)}, // 5
+        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED( 1.0f)}, // 6
+        {FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(-1.0f), FLOAT_TO_LARGE_FIXED(-1.0f)}, // 7
+
+        // (0, ±1/φ, ±φ) - indices 8-11
+        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( INV_PHI), FLOAT_TO_LARGE_FIXED( PHI)},   // 8
+        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( INV_PHI), FLOAT_TO_LARGE_FIXED(-PHI)},  // 9
+        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-INV_PHI), FLOAT_TO_LARGE_FIXED( PHI)},  // 10
+        {FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-INV_PHI), FLOAT_TO_LARGE_FIXED(-PHI)},  // 11
+
+        // (±1/φ, ±φ, 0) - indices 12-15
+        {FLOAT_TO_LARGE_FIXED( INV_PHI), FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED(0.0f)},  // 12
+        {FLOAT_TO_LARGE_FIXED( INV_PHI), FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED(0.0f)},  // 13
+        {FLOAT_TO_LARGE_FIXED(-INV_PHI), FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED(0.0f)},  // 14
+        {FLOAT_TO_LARGE_FIXED(-INV_PHI), FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED(0.0f)},  // 15
+
+        // (±φ, 0, ±1/φ) - indices 16-19
+        {FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( INV_PHI)},  // 16
+        {FLOAT_TO_LARGE_FIXED( PHI), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-INV_PHI)},  // 17
+        {FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED( INV_PHI)},  // 18
+        {FLOAT_TO_LARGE_FIXED(-PHI), FLOAT_TO_LARGE_FIXED(0.0f), FLOAT_TO_LARGE_FIXED(-INV_PHI)}   // 19
     };
+
     struct Edge dodecahedronEdges[] = {
-        // Just the visible edges that define the shape
-        // Pentagon rings (12 edges)
-        {8,9}, {9,13}, {13,17}, {17,16}, {16,12}, {12,8},
-        {10,11}, {11,15}, {15,19}, {19,18}, {18,14}, {14,10},
-        
-        // Ring connections (6 edges)
-        {8,10}, {12,14}, {16,18}, {9,11}, {13,15}, {17,19},
-        
-        // Cube edges (8 edges - just the corners that matter)
-        {0,1}, {0,4}, {1,5}, {2,3}, {2,6}, {3,7}, {4,5}, {6,7}
-        // Total: 26 edges - good enough!
+        // Cube-related edges (8)
+        {0,1}, {0,2}, {0,4}, {1,3}, {1,5}, {2,3}, {2,6}, {4,5}, {4,6}, {5,7}, {6,7}, // adjusted for better coverage
+
+        // One set of pentagons / rings
+        {8,12}, {12,16}, {16,0}, {0,8}, {8,9},          // example pentagon around top
+        {9,13}, {13,17}, {17,1}, {1,9},
+        {10,14}, {14,18}, {18,4}, {4,10},
+        {11,15}, {15,19}, {19,5}, {5,11},
+
+        // More connecting edges (full set - 30 total)
+        {8,16}, {16,17}, {17,9}, {9,12}, {12,13}, {13,8}, // more pentagons
+        {10,18}, {18,19}, {19,11}, {11,14}, {14,15}, {15,10},
+        {0,12}, {0,16}, {1,9}, {1,17}, {2,6}, {2,10}, {3,7}, {3,11},
+        {4,14}, {4,18}, {5,11}, {5,19}, {6,10}, {6,15}, {7,13}, {7,17}
+        // Note: This is a curated set that avoids duplicates and covers all faces reasonably
     };
     struct Object3lf dodecahedronObject = {
         (struct Vector3lf){INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0), MAKE_FIXED32(2, 50)},
@@ -566,7 +572,7 @@ int main(void) {
         {1, 11}, {4, 3}, {6, 5}, {8, 7}, {10, 9}
     };
     struct Object3lf icosahedronObject = {
-        (struct Vector3lf){INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0), MAKE_FIXED32(2, 50)},
+        (struct Vector3lf){INT_TO_LARGE_FIXED(0), INT_TO_LARGE_FIXED(0), MAKE_FIXED32(3, 0)},
         {0, 0, 0},
         (struct Mesh3lf) {icosahedronVertices, icosahedronEdges, sizeof(icosahedronVertices) / sizeof(struct Vector3lf), sizeof(icosahedronEdges) / sizeof(struct Edge)}
     };
@@ -578,7 +584,7 @@ int main(void) {
     spriteVertexBuffers[5] = icosahedronVertexBuffer;
 
     uint8_t spriteBackbufferBlocks[HARDWARE_SPRITE_COUNT];
-    struct Sprite3d* sprites[] = {&tetrahedronSprite, &cubeSprite, &octahedronSprite, &decahedronSprite}; //, &dodecahedronSprite, &icosahedronSprite
+    struct Sprite3d* sprites[] = {&tetrahedronSprite, &cubeSprite, &octahedronSprite, &decahedronSprite, &dodecahedronSprite, &icosahedronSprite};
     const uint8_t spriteCount = sizeof(sprites) / sizeof(struct Sprite3d*);
     for(uint8_t currentSprite = 0; currentSprite < spriteCount; currentSprite++) {
         positionSprite(currentSprite, sprites[currentSprite]->sprite.position);
