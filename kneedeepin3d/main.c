@@ -55,8 +55,8 @@
 #define SPRITE_3_FRONTBUFFER_BLOCK 239
 #define SPRITE_3_BACKBUFFER_BLOCK 240
 
-#define SPRITE_4_FRONTBUFFER_BLOCK 212
-#define SPRITE_4_BACKBUFFER_BLOCK 213
+#define SPRITE_4_FRONTBUFFER_BLOCK 248
+#define SPRITE_4_BACKBUFFER_BLOCK 249
 
 #define SPRITE_5_FRONTBUFFER_BLOCK 216
 #define SPRITE_5_BACKBUFFER_BLOCK 217
@@ -171,6 +171,18 @@ void makeLineSpriteBresenham(volatile unsigned char* bitmapPointer, const struct
     }
 }
 
+void makeChackerboardSprite(volatile unsigned char* bitmapPointer) {
+    const uint8_t evenByte = 0xAA;
+    const uint8_t oddByte = evenByte >> 1;
+    uint8_t checkerboardByte = evenByte;
+    for(uint8_t currentRow = 0; currentRow < SPRITE_ROWS; currentRow++) {
+        for(uint8_t currentByte = 0; currentByte < SPRITE_BYTES_PER_ROW; currentByte++) {
+            bitmapPointer[currentRow*SPRITE_BYTES_PER_ROW+currentByte] = checkerboardByte;
+        }
+        checkerboardByte = checkerboardByte == evenByte ? oddByte : evenByte;
+    }
+}
+
 void spritePointsFromVertexArray(struct Vector2uis* results, const struct Vector3lf* vertices, uint16_t vertexCount) {
     const struct Vector2uis spriteDimensions = {SPRITE_COLUMNS, SPRITE_ROWS};
     for(uint16_t currentVertexIndex = 0; currentVertexIndex < vertexCount; currentVertexIndex++) {
@@ -204,29 +216,19 @@ void makeWireframeMeshSprite(volatile unsigned char* bitmapPointer, const struct
     }
 }
 
-void positionSprite(const uint8_t spriteNr, const struct Vector2ui posiition) {
+void positionSprite(const uint8_t spriteNr, const struct Vector2ui position) {
     volatile unsigned char* spriteXlowPositionRegisterAddress = ADDRESS_TO_PTR(SPRITE_0_POSITION + spriteNr * 2);
-    uint8_t positionXlow = posiition.x & 0xFF;
-    bool positionXhigh = posiition.x & 0x100;
+    uint8_t positionXlow = position.x & 0xff;
+    bool positionXhigh = position.x & 0x100;
     *spriteXlowPositionRegisterAddress = positionXlow;
-    *ADDRESS_TO_PTR(SPRITES_X_HIGH) = (SPRITES_X_HIGH & ~(1 << spriteNr) | (positionXhigh << spriteNr));
+    *ADDRESS_TO_PTR(SPRITES_X_HIGH) = (*ADDRESS_TO_PTR(SPRITES_X_HIGH) & ~(1 << spriteNr) | (positionXhigh << spriteNr));
     volatile unsigned char* spriteYpositionRegisterAddress = spriteXlowPositionRegisterAddress+1;
-    *spriteYpositionRegisterAddress = posiition.y;
+    *spriteYpositionRegisterAddress = position.y;
 }
 
 void colorSprite(const uint8_t spriteNr, const uint8_t color) {
     volatile unsigned char* spriteColors = ADDRESS_TO_PTR(SPRITE_0_COLOR);
     spriteColors[spriteNr] = color;
-}
-
-uint8_t getSpriteBlock(const uint8_t spriteNr) {
-    volatile unsigned char* spriteBlockPointers = ADDRESS_TO_PTR(SPRITE_0_FRONTBUFFER_BLOCK);
-    return spriteBlockPointers[spriteNr];
-}
-
-void setSpriteBlock(const uint8_t spriteNr, const uint8_t block) {
-    volatile unsigned char* spriteBlockPointers = ADDRESS_TO_PTR(SPRITE_0_FRONTBUFFER_BLOCK);
-    spriteBlockPointers[spriteNr] = block;
 }
 
 void copySpriteBitmap(volatile unsigned char* to, volatile unsigned char* from) {
@@ -287,7 +289,6 @@ void swapSpriteWithBackbuffer(const uint8_t spriteNr, struct SpriteBase* sprite)
 
 struct Vector3lf* spriteVertexBuffers[HARDWARE_SPRITE_COUNT];
 void draw3dSprite(uint8_t hwSpriteSlot, struct Sprite3d *s3d) {
-    swapSpriteWithBackbuffer(hwSpriteSlot, &s3d->sprite);
     fillMemory(s3d->sprite.bitmapPtr, SPRITE_SIZE, 0x00);
     copyByteArray((unsigned char*) spriteVertexBuffers[hwSpriteSlot], (unsigned char*) s3d->object->mesh.vertices, s3d->object->mesh.vertexCount * sizeof(struct Vector3lf));
     struct Vector3lf* templatePtr = s3d->object->mesh.vertices;
@@ -297,6 +298,7 @@ void draw3dSprite(uint8_t hwSpriteSlot, struct Sprite3d *s3d) {
     makeWireframeMeshSprite(s3d->sprite.bitmapPtr, &s3d->object->mesh);
     s3d->object->mesh.vertices = templatePtr;
     //swapSpriteWithBackbuffer(hwSpriteSlot, &s3d->sprite);
+    swapSpriteWithBackbuffer(hwSpriteSlot, &s3d->sprite);
 }
 
 int main(void) {
@@ -512,13 +514,13 @@ int main(void) {
         {0,1}, {0,2}, {0,4}, {1,3}, {1,5}, {2,3}, {2,6}, {4,5}, {4,6}, {5,7}, {6,7}, // adjusted for better coverage
 
         // One set of pentagons / rings
-        {8,12}, {12,16}, {16,0}, {0,8}, {8,9},          // example pentagon around top
+        {8,12}, {12,16}, {16,0}, {0,8}, {8,9},
         {9,13}, {13,17}, {17,1}, {1,9},
         {10,14}, {14,18}, {18,4}, {4,10},
         {11,15}, {15,19}, {19,5}, {5,11},
 
         // More connecting edges (full set - 30 total)
-        {8,16}, {16,17}, {17,9}, {9,12}, {12,13}, {13,8}, // more pentagons
+        {8,16}, {16,17}, {17,9}, {9,12}, {12,13}, {13,8},
         {10,18}, {18,19}, {19,11}, {11,14}, {14,15}, {15,10},
         {0,12}, {0,16}, {1,9}, {1,17}, {2,6}, {2,10}, {3,7}, {3,11},
         {4,14}, {4,18}, {5,11}, {5,19}, {6,10}, {6,15}, {7,13}, {7,17}
@@ -558,7 +560,7 @@ int main(void) {
     };
     struct Edge icosahedronEdges[] = {
         // Connections from upper vertices
-    {0,4}, {0,5}, {0,6}, {0,7}, {0,8}, {0,9}, // adjust based on indices
+    {0,4}, {0,5}, {0,6}, {0,7}, {0,8}, {0,9},
     {1,4}, {1,6}, {1,8}, {1,9}, {1,10}, {1,11},
     {2,5}, {2,7}, {2,9}, {2,11}, {2,4}, {2,6},
     {3,5}, {3,7}, {3,9}, {3,11}, {3,10}, {3,8},
@@ -592,6 +594,7 @@ int main(void) {
     while(gamerunning) {
         for(uint8_t currentSprite = 0; currentSprite < spriteCount; currentSprite++) {
             sprites[currentSprite]->object->rotation.y++;
+            sprites[currentSprite]->sprite.position.x++;
             draw3dSprite(currentSprite, sprites[currentSprite]);
         }
     }
