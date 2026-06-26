@@ -144,7 +144,7 @@ void fillMemory(volatile unsigned char* memoryPtr, uint16_t length, uint8_t fill
 
 volatile unsigned char* bitmapPtrFromSpriteBlock(uint8_t block) {
     uint16_t addressValue = block * SPRITE_SIZE;
-    return (volatile unsigned char*) addressValue;
+    return ADDRESS_TO_PTR(addressValue);
 }
 
 struct BitmapPosition spritePixelPositionToBitmapPosition(const struct Vector2uis position) {
@@ -335,6 +335,7 @@ void swapSpriteWithBackbuffer(const uint8_t spriteNr, struct SpriteBase* sprite)
 }
 
 struct Vector3lf* spriteVertexBuffers[HARDWARE_SPRITE_COUNT];
+uint8_t currentSpriteVertexBuffer = 0;
 void draw3dSprite(uint8_t hwSpriteSlot, struct Sprite3d *s3d) {
     fillMemory(s3d->sprite.bitmapPtr, SPRITE_SIZE, 0x00);
     copyByteArray((unsigned char*) spriteVertexBuffers[hwSpriteSlot], (unsigned char*) s3d->object->mesh.vertices, s3d->object->mesh.vertexCount * sizeof(struct Vector3lf));
@@ -347,6 +348,17 @@ void draw3dSprite(uint8_t hwSpriteSlot, struct Sprite3d *s3d) {
     //swapSpriteWithBackbuffer(hwSpriteSlot, &s3d->sprite);
     swapSpriteWithBackbuffer(hwSpriteSlot, &s3d->sprite);
 }
+
+struct BufferPair spriteBlocks[HARDWARE_SPRITE_COUNT] = {
+    {SPRITE_0_FRONTBUFFER_BLOCK, SPRITE_0_BACKBUFFER_BLOCK},
+    {SPRITE_1_FRONTBUFFER_BLOCK, SPRITE_1_BACKBUFFER_BLOCK},
+    {SPRITE_2_FRONTBUFFER_BLOCK, SPRITE_2_FRONTBUFFER_BLOCK},
+    {SPRITE_3_FRONTBUFFER_BLOCK, SPRITE_3_BACKBUFFER_BLOCK},
+    {SPRITE_4_FRONTBUFFER_BLOCK, SPRITE_4_BACKBUFFER_BLOCK},
+    {SPRITE_5_FRONTBUFFER_BLOCK, SPRITE_5_BACKBUFFER_BLOCK},
+    {SPRITE_6_FRONTBUFFER_BLOCK, SPRITE_6_BACKBUFFER_BLOCK},
+    {SPRITE_7_FRONTBUFFER_BLOCK, SPRITE_7_BACKBUFFER_BLOCK}
+};
 
 int main(void) {
     //Background colors
@@ -388,11 +400,12 @@ int main(void) {
         (struct Mesh3lf) {tetrahedronVertices, tetrahedronEdges, sizeof(tetrahedronVertices) / sizeof(struct Vector3lf), sizeof(tetrahedronEdges) / sizeof(struct Edge)}
     };
     struct Sprite3d tetrahedronSprite = {
-        (struct SpriteBase) {(struct Vector2ui) {40, 200}, COLOR_RED, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_0_FRONTBUFFER_BLOCK))},
+        (struct SpriteBase) {(struct Vector2ui) {40, 200}, COLOR_RED, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(spriteBlocks[currentSpriteVertexBuffer].frontBufferBlock))},
         &tetrahedronObject
     };
     struct Vector3lf tetrahedronVertexBuffer[sizeof(tetrahedronVertices) / sizeof(struct Vector3lf)];
-    spriteVertexBuffers[0] = tetrahedronVertexBuffer;
+    spriteVertexBuffers[currentSpriteVertexBuffer] = tetrahedronVertexBuffer;
+    currentSpriteVertexBuffer++;
 
     // d6
     struct Vector3lf cubeVertices[] = {
@@ -433,12 +446,12 @@ int main(void) {
         (struct Mesh3lf) { cubeVertices, cubeEdges, sizeof(cubeVertices) / sizeof(struct Vector3lf), sizeof(cubeEdges) / sizeof(struct Edge)},
     };
     struct Sprite3d cubeSprite = {
-        (struct SpriteBase) {(struct Vector2ui) {80, 200}, COLOR_WHITE, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_1_FRONTBUFFER_BLOCK))},
+        (struct SpriteBase) {(struct Vector2ui) {80, 200}, COLOR_WHITE, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(spriteBlocks[currentSpriteVertexBuffer].frontBufferBlock))},
         &cubeObject
     };
     struct Vector3lf cubeVertexBuffer[sizeof(cubeVertices) / sizeof(struct Vector3lf)];
-    spriteVertexBuffers[1] = cubeVertexBuffer;
-
+    spriteVertexBuffers[currentSpriteVertexBuffer] = cubeVertexBuffer; //Referactor: Remove magic numbers....
+    currentSpriteVertexBuffer++;
 
     // d8
     struct Vector3lf octahedronVertices[] = {
@@ -468,11 +481,12 @@ int main(void) {
         (struct Mesh3lf) {octahedronVertices, octahedronEdges, sizeof(octahedronVertices) / sizeof(struct Vector3lf), sizeof(octahedronEdges) / sizeof(struct Edge)}
     };
     struct Sprite3d octahedronSprite = {
-        (struct SpriteBase) {(struct Vector2ui) {120, 200}, COLOR_CYAN, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_2_FRONTBUFFER_BLOCK))},
+        (struct SpriteBase) {(struct Vector2ui) {120, 200}, COLOR_CYAN, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(spriteBlocks[currentSpriteVertexBuffer].frontBufferBlock))},
         &octahedronObject
     };
     struct Vector3lf octahedronVertexBuffer[sizeof(octahedronVertices) / sizeof(struct Vector3lf)];
-    spriteVertexBuffers[2] = octahedronVertexBuffer;
+    spriteVertexBuffers[currentSpriteVertexBuffer] = octahedronVertexBuffer;
+    currentSpriteVertexBuffer++;
 
     // d10
     struct Vector3lf decahedronVertices[] = {
@@ -521,11 +535,12 @@ int main(void) {
         (struct Mesh3lf) {decahedronVertices, decahedronEdges, sizeof(decahedronVertices) / sizeof(struct Vector3lf), sizeof(decahedronEdges) / sizeof(struct Edge)}
     };
     struct Sprite3d decahedronSprite = {
-        (struct SpriteBase) {(struct Vector2ui) {200, 200}, COLOR_VIOLET, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_3_FRONTBUFFER_BLOCK))},
+        (struct SpriteBase) {(struct Vector2ui) {200, 200}, COLOR_VIOLET, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(spriteBlocks[currentSpriteVertexBuffer].frontBufferBlock))},
         &decahedronObject
     };
     struct Vector3lf decahedronVertexBuffer[sizeof(decahedronVertices) / sizeof(struct Vector3lf)];
-    spriteVertexBuffers[3] = decahedronVertexBuffer;
+    spriteVertexBuffers[currentSpriteVertexBuffer] = decahedronVertexBuffer;
+    currentSpriteVertexBuffer++;
 
     // d12
     // d12 - Regular Dodecahedron (20 vertices, 30 edges)
@@ -582,11 +597,12 @@ int main(void) {
         (struct Mesh3lf) {dodecahedronVertices, dodecahedronEdges, sizeof(dodecahedronVertices) / sizeof(struct Vector3lf), sizeof(dodecahedronEdges) / sizeof(struct Edge)}
     };
     struct Sprite3d dodecahedronSprite = {
-        (struct SpriteBase) {(struct Vector2ui) {240, 200}, COLOR_GREEN, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_4_FRONTBUFFER_BLOCK))},
+        (struct SpriteBase) {(struct Vector2ui) {240, 200}, COLOR_GREEN, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(spriteBlocks[currentSpriteVertexBuffer].frontBufferBlock))},
         &dodecahedronObject
     };
     struct Vector3lf dodecahedronVertexBuffer[sizeof(dodecahedronVertices) / sizeof(struct Vector3lf)];
-    spriteVertexBuffers[4] = dodecahedronVertexBuffer;
+    spriteVertexBuffers[currentSpriteVertexBuffer] = dodecahedronVertexBuffer;
+    currentSpriteVertexBuffer++;
 
     // d20
     struct Vector3lf icosahedronVertices[] = {
@@ -626,7 +642,7 @@ int main(void) {
         (struct Mesh3lf) {icosahedronVertices, icosahedronEdges, sizeof(icosahedronVertices) / sizeof(struct Vector3lf), sizeof(icosahedronEdges) / sizeof(struct Edge)}
     };
     struct Sprite3d icosahedronSprite = {
-        (struct SpriteBase) {(struct Vector2ui) {280, 200}, COLOR_BLUE, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_5_FRONTBUFFER_BLOCK))},
+        (struct SpriteBase) {(struct Vector2ui) {280, 200}, COLOR_BLUE, ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(spriteBlocks[currentSpriteVertexBuffer].frontBufferBlock))},
         &icosahedronObject
     };
     struct Vector3lf icosahedronVertexBuffer[sizeof(icosahedronVertices) / sizeof(struct Vector3lf)];
