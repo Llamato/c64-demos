@@ -68,6 +68,10 @@
 #define SPRITE_7_BACKBUFFER_BLOCK 251
 
 //Hardware limitations
+#define TEXT_SCREEN_COLUMNS 40
+#define TEXT_SCREEN_ROWS 25
+#define TEXT_SCREEN_SIZE TEXT_SCREEN_COLUMNS * TEXT_SCREEN_ROWS
+#define BLANK_CHAR 32
 #define BITS_PER_BYTE 8
 #define SPRITE_COLUMNS 24
 #define SPRITE_ROWS 21
@@ -88,10 +92,16 @@
 #define COLOR_LIGHT_GREEN 13
 #define COLOR_LIGHT_BLUE 14
 #define COLOR_LIGHT_GRAY 15
+#define JOYSTICK_DIRECTION_UP 254
+#define JOYSTICK_DIRECTION_DOWN 253
+#define JOYSTICK_DIRECTION_LEFT 251
+#define JOYSTICK_DIRECTION_RIGHT 246
 
 //Mathematical constants (Floats)
 #define PHI 1.618034f
 #define INV_PHI 0.618034f  // 1/phi
+#define POINTS_IN_TRIANGLE 3
+#define POINTS_IN_RECTANGLE 4
 
 struct BufferPair {
     uint8_t frontBufferBlock;
@@ -119,6 +129,12 @@ struct Sprite3d {
     struct SpriteBase sprite;
     struct Object3lf* object;
 };
+
+void swap(volatile unsigned char* a, volatile unsigned char* b) {
+    volatile unsigned char temp = *a;
+    *a = *b;
+    *b = temp;
+}
 
 void fillMemory(volatile unsigned char* memoryPtr, uint16_t length, uint8_t fillByte) {
 	for(uint16_t currentByte = 0; currentByte < length; currentByte++) {
@@ -171,16 +187,45 @@ void makeLineSpriteBresenham(volatile unsigned char* bitmapPointer, const struct
     }
 }
 
-void makeChackerboardSprite(volatile unsigned char* bitmapPointer) {
-    const uint8_t evenByte = 0xAA;
-    const uint8_t oddByte = evenByte >> 1;
-    uint8_t checkerboardByte = evenByte;
-    for(uint8_t currentRow = 0; currentRow < SPRITE_ROWS; currentRow++) {
-        for(uint8_t currentByte = 0; currentByte < SPRITE_BYTES_PER_ROW; currentByte++) {
-            bitmapPointer[currentRow*SPRITE_BYTES_PER_ROW+currentByte] = checkerboardByte;
+void makeTriangleSprite(volatile unsigned char* bitmapPointer, const struct Vector2uis* points) {
+    makeLineSpriteBresenham(bitmapPointer, points[0], points[1]);
+    makeLineSpriteBresenham(bitmapPointer, points[1], points[2]);
+    makeLineSpriteBresenham(bitmapPointer, points[2], points[0]);
+}
+
+void makeRectangleSprite(volatile unsigned char* bitmapPointer, const struct Vector2uis upperLeftEdge, const struct Vector3uis dimensions) {
+    const struct Vector2uis upperRightEdge = {upperLeftEdge.x + dimensions.x, upperLeftEdge.y};
+    const struct Vector2uis lowerLeftEdge = {upperLeftEdge.x, upperLeftEdge.y + dimensions.y};
+    const struct Vector2uis lowerRightEdge = {upperLeftEdge.x + dimensions.x, upperLeftEdge.y + dimensions.y};
+    makeLineSpriteBresenham(bitmapPointer, upperLeftEdge, upperRightEdge);
+    makeLineSpriteBresenham(bitmapPointer, upperLeftEdge, lowerLeftEdge);
+    makeLineSpriteBresenham(bitmapPointer, lowerLeftEdge, lowerRightEdge);
+    makeLineSpriteBresenham(bitmapPointer, upperRightEdge, lowerRightEdge);
+}
+
+void makeArrowSprite(volatile unsigned char* bitmapPointer, const uint8_t direction, const uint8_t size) {
+    struct Vector2uis trianglePoints[] = {
+        {SPRITE_COLUMNS / 2, 0},
+        {SPRITE_COLUMNS / 2, SPRITE_ROWS-1},
+        {SPRITE_COLUMNS-1, SPRITE_ROWS / 2}
+    };
+    switch (direction) {
+        case JOYSTICK_DIRECTION_DOWN: {
+            for(uint8_t currentPoint = 0; currentPoint < POINTS_IN_TRIANGLE; currentPoint++){
+                swap(&trianglePoints[currentPoint].x, &trianglePoints[currentPoint].y); break;
+            }
+            break;
         }
-        checkerboardByte = checkerboardByte == evenByte ? oddByte : evenByte;
+        case JOYSTICK_DIRECTION_LEFT: {
+
+            break;
+        }
+        case JOYSTICK_DIRECTION_UP : {
+            break;
+        }
     }
+    uint8_t rectangleSize = size / 2;
+    
 }
 
 void spritePointsFromVertexArray(struct Vector2uis* results, const struct Vector3lf* vertices, uint16_t vertexCount) {
@@ -265,15 +310,17 @@ struct BufferPair bufferBlocks[] = {
     {SPRITE_7_FRONTBUFFER_BLOCK, SPRITE_7_BACKBUFFER_BLOCK}
 };
 
-void rotate3dSprite(struct Sprite3d *s3d, const uint8_t angle) {
+void rotate3dSprite(struct Sprite3d *s3d, const struct Vector3uis eulerAngles) {
     for(uint32_t currentVertex = 0; currentVertex < s3d->object->mesh.vertexCount; currentVertex++) {
-        s3d->object->mesh.vertices[currentVertex] = rotateVectorY(s3d->object->mesh.vertices[currentVertex], angle);
+        s3d->object->mesh.vertices[currentVertex] = rotate3dVectorX(s3d->object->mesh.vertices[currentVertex], eulerAngles.x);
+        s3d->object->mesh.vertices[currentVertex] = rotate3dVectorY(s3d->object->mesh.vertices[currentVertex], eulerAngles.y);
+        s3d->object->mesh.vertices[currentVertex] = rotate3dVectorZ(s3d->object->mesh.vertices[currentVertex], eulerAngles.z);
     }
 }
 
 void translate3dSprite(struct Sprite3d *s3d, const struct Vector3lf position) {
     for(uint32_t currentVertex = 0; currentVertex < s3d->object->mesh.vertexCount; currentVertex++) {
-        s3d->object->mesh.vertices[currentVertex] = translateVector(s3d->object->mesh.vertices[currentVertex], position);
+        s3d->object->mesh.vertices[currentVertex] = translate3dVector(s3d->object->mesh.vertices[currentVertex], position);
     }
     //s3d->object->position = positio; //Preserve position
 }
@@ -293,7 +340,7 @@ void draw3dSprite(uint8_t hwSpriteSlot, struct Sprite3d *s3d) {
     copyByteArray((unsigned char*) spriteVertexBuffers[hwSpriteSlot], (unsigned char*) s3d->object->mesh.vertices, s3d->object->mesh.vertexCount * sizeof(struct Vector3lf));
     struct Vector3lf* templatePtr = s3d->object->mesh.vertices;
     s3d->object->mesh.vertices = spriteVertexBuffers[hwSpriteSlot];
-    rotate3dSprite(s3d, s3d->object->rotation.y);
+    rotate3dSprite(s3d, s3d->object->rotation);
     translate3dSprite(s3d, s3d->object->position);
     makeWireframeMeshSprite(s3d->sprite.bitmapPtr, &s3d->object->mesh);
     s3d->object->mesh.vertices = templatePtr;
@@ -306,6 +353,9 @@ int main(void) {
     *ADDRESS_TO_PTR(VIC_BACKGROUND_COLOR) = COLOR_BLACK;
     *ADDRESS_TO_PTR(VIC_BORDER_COLOR) = COLOR_GRAY;
 
+    //Clear screen
+    fillMemory(ADDRESS_TO_PTR(TEXT_SCREEN), TEXT_SCREEN_SIZE, BLANK_CHAR);
+
     //Enable sprites
     *ADDRESS_TO_PTR(SPRITES_ENABLE) = 0xff;
     POINT_SPRITE(0, 0);
@@ -317,8 +367,8 @@ int main(void) {
     POINT_SPRITE(6, 6);
     POINT_SPRITE(7, 7);
 
-    //Debug!!!
-    positionSprite(7, (struct Vector2ui) {160, 100});
+    //draw arrows
+    positionSprite(7, (struct Vector2ui) {160, 200});
     *ADDRESS_TO_PTR(SPRITE_7_COLOR) = COLOR_WHITE;
 
     // d4
@@ -594,7 +644,6 @@ int main(void) {
     while(gamerunning) {
         for(uint8_t currentSprite = 0; currentSprite < spriteCount; currentSprite++) {
             sprites[currentSprite]->object->rotation.y++;
-            sprites[currentSprite]->sprite.position.x++;
             draw3dSprite(currentSprite, sprites[currentSprite]);
         }
     }

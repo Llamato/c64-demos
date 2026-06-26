@@ -93,7 +93,14 @@ fixed16_t gllmCos(uint8_t angle) {
     return sinTable[shiftedAngle];
 }
 
-struct Vector3lf translateVector(const struct Vector3lf vector, const struct Vector3lf offset) {
+struct Vector2uis rotate2dVector(const struct Vector2uis vector, const fixed32_t angle) {
+    return (struct Vector2uis) {
+        vector.x * gllmCos(angle),
+        vector.y * gllmSin(angle)
+    };
+}
+
+struct Vector3lf translate3dVector(const struct Vector3lf vector, const struct Vector3lf offset) {
     return (struct Vector3lf) {
         FIXED_ADD(vector.x, offset.x),
         FIXED_ADD(vector.y, offset.y),
@@ -101,13 +108,33 @@ struct Vector3lf translateVector(const struct Vector3lf vector, const struct Vec
     };
 }
 
-struct Vector3lf rotateVectorY(const struct Vector3lf vector, fixed32_t angle) {
+struct Vector3lf rotate3dVectorX(const struct Vector3lf vector, const fixed32_t angle) {
+    fixed16_t cosAngle = gllmCos(angle);
+    fixed16_t sinAngle = gllmSin(angle);
+    struct Vector3lf result;
+    result.x = vector.x;
+    result.y = FIXED_LARGE_MUL_SMALL(vector.y, cosAngle) - FIXED_LARGE_MUL_SMALL(vector.z, sinAngle);
+    result.z = FIXED_LARGE_MUL_SMALL(vector.y, sinAngle) + FIXED_LARGE_MUL_SMALL(vector.z, cosAngle);
+    return result;
+}
+
+struct Vector3lf rotate3dVectorY(const struct Vector3lf vector, fixed32_t angle) {
     fixed16_t cosAngle = gllmCos(angle);
     fixed16_t sinAngle = gllmSin(angle);
     struct Vector3lf result;
     result.x = FIXED_LARGE_MUL_SMALL(vector.x, cosAngle) - FIXED_LARGE_MUL_SMALL(vector.z, sinAngle);
-    result.z = FIXED_LARGE_MUL_SMALL(vector.x, sinAngle) + FIXED_LARGE_MUL_SMALL(vector.z, cosAngle);
     result.y = vector.y;
+    result.z = FIXED_LARGE_MUL_SMALL(vector.x, sinAngle) + FIXED_LARGE_MUL_SMALL(vector.z, cosAngle);
+    return result;
+}
+
+struct Vector3lf rotate3dVectorZ(const struct Vector3lf vector, const fixed32_t angle) {
+    fixed16_t cosAngle = gllmCos(angle);
+    fixed16_t sinAngle = gllmSin(angle);
+    struct Vector3lf result;
+    result.x = FIXED_LARGE_MUL_SMALL(vector.x, cosAngle) - FIXED_LARGE_MUL_SMALL(vector.y, sinAngle);
+    result.y = FIXED_LARGE_MUL_SMALL(vector.x, sinAngle) + FIXED_LARGE_MUL_SMALL(vector.y, cosAngle);
+    result.z = vector.z;
     return result;
 }
 

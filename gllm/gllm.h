@@ -135,9 +135,11 @@ uint8_t gllmRound(const fixed16_t v);
 int16_t gllmSin(const uint8_t angle);
 int16_t gllmCos(const uint8_t angle);
 
-struct Vector3lf translateVector(struct Vector3lf vector, struct Vector3lf offset);
-struct Vector2lf rotateVectorZ(const struct Vector3lf vector, const fixed32_t angle);
-struct Vector3lf rotateVectorY(const struct Vector3lf vector, const fixed32_t angle);
+struct Vector2uis rotate2dVector(const struct Vector2uis vector, const fixed32_t angle);
+struct Vector3lf translate3dVector(const struct Vector3lf vector, const struct Vector3lf offset);
+struct Vector3lf rotate3dVectorX(const struct Vector3lf vector, const fixed32_t angle);
+struct Vector3lf rotate3dVectorY(const struct Vector3lf vector, const fixed32_t angle);
+struct Vector3lf rotate3dVectorZ(const struct Vector3lf vector, const fixed32_t angle);
 struct Vector2sf projectSFvector(const struct Vector3sf point);
 struct Vector2lf projectLFvector(const struct Vector3lf point);
 struct Vector2i ndcToScreen(const struct Vector2uis dimensions, const struct Vector2lf ndc);
