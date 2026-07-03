@@ -1,2 +1,5 @@
-main.prg
-main.prg.elf
+*.prg
+*.d64
+*.elf
+*.o
+result

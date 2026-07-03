@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "../gllm/gllm.h"
+#include "gllm/gllm.h"
 
 //Memory Mapping Macros
 #define ADDRESS_TO_PTR(ADDR) ((volatile unsigned char*)ADDR)
