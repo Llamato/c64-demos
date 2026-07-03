@@ -7,7 +7,7 @@
   };
 
   outputs =
-    { self, nixpkgs, ... } @inputs:
+    { self, nixpkgs, ... }@inputs:
     let
       systems = [
         "x86_64-linux"
@@ -19,7 +19,8 @@
       pkgsFor = system: import nixpkgs { inherit system; };
     in
     {
-      packages = forAllSystems (system:
+      packages = forAllSystems (
+        system:
         let
           pkgs = pkgsFor system;
           llvm-mos = pkgs.callPackage (inputs.llamato-dotfiles + "/nixos/packages/llvm-mos/package.nix") { };
@@ -55,7 +56,8 @@
           };
         }
       );
-      devShells = forAllSystems (system:
+      devShells = forAllSystems (
+        system:
         let
           pkgs = pkgsFor system;
           llvm-mos = pkgs.callPackage (inputs.llamato-dotfiles + "/nixos/packages/llvm-mos/package.nix") { };
