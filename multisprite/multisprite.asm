@@ -13,7 +13,7 @@ sprite2PositionY = sprite1PositionY+2
 sprite1BlockPointer = $07f8
 sprite2BlockPointer = sprite1BlockPointer+1
 
-;Constants
+;System Constants
 sprite1Block = 250 ;(*64=16000)
 sprite2Block = 251 ;(*64=16064)
 vicColorBlack = 0
@@ -32,6 +32,9 @@ vicColorGray = 12
 vicColorLightGreen = 13
 vicColorLightPurple = 14
 vicColorLightGray = 15
+
+;Application constants
+
 
 ;Setting shared colors
 *= $1000
@@ -71,9 +74,9 @@ sta spritesXhigh
 lda #3
 sta spritesEnableMulticolor
 
-;We are done here. Hold the system
+;Movement loop
 HoldAndCatchFire:
-jsr moveleft
+;jsr moveleft
 inc vicBorderColor
 jmp HoldAndCatchFire
 
@@ -83,22 +86,65 @@ lda sprite1PositionX
 sec
 sbc #1
 sta sprite1PositionX
-bcs movesprite2
-lda #$fe
+bcs movesprite2left
+lda #$fe ;~(1 << 0)
 and spritesXhigh
 sta spritesXhigh
-movesprite2:
+movesprite2left:
 lda sprite2PositionX
 sec
 sbc #1
 sta sprite2PositionX
 bcs moveleftdone
-lda #$fd
+lda #$fd ;~(1 << 1)
 and spritesXhigh
 sta spritesXhigh
 moveleftdone:
 rts
 
+moveup:
+lda sprite1PositionY
+sec
+sbc #1
+sta sprite1PositionY
+movesprite2up:
+lda sprite2PositionY
+sec
+sbc #1
+sta sprite2PositionY
+moveupdone
+rts
+
+moveright:
+lda sprite1PositionX
+clc
+adc #1
+sta sprite1PositionX
+bcc movesprite2right
+lda #$fe ;~(1 << 0)
+and spritesXhigh
+sta spritesXhigh
+movesprite2right:
+lda sprite2PositionX
+bcs moverightdone
+lda #$fd ;(1 << 1)
+and spritesXhigh
+sta spritesXhigh
+moverightdone:
+rts
+
+movedown:
+lda sprite1PositionY
+clc
+adc #1
+sta sprite1PositionY
+movesprite2down:
+lda sprite2PositionY
+clc
+adc #1
+sta sprite2PositionY
+movedowndone:
+rts
 
 *=$3e80
 ; sprite 1 / multicolor / color: $03
@@ -122,4 +168,3 @@ sprite2
 !byte $a5,$00,$01,$54,$00,$00,$44,$00
 !byte $01,$44,$00,$01,$04,$00,$01,$04
 !byte $00,$01,$04,$00,$01,$04,$00,$87
-

@@ -2,4 +2,5 @@
 *.d64
 *.elf
 *.o
+*.spm
 result

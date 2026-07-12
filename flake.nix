@@ -26,7 +26,20 @@
           llvm-mos = pkgs.callPackage (inputs.llamato-dotfiles + "/nixos/packages/llvm-mos/package.nix") { };
         in
         {
-
+          kneedeepin3d = pkgs.stdenv.mkDerivation {
+            name = "kneedeepin3d";
+            version = "0.0.1";
+            src = ./kneedeepin3d/.;
+            buildPhase = ''
+              runHook preBuild
+              ${llvm-mos}/bin/mos-c64-clang -Os main.c gllm/gllm.c -o kneedeepin3d.prg
+              runHook postBuild
+            '';
+            installPhase = ''
+              cp kneedeepin3d.prg $out
+            '';
+          };
+          
           multisprite = pkgs.stdenv.mkDerivation {
             name = "multisprite";
             version = "0.0.1";
@@ -41,17 +54,17 @@
             '';
           };
 
-          kneedeepin3d = pkgs.stdenv.mkDerivation {
-            name = "kneedeepin3d";
+          spritemultiplexing = pkgs.stdenv.mkDerivation {
+            name = "spritemultiplexing";
             version = "0.0.1";
-            src = ./kneedeepin3d/.;
+            src = ./spritemultiplexing/.;
             buildPhase = ''
               runHook preBuild
-              ${llvm-mos}/bin/mos-c64-clang -Os main.c gllm/gllm.c -o kneedeepin3d.prg
+              ${pkgs.acme}/bin/acme --cpu 6510 --format cbm -o result.prg main.asm
               runHook postBuild
             '';
             installPhase = ''
-              cp kneedeepin3d.prg $out
+              cp result.prg $out
             '';
           };
         }
