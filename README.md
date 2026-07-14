@@ -11,6 +11,7 @@ Currently supported are:
 |------|---------------|---------------|-------------|
 | Kneedeep in 3D | `nix build .#kneedeepin3d` | c64 | Using sprites as canvases for 3D rendering. Showing that while 3D can be done on the Commodore 8-bit line, it is best avoided for performance reasons. |
 | Multisprite | `nix build .#multisprite` | c64 | A demo showing how to combine multiple sprites into one character. |
+| Spritemultiplexing | `nix build .#spritemultiplexing` | c64 | A demo showing how to display more then 8 sprites at once using sprite multiplexing |
 
 If there are problems, feel free to open issues.
 
