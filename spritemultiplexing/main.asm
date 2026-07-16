@@ -9,59 +9,96 @@
 next_line:
     !16 $0000       ; End of BASIC program
 
+;Petscii text
+petsciiBlank = 32
+
+;Vic Colors
+vicColorBlack = 0
+vicColorWhite = 1
+
+;Vic Registers
+screen = $400; 4*256 = 1024
+vicBorderColorRegister = $d020
+vicBackgroundColorRegister = $d021
+vicControlRegister = $d01a
+vicSpriteMultiColorRegister = $d01c
+vicSpriteEnableRegister = $d015
+vicSprite0positionXregister = $d000
+vicSprite0positionYregister = $d001
+vicSprite0bitmapBlockPointerRegister = $7f8
+vicSprite0colorRegister = $d027
+vicSpritePositionsXhighbitRegister = $d010
+vicRasterInterruptScanlineSelectRegister = $d012
+
+
+;CIA
+cia1ControlReigster = $dc0d
+cia2ControlRegister = $dd0d
+
+;Kernel
+kernelrqVector = $0314 ;$0314-0315
+kernelTextColor = $286
+kernelRestoreRegistersAndReturnFromInterruptRotine = $ea81
+
+;Programm
+sprite0block = 251
+
 *=$080d
 ;set colors
 lda #13
-sta 53280
-lda #0
-sta 53281
-sta 646
+sta vicBorderColorRegister
+lda #vicColorBlack
+sta vicBackgroundColorRegister
+sta kernelTextColor
 
 ;clear screen
 ldy #0
-lda #32
+lda #petsciiBlank
+
 screenclearloop:
-sta 1024, y
-sta 1024+256, y
-sta 1024+512, y
-sta 1024+768, y
+sta screen+0*256, y ;Screen page 0
+sta screen+1*256, y ;Screen page 1
+sta screen+2*256, y ;Screen page 2
+sta screen+3*256, y ;Screen page 3
 iny
 bne screenclearloop
 
 ;setup raster interrupt
 sei ;disable interrupts globally
 ;disable CIA's
-lda #$7f
-sta $dc0d
-sta $dd0d
+lda #$7f ;everything execpt highest bit
+sta cia1ControlReigster
+sta cia2ControlRegister
 
 ;set rasterline for interrupt to fire on
 lda #$7f
 and $d011
 sta $d011
 lda #100 ; line 100
-sta $d012
+sta vicRasterInterruptScanlineSelectRegister
 
 ;set IRQ handler pointer to ISR
 lda #<rasterISR100
-sta $0314 ;low byte set
+sta kernelrqVector ;low byte set
 lda #>rasterISR100
-sta $0315 ;high byte set
+sta kernelrqVector+1 ;high byte set
 
 
 ;enable raster interrupt
-lda $d01a
-ora #$01
-sta $d01a
+lda vicControlRegister
+ora #$01 ; set raster interrupt enable bit to 1
+sta vicControlRegister
 cli ;Reenable interrupts
 
 ;setup sprite
-lda #251
-sta $07f8 ;sprite one bitmap block set to 251*64
+lda #sprite0block
+sta vicSprite0bitmapBlockPointerRegister ;sprite one bitmap block set to 251*64
 lda #0
-sta $d01c ;disable multicolor for all sprites
-lda #1
-sta $d015 ;enable sprite 1
+sta vicSpriteMultiColorRegister ;disable multicolor for all sprites
+lda #1 ;(1 << 0) = 1
+sta vicSpriteEnableRegister ;enable sprite 1
+lda #vicColorWhite
+sta vicSprite0colorRegister
 
 
 ;animation code starts here
@@ -85,67 +122,67 @@ jmp gameloop
 rasterISR100:
 sei
 inc $d019 ;acknowlage interrupt
-inc 53280 ;visualize screen division
+inc vicBorderColorRegister ;visualize screen division
 lda $c003
-sta $d001 ;sprite 0 position y = sprite 0 higher position y
+sta vicSprite0positionYregister ;sprite 0 position y = sprite 0 higher position y
 lda $c002
-sta $d000 ;sprite 0 position x = sprite 0 higher position x
+sta vicSprite0positionXregister ;sprite 0 position x = sprite 0 higher position x
 lda #$fe
-and $d010
+and vicSpritePositionsXhighbitRegister
 sta 254
 lda 254 ;tmp reg 1
 pha ;save temp reg 1 to stack
 lda #1
 and $cfff
 ora 254
-sta $d010 ;sprite 0 position x high bit = sprite 0 higher position x high bit
+sta vicSpritePositionsXhighbitRegister ;sprite 0 position x high bit = sprite 0 higher position x high bit
 pla
 sta 254 ;restore temp reg 1 from stack
 lda #$7f
 and $d011
 sta $d011
 lda #250 ; line 250
-sta $d012
+sta vicRasterInterruptScanlineSelectRegister
 lda #<rasterISR250
-sta $0314
+sta kernelrqVector
 lda #>rasterISR250
-sta $0315 ;setup next raster interrupt
+sta kernelrqVector+1 ;setup next raster interrupt
 cli
-jmp $ea81 ;return from interrupt, restoring regs using kernel rotinue
+jmp kernelRestoreRegistersAndReturnFromInterruptRotine ;return from interrupt, restoring regs using kernel rotinue
 
 
 rasterISR250:
 sei
 inc $d019 ;acknowlage interrupt
-dec 53280 ;visualize screen division
+dec vicBorderColorRegister ;visualize screen division
 lda $c001
-sta $d001 ;sprite 0 position y = sprite 0 lower position y
+sta vicSprite0positionYregister ;sprite 0 position y = sprite 0 lower position y
 lda $c000
-sta $d000 ;sprite 0 position x = sprite 0 lower position x
+sta vicSprite0positionXregister ;sprite 0 position x = sprite 0 lower position x
 lda $fe
-and $d010
+and vicSpritePositionsXhighbitRegister
 sta 254
 lda 254 ;tmp reg 1
 pha ;save temp reg 1 to stack
 lda #1
 and $cfff
 ora 254
-sta $d010 ;sprite 0 position x high bit = sprite 0 lower position x high bit
+sta vicSpritePositionsXhighbitRegister ;sprite 0 position x high bit = sprite 0 lower position x high bit
 pla
 sta 254 ;restore temp reg 1 from stack
 lda #$7f
 and $d011
 sta $d011
 lda #100 ; line 100
-sta $d012
+sta vicRasterInterruptScanlineSelectRegister
 lda #<rasterISR100
-sta $0314
+sta kernelrqVector
 lda #>rasterISR100
-sta $0315 ;setup next raster interrupt
+sta kernelrqVector+1 ;setup next raster interrupt
 cli
-jmp $ea81 ;return from interrupt, restoring regs using kernel rotinue
+jmp kernelRestoreRegistersAndReturnFromInterruptRotine ;return from interrupt, restoring regs using kernel rotinue
 
-*=251*64
+*=sprite0block*64
 fish: 
 ;The AI I had this draw told me this is a fish. I will let you be the judge...
 !byte $00,$3C,$00
