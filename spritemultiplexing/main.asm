@@ -25,11 +25,11 @@ vicSpriteMultiColorRegister = $d01c
 vicSpriteEnableRegister = $d015
 vicSprite0positionXregister = $d000
 vicSprite0positionYregister = $d001
-vicSprite0bitmapBlockPointerRegister = $7f8
+vicSprite0bitmapBlockPointerRegister = $07f8
 vicSprite0colorRegister = $d027
 vicSpritePositionsXhighbitRegister = $d010
 vicRasterInterruptScanlineSelectRegister = $d012
-
+vicInterruptControlRegister = $d011
 
 ;CIA
 cia1ControlReigster = $dc0d
@@ -41,7 +41,7 @@ kernelTextColor = $286
 kernelRestoreRegistersAndReturnFromInterruptRotine = $ea81
 
 ;Programm
-sprite0block = 251
+sprite0block = 128
 
 *=$080d
 ;set colors
@@ -72,8 +72,8 @@ sta cia2ControlRegister
 
 ;set rasterline for interrupt to fire on
 lda #$7f
-and $d011
-sta $d011
+and vicInterruptControlRegister
+sta vicInterruptControlRegister
 lda #100 ; line 100
 sta vicRasterInterruptScanlineSelectRegister
 
@@ -92,7 +92,7 @@ cli ;Reenable interrupts
 
 ;setup sprite
 lda #sprite0block
-sta vicSprite0bitmapBlockPointerRegister ;sprite one bitmap block set to 251*64
+sta vicSprite0bitmapBlockPointerRegister ;sprite one bitmap block set to 100*64
 lda #0
 sta vicSpriteMultiColorRegister ;disable multicolor for all sprites
 lda #1 ;(1 << 0) = 1
@@ -116,7 +116,6 @@ sta $c003 ;sprite 0 higher position y = 150
 
 ;set upper sprite positions
 gameloop:
-
 jmp gameloop
 
 rasterISR100:
@@ -139,8 +138,8 @@ sta vicSpritePositionsXhighbitRegister ;sprite 0 position x high bit = sprite 0 
 pla
 sta 254 ;restore temp reg 1 from stack
 lda #$7f
-and $d011
-sta $d011
+and vicInterruptControlRegister
+sta vicInterruptControlRegister
 lda #250 ; line 250
 sta vicRasterInterruptScanlineSelectRegister
 lda #<rasterISR250
@@ -171,8 +170,8 @@ sta vicSpritePositionsXhighbitRegister ;sprite 0 position x high bit = sprite 0 
 pla
 sta 254 ;restore temp reg 1 from stack
 lda #$7f
-and $d011
-sta $d011
+and vicInterruptControlRegister
+sta vicInterruptControlRegister
 lda #100 ; line 100
 sta vicRasterInterruptScanlineSelectRegister
 lda #<rasterISR100
