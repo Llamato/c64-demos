@@ -67,6 +67,20 @@
               cp result.prg $out
             '';
           };
+
+          smoothpaddles = pkgs.stdenv.mkDerivation {
+            name = "smoothpaddles";
+            version = "0.0.1";
+            src = ./smoothpaddles/.;
+            buildPhase = ''
+              runHook preBuild
+              ${pkgs.acme}/bin/acme --cpu 6510 --format cbm -o result.prg main.asm
+              runHook postBuild
+            '';
+            installPhase = ''
+              cp result.prg $out
+            '';
+          };
         }
       );
       devShells = forAllSystems (
