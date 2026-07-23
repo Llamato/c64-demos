@@ -30,23 +30,6 @@ next_line:
   sta .addr+1
 }
 
-!macro add168i .addr, .value {
-  clc
-  lda .addr
-  adc .value
-  sta .addr
-  lda .addr+1
-  adc #0
-  sta .addr+1
-}
-
-!macro sub16a .addr {
-  sbc .addr
-  sta .addr
-  sbc #0
-  sta .addr+1
-}
-
 !macro sub168i .addr, .value {
   sec
   lda .addr
@@ -151,32 +134,17 @@ sta cia1portA
 ;Set colors
 +poke vicBorderColorRegister, vicColorGreen
 
-;Clear and divide screen
-!zone clearAndDivideScreen {
-.fillingChar = 0
-.leftColor = vicColorRed
-.rightColor = vicColorBlue
-  ldy #0 ;Current column
-.rowloop:
-  lda #.fillingChar
-!for .currentRow, screenRows { ;Careful: Old Acme for syntax has intererator start at 1
-  sta screen-screenColumns+.currentRow*screenColumns, y
-}
-  cpy #screenColumns/2
-  bcs .leftside
-  lda #.rightColor
-  jmp .colorfill
-.leftside:
-  lda #.leftColor
-.colorfill:
-!for .currentRow, screenRows { ;Careful: Old Acme for syntax has intererator start at 1
-  sta colorRam-screenColumns+.currentRow*screenColumns, y
-}
-  iny
-  cpy #screenColumns
-  beq .done
-  jmp .rowloop
-.done
+;Clear screen
+!zone clearscreen {
+  lda #0
+  ldx #0
+.loop:
+  sta screen, x
+  sta screen+256, x
+  sta screen+512, x
+  sta screen+768, x
+  inx
+  bne .loop
 }
 
 apploop:
