@@ -226,8 +226,8 @@ scale:
 drawGraph:
 !zone drawGraph {
 ;Input: A = value (0-255), Y = column to draw at
-  rowStartPointerLowByte = 253
-  rowStartPointerHighByte = 254
+  .rowStartPointerLowByte = 253
+  .rowStartPointerHighByte = 254
   .tempA = $cff0
   .tempX = $cff1
   .tempY = $cff2
@@ -238,10 +238,10 @@ drawGraph:
   lda #<screen
   clc
   adc #<(screenRows*screenColumns - screenColumns)
-  sta rowStartPointerLowByte
+  sta .rowStartPointerLowByte
   lda #>screen
   adc #>(screenRows*screenColumns - screenColumns)
-  sta rowStartPointerHighByte
+  sta .rowStartPointerHighByte
   ldx #0
   lda .tempA
 .loop:
@@ -249,8 +249,8 @@ drawGraph:
   bcc .partial
   lda #8
   ldy .tempY
-  sta (rowStartPointerLowByte), y
-  +sub168i rowStartPointerLowByte, screenColumns
+  sta (.rowStartPointerLowByte), y
+  +sub168i .rowStartPointerLowByte, screenColumns
   inx
   lda .tempA
   sec
@@ -259,7 +259,25 @@ drawGraph:
   cpx #screenRows
   beq .done
   jmp .loop
-.partial:`
+.partial:
+  cmp #0
+  beq .clearRest
+  ldy .tempY
+  sta (.rowStartPointerLowByte), y
+.clearRest:
+  +sub168i .rowStartPointerLowByte, screenColumns
+  inx
+.clearLoop:
+  cpx #screenRows
+  beq .done
+  +sub168i .rowStartPointerLowByte, screenColumns
+  inx
+  lda #0
+  ldy .tempY
+  sta (.rowStartPointerLowByte), y
+  jmp .clearLoop
+.done:
+  lda .tempA
   ldx .tempX
   ldy .tempY
   rts
