@@ -159,7 +159,7 @@ sta cia1portA
   ldy #0 ;Current column
 .rowloop:
   lda #.fillingChar
-!for .currentRow, screenRows { ;Careful: Acme for syntax has intererator start at 1
+!for .currentRow, screenRows { ;Careful: Old Acme for syntax has intererator start at 1
   sta screen-screenColumns+.currentRow*screenColumns, y
 }
   cpy #screenColumns/2
@@ -169,7 +169,7 @@ sta cia1portA
 .leftside:
   lda #.leftColor
 .colorfill:
-!for .currentRow, screenRows { ;Careful: Acme for syntax has intererator start at 1
+!for .currentRow, screenRows { ;Careful: Old Acme for syntax has intererator start at 1
   sta colorRam-screenColumns+.currentRow*screenColumns, y
 }
   iny
