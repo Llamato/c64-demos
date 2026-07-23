@@ -32,15 +32,15 @@ vicRasterInterruptScanlineSelectRegister = $d012
 vicInterruptControlRegister = $d011
 
 ;CIA
-cia1ControlReigster = $dc0d
+cia1ControlRegister = $dc0d
 cia2ControlRegister = $dd0d
 
 ;Kernel
 kernelrqVector = $0314 ;$0314-0315
 kernelTextColor = $286
-kernelRestoreRegistersAndReturnFromInterruptRotine = $ea81
+kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
-;Programm
+;Program
 sprite0block = 128
 
 *=$080d
@@ -66,8 +66,8 @@ bne screenclearloop
 ;setup raster interrupt
 sei ;disable interrupts globally
 ;disable CIA's
-lda #$7f ;everything execpt highest bit
-sta cia1ControlReigster
+lda #$7f ;everything except highest bit
+sta cia1ControlRegister
 sta cia2ControlRegister
 
 ;set rasterline for interrupt to fire on
@@ -147,7 +147,7 @@ sta kernelrqVector
 lda #>rasterISR250
 sta kernelrqVector+1 ;setup next raster interrupt
 cli
-jmp kernelRestoreRegistersAndReturnFromInterruptRotine ;return from interrupt, restoring regs using kernel rotinue
+jmp kernelRestoreRegistersAndReturnFromInterruptRoutine ;return from interrupt, restoring regs using kernel rotinue
 
 
 rasterISR250:
@@ -179,7 +179,7 @@ sta kernelrqVector
 lda #>rasterISR100
 sta kernelrqVector+1 ;setup next raster interrupt
 cli
-jmp kernelRestoreRegistersAndReturnFromInterruptRotine ;return from interrupt, restoring regs using kernel rotinue
+jmp kernelRestoreRegistersAndReturnFromInterruptRoutine ;return from interrupt, restoring regs using kernel rotinue
 
 *=sprite0block*64
 fish: 
