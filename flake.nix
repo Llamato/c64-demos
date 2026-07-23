@@ -2,102 +2,72 @@
   description = "development environment for c64 assembly applications using acme assembler";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
-    llamato-dotfiles.url = "github:llamato/dotfiles";
+    nixpkgs.url = "github:NixOs/nixpkgs/nixos-26.05";
+    dotfiles-llamato.url = "github:llamato/dotfiles";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs =
-    { self, nixpkgs, ... }@inputs:
-    let
-      systems = [
+  outputs = { self, nixpkgs, flake-utils, ... }: let
+      supportedSystems = [
         "x86_64-linux"
-        #Coming soon... llvm-mos package not ready yet
-        #"aarch64-linux"
-        #"aarch64-darwin"
+        "aarch64-linux"
+        "riscv64-linux"
+        "aarch64-darwin"
+        "x86_64-darwin"
       ];
-      forAllSystems = nixpkgs.lib.genAttrs systems;
-      pkgsFor = system: import nixpkgs { inherit system; };
-    in
-    {
-      packages = forAllSystems (
-        system:
-        let
-          pkgs = pkgsFor system;
-          llvm-mos = pkgs.callPackage (inputs.llamato-dotfiles + "/nixos/packages/llvm-mos/package.nix") { };
-        in
-        {
+    in flake-utils.lib.eachSystem supportedSystems (system: let
+        pkgs = import nixpkgs { inherit system; };
+        acme-build = name: pkgs.stdenv.mkDerivation {
+          name = name;
+          version = "0.0.1";
+          src = ./${name};
+          buildPhase = ''
+            runHook preBuild
+            ${pkgs.acme}/bin/acme --cpu 6510 --format cbm -o result.prg main.asm
+            runHook postBuild
+          '';
+          installPhase = ''
+            cp result.prg $out
+          '';
+        };
+        packages = {
           kneedeepin3d = pkgs.stdenv.mkDerivation {
             name = "kneedeepin3d";
             version = "0.0.1";
             src = ./kneedeepin3d/.;
             buildPhase = ''
               runHook preBuild
-              ${llvm-mos}/bin/mos-c64-clang -Os main.c gllm/gllm.c -o kneedeepin3d.prg
+              ${pkgs.llvm-mos-sdk}/bin/mos-c64-clang -Os main.c gllm/gllm.c -o kneedeepin3d.prg
               runHook postBuild
             '';
             installPhase = ''
               cp kneedeepin3d.prg $out
             '';
           };
-          
-          multisprite = pkgs.stdenv.mkDerivation {
-            name = "multisprite";
-            version = "0.0.1";
-            src = ./multisprite/.;
-            buildPhase = ''
-              runHook preBuild
-              ${pkgs.acme}/bin/acme --cpu 6510 --format cbm -o multisprite.prg multisprite.asm
-              runHook postBuild
-            '';
-            installPhase = ''
-              cp multisprite.prg $out
-            '';
+          multisprite = acme-build "multisprite";
+          spritemultiplexing = acme-build "spritemultiplexing";
+          smoothpaddles = acme-build "smoothpaddles";
+        };
+      in
+      {
+        inherit packages;
+        apps = {
+          multisprite = {
+            type = "app";
+            program = "${pkgs.vice}/bin/x64sc ${packages.multisprite}";
           };
-
-          spritemultiplexing = pkgs.stdenv.mkDerivation {
-            name = "spritemultiplexing";
-            version = "0.0.1";
-            src = ./spritemultiplexing/.;
-            buildPhase = ''
-              runHook preBuild
-              ${pkgs.acme}/bin/acme --cpu 6510 --format cbm -o result.prg main.asm
-              runHook postBuild
-            '';
-            installPhase = ''
-              cp result.prg $out
-            '';
+          spritemultiplexing = {
+            type = "app";
+            program = "${pkgs.vice}/bin/x64sc ${packages.spritemultiplexing}";
           };
-
-          smoothpaddles = pkgs.stdenv.mkDerivation {
-            name = "smoothpaddles";
-            version = "0.0.1";
-            src = ./smoothpaddles/.;
-            buildPhase = ''
-              runHook preBuild
-              ${pkgs.acme}/bin/acme --cpu 6510 --format cbm -o result.prg main.asm
-              runHook postBuild
-            '';
-            installPhase = ''
-              cp result.prg $out
-            '';
+          smoothpaddles = {
+            type = "app";
+            program = "${pkgs.vice}/bin/x64sc ${packages.smoothpaddles}";
           };
-        }
-      );
-      devShells = forAllSystems (
-        system:
-        let
-          pkgs = pkgsFor system;
-          llvm-mos = pkgs.callPackage (inputs.llamato-dotfiles + "/nixos/packages/llvm-mos/package.nix") { };
-        in
-        {
-          default = pkgs.mkShell {
-            packages = with pkgs; [
-              acme
-              vice
-              llvm-mos
-            ];
-          };
-        }
-      );
-    };
+        };
+        devShells.default = pkgs.mkShell {
+          packages = with pkgs; [ acme vice dotfiles-llamato.packages.llvm-mos-sdk ];
+        };
+      }
+    );
 }
