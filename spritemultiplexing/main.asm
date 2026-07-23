@@ -181,9 +181,8 @@ sta kernelrqVector+1 ;setup next raster interrupt
 cli
 jmp kernelRestoreRegistersAndReturnFromInterruptRoutine ;return from interrupt, restoring regs using kernel rotinue
 
-*=sprite0block*64
-fish: 
-;The AI I had this draw told me this is a fish. I will let you be the judge...
+*=sprite0block*64 
+;Deepseek told me this is a fish. I will let you be the judge...
 !byte $00,$3C,$00
 !byte $01,$42,$80
 !byte $02,$99,$40
@@ -205,3 +204,169 @@ fish:
 !byte $00,$00,$00
 !byte $00,$00,$00
 !byte $00,$00,$00
+
+*=sprite1block*64
+;Claude told me this is a fish. I will let you be the judge...
+!byte $00,$00,$00  ; ........................
+!byte $00,$70,$00  ; .........XXX............
+!byte $00,$f8,$00  ; ........XXXXX...........
+!byte $00,$00,$00  ; ........................
+!byte $00,$20,$00  ; ..........X.............
+!byte $03,$ff,$00  ; ......XXXXXXXXXX........
+!byte $07,$ff,$c0  ; .....XXXXXXXXXXXXX......
+!byte $0f,$ff,$f0  ; ....XXXXXXXXXXXXXXXX....
+!byte $1b,$ff,$fc  ; ...XX.XXXXXXXXXXXXXXXX..   <- eye
+!byte $1f,$ff,$fe  ; ...XXXXXXXXXXXXXXXXXXXX.
+!byte $1f,$ff,$ff  ; ...XXXXXXXXXXXXXXXXXXXXX
+!byte $1f,$ff,$fe  ; ...XXXXXXXXXXXXXXXXXXXX.
+!byte $1f,$ff,$fc  ; ...XXXXXXXXXXXXXXXXXXX..
+!byte $0f,$ff,$f0  ; ....XXXXXXXXXXXXXXXX....
+!byte $07,$ff,$c0  ; .....XXXXXXXXXXXXX......
+!byte $03,$ff,$00  ; ......XXXXXXXXXX........
+!byte $00,$20,$00  ; ..........X.............
+!byte $00,$f8,$00  ; ........XXXXX...........
+!byte $00,$70,$00  ; .........XXX............
+!byte $00,$00,$00  ; ........................
+!byte $00,$00,$00  ; ........................
+
+*=sprite2block*64
+;Github copilot told me this is a fish. I will let you be the judge...
+; Row  1
+!byte %00000000, %00000000, %00000000
+; Row  2
+!byte %00000000, %00000000, %00000000
+; Row  3
+!byte %00000000, %00011100, %00000000
+; Row  4
+!byte %00000000, %00111110, %00000000
+; Row  5
+!byte %00000000, %01111111, %00000000
+; Row  6
+!byte %00000000, %11111111, %10000000
+; Row  7
+!byte %00000001, %11111111, %11000000
+; Row  8
+!byte %00000011, %11111111, %11100000
+; Row  9
+!byte %00000111, %11111111, %11110000
+; Row 10
+!byte %00001111, %11011111, %11111000   ; eye gap hint
+; Row 11
+!byte %00011111, %10111111, %11111100   ; eye pixel region
+; Row 12
+!byte %00001111, %11011111, %11111000
+; Row 13
+!byte %00000111, %11111111, %11110000
+; Row 14
+!byte %00000011, %11111111, %11100000
+; Row 15
+!byte %00000001, %11111111, %11000000
+; Row 16
+!byte %00000000, %11111111, %10000000
+; Row 17
+!byte %00000000, %01111111, %00000000
+; Row 18
+!byte %00000000, %00111110, %00000000
+; Row 19
+!byte %00000000, %00011100, %00000000
+; Row 20
+!byte %00000000, %00001000, %00000000
+; Row 21
+!byte %00000000, %00000000, %00000000
+
+*=sprite3block*64
+;Chatgpt told me this is a fish. I will let you be the judge...
+!byte %00000000,%00000000,%00000000
+!byte %00000000,%00011000,%00000000
+!byte %00000000,%00111100,%00000000
+!byte %00000000,%01111110,%00000000
+!byte %00000111,%11111111,%00000000
+!byte %00011111,%11111111,%10000000
+!byte %00111111,%11111111,%11100000
+!byte %01111111,%11111111,%11110000
+!byte %11111111,%10111111,%11111000
+!byte %11111111,%11111111,%11111100
+!byte %11111111,%11111111,%11111000
+!byte %01111111,%11111111,%11110000
+!byte %00111111,%11111111,%11100000
+!byte %00011111,%11111111,%10000000
+!byte %00000111,%11111111,%00000000
+!byte %00000000,%01111110,%00000000
+!byte %00000000,%00111100,%00000000
+!byte %00000000,%00011000,%00000000
+!byte %00000000,%00011000,%00000000
+!byte %00000000,%00100100,%00000000
+!byte %00000000,%01000010,%00000000
+
+*=sprite4block*64
+;Gamini told me this is a fish. I will let you be the judge...
+; Row 1-3: Top fin starting
+!byte %00000000, %00001100, %00000000
+!byte %00000000, %00011110, %00000000
+!byte %00000000, %00111111, %00000000
+
+; Row 4-6: Upper body & tail top expansion
+!byte %00000001, %11111111, %10000000
+!byte %00000111, %11111111, %11000000
+!byte %00001111, %11111111, %11100000
+
+; Row 7-9: Eye level & main body
+!byte %00011111, %11011111, %11110000   ; Contains eye space
+!byte %00111111, %10011111, %01111000
+!byte %01111111, %11111111, %00111100   ; Tail narrows
+
+; Row 10-12: Center body & tail fin split
+!byte %01111111, %11111110, %00011110   ; Tail tip 1
+!byte %01111111, %11111100, %00001111   ; Tail split
+!byte %01111111, %11111110, %00011110   ; Tail tip 2
+
+; Row 13-15: Lower body & tail bottom expansion
+!byte %00111111, %11111111, %00111100
+!byte %00011111, %11111111, %01111000
+!byte %00001111, %11111111, %11100000
+
+; Row 16-18: Lower fin & tail base
+!byte %00000111, %11111111, %11000000
+!byte %00000001, %11111111, %10000000
+!byte %00000000, %00111111, %00000000
+
+; Row 19-21: Bottom fin end
+!byte %00000000, %00011110, %00000000
+!byte %00000000, %00001100, %00000000
+!byte %00000000, %00000000, %00000000
+
+*=sprite5block*64
+;Grok told me this is a fish. I will let you be the judge...
+!byte %00000000, %00000000, %00000000   ; row 0
+!byte %00000000, %00000000, %00000000   ; row 1
+!byte %00001110, %00000000, %00000000   ; row 2  .. dorsal fin
+!byte %00011111, %00000000, %00000000   ; row 3
+!byte %00111111, %10000000, %00000000   ; row 4
+!byte %01111111, %11000000, %00000000   ; row 5
+!byte %01111111, %11100000, %00000000   ; row 6
+!byte %11111111, %11110000, %00000000   ; row 7  .. body
+!byte %11111111, %11111000, %00000000   ; row 8
+!byte %11111111, %11111100, %00000000   ; row 9  .. eye area (you can set a pixel for eye)
+!byte %11111111, %11111110, %00000000   ; row 10
+!byte %11111111, %11111111, %00000000   ; row 11
+!byte %11111111, %11111111, %10000000   ; row 12
+!byte %01111111, %11111111, %11000000   ; row 13
+!byte %01111111, %11111111, %10000000   ; row 14
+!byte %00111111, %11111111, %00000000   ; row 15
+!byte %00011111, %11111100, %00000000   ; row 16
+!byte %00001111, %11100000, %00000000   ; row 17  .. tail
+!byte %00000111, %10000000, %00000000   ; row 18
+!byte %00000000, %00000000, %00000000   ; row 19
+!byte %00000000, %00000000, %00000000   ; row 20
+
+*=sprite6block*64
+;Mistral told me this is a fish. I will let you be the judge...
+.byte $00, $00, $00, $00, $00, $00, $00, $00 ; Top border (empty)
+.byte $00, $00, $00, $00, $00, $00, $00, $00
+.byte $00, $00, $00, $18, $18, $00, $00, $00 ; Fish body starts
+.byte $00, $00, $3C, $7E, $7E, $3C, $00, $00 ; Fish body (widest part)
+.byte $00, $00, $7E, $FF, $FF, $7E, $00, $00 ; Fish body (middle)
+.byte $00, $00, $3C, $7E, $7E, $3C, $00, $00 ; Fish body (end)
+.byte $00, $00, $00, $18, $18, $00, $00, $00 ; Fish tail
+.byte $00, $00, $00, $00, $00, $00, $00, $00 ; Bottom border (empty)
+.byte $00, $00, $00, $00, $00, $00, $00, $00
