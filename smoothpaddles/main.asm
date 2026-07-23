@@ -259,31 +259,13 @@ drawGraph:
   cpx #screenRows
   beq .done
   jmp .loop
-.partial:
-  cmp #0
-  beq .clearRest
-  ldy .tempY
-  sta (rowStartPointerLowByte), y
-.clearRest:
-  +sub168i rowStartPointerLowByte, screenColumns
-  inx
-.clearLoop:
-  cpx #screenRows
-  beq .done
-  +sub168i rowStartPointerLowByte, screenColumns
-  inx
-  lda #0
-  ldy .tempY
-  sta (rowStartPointerLowByte), y
-  jmp .clearLoop
-.done:
-  lda .tempA
+.partial:`
   ldx .tempX
   ldy .tempY
   rts
 }
 
-measurementCount = 16
+measurementCount = 64
 sumAccumulator = $c030 ;($c030-$c031)
 simpleMovingAverage:
 !zone simpleMovingAverage {
@@ -299,6 +281,10 @@ simpleMovingAverage:
   dex
   bne .readingLoop
 ;Divide by the number of messurements
+  lsr sumAccumulator+1
+  ror sumAccumulator
+  lsr sumAccumulator+1
+  ror sumAccumulator
   lsr sumAccumulator+1
   ror sumAccumulator
   lsr sumAccumulator+1
