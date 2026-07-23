@@ -9,21 +9,95 @@
 next_line:
     !16 $0000       ; End of BASIC program
 
-
-
 *=$080d
 
 ;Macros
 !macro poke .addr, .value {
-    lda #.value
-    sta .addr
+  lda #.value
+  sta .addr
+}
+
+!macro mov .destination, .source {
+  lda .source
+  sta .destination
 }
 
 !macro add16a .addr {
-  adc addr
-  sta addr
+  adc .addr
+  sta .addr
+  lda .addr+1
   adc #0
-  sta addr+1
+  sta .addr+1
+}
+
+!macro add168i .addr, .value {
+  clc
+  lda .addr
+  adc .value
+  sta .addr
+  lda .addr+1
+  adc #0
+  sta .addr+1
+}
+
+!macro sub16a .addr {
+  sbc .addr
+  sta .addr
+  sbc #0
+  sta .addr+1
+}
+
+!macro sub168i .addr, .value {
+  sec
+  lda .addr
+  sbc #.value
+  sta .addr
+  lda .addr+1
+  sbc #0
+  sta .addr+1
+}
+
+!macro mul8816 .factor1addr, .factor2addr, .resultLow, .resultHigh {
+  lda #0
+  sta .resultLow
+  sta .resultHigh
+  ldx #8
+.loop:
+  lsr .factor1addr
+  bcc .noAdd
+  lda .resultHigh
+  clc
+  adc .factor2addr
+  sta .resultHigh
+.noAdd:
+  ror .resultHigh
+  ror .resultLow
+  dex
+  bne .loop
+}
+
+!macro div1688 .dividendLow, .dividendHigh, .divisor, .quotient, .remainder {
+  lda #0
+  sta .remainder
+  ldx #16
+.loop:
+  asl .dividendLow
+  rol .dividendHigh
+  rol .remainder
+  lda .remainder
+  bcs .subtract
+  cmp .divisor
+  bcc .noSubtract
+.subtract:
+  sec
+  sbc .divisor
+  sta .remainder
+  inc .dividendLow
+.noSubtract:
+  dex
+  bne .loop
+  lda .dividendLow
+  sta .quotient
 }
 
 ;Hardware constants
@@ -43,14 +117,18 @@ vicBorderColorRegister = $d020
 vicBackgroundColorRegister = $d021
 vicScreenAndChargenMemoryPointersRegister = $d018
 colorRam = $d800 ;d800-dbe7 = 1000 * 4 bit (lower byte only)
-cia1PortA = $dc00 ;Bit 6 = Control port 1 paddles selected, Bit 7 = Control port 2 paddels selected.
+cia1portA = $dc00 ;Bit 6 = Control port 1 paddles selected, Bit 7 = Control port 2 paddels selected.
+cia1portB = $dc01
+cia1ddrA = $dc02
+cia1ddrB = $dc03
+cia1interruptControlRegister = $dc0d
 sidADC0 = $d419 ;Analog value padel x is set to can be read here
 sidADC1 = $d41a ;Analog value padel y is set to can be read here
 
 ;Kernel registers
 kernelTextColorRegister = $286
 
-;Programm constants
+;Program constants
 chargenAddress = $3800 ;7 * 2048 = 14336 = $3800
 
 *=$080d
@@ -59,136 +137,211 @@ chargenAddress = $3800 ;7 * 2048 = 14336 = $3800
 +poke kernelTextColorRegister, vicColorWhite
 
 ;Setup custom character set
-+poke vicScreenAndChargenMemoryPointersRegister, (7<<1) ;7 * 2048 = 14336 = $3800. Shift by 1 to hit bits 1-3
+;+poke vicScreenAndChargenMemoryPointersRegister, (7<<1) ;7 * 2048 = 14336 = $3800. Shift by 1 to hit bits 1-3
+lda vicScreenAndChargenMemoryPointersRegister
+ora #14
+sta vicScreenAndChargenMemoryPointersRegister
+
+;Setup paddel input
+lda cia1portA
+and #$3f ;Clear bit 7 and 6
+ora #$80 ;Set bit 7 and thereby select control port 1
+sta cia1portA
 
 ;Set colors
 +poke vicBorderColorRegister, vicColorGreen
 
-;Clear screen 
-ldy #0
-tya
-
-screenclearloop:
-sta screen+0*256, y ;Screen page 0
-sta screen+1*256, y ;Screen page 1
-sta screen+2*256, y ;Screen page 2
-sta screen+3*256, y ;Screen page 3
-iny
-bne screenclearloop
-
-!zone divideScreenIntoColoredRegions {
-  colorRamEnd = colorRam + screenSize
-  colorRamPointerLowByte = 253
-  colorRamPointerHighByte = 254
-  +poke colorRamPointerLowByte, <colorRam
-  +poke colorRamPointerHighByte, >colorRam
+;Clear and divide screen
+!zone clearAndDivideScreen {
+.fillingChar = 0
+.leftColor = vicColorRed
+.rightColor = vicColorBlue
   ldy #0 ;Current column
-  ldx #0 ;Current Row
-
-.loop
-    cpy #screenColumns/2
-    bcc .inFirstHalf
-    jmp .inSecondHalf
-.inFirstHalf
-      lda #vicColorRed
-      jmp .nextColumn
-.inSecondHalf
-      lda #vicColorBlue
-.nextColumn
-      sta (colorRamPointerLowByte), y
-      iny
-      cpy #screenColumns
-      bne .loop
-.nextRow
-      inx
-      cpx #screenRows
-      beq .done
-      lda #screenColumns
-      clc
-      +add16a colorRamPointerLowByte
+.rowloop:
+  lda #.fillingChar
+!for .currentRow, screenRows { ;Careful: Acme for syntax has intererator start at 1
+  sta screen-screenColumns+.currentRow*screenColumns, y
+}
+  cpy #screenColumns/2
+  bcs .leftside
+  lda #.rightColor
+  jmp .colorfill
+.leftside:
+  lda #.leftColor
+.colorfill:
+!for .currentRow, screenRows { ;Careful: Acme for syntax has intererator start at 1
+  sta colorRam-screenColumns+.currentRow*screenColumns, y
+}
+  iny
+  cpy #screenColumns
+  beq .done
+  jmp .rowloop
 .done
 }
 
 apploop:
+!zone main {
+.tempA = $c020
+.tempX = $c021
+.tempY = $c022
 ;Process padel 1
-lda sidADC0
-ldx #1
-pha
-jsr drawGraph ;Draw raw value 
-pla
-pha
-jsr simpleMovingAverage
-ldx #5
-jsr drawGraph
-pla
-pha
-jsr weightedMovingAverage
-ldx #10
-jsr drawGraph
-pla
-pha
-jsr exponentialMovingAverage
-ldx #19
-jsr drawGraph
-pla
+  jsr readPaddel
+  sta .tempA
+  ldy #1
+  jsr drawGraph ;Draw a graph for the raw value
+  lda .tempA
+  ldx #255
+  ldy #200
+  jsr scale ;Scale the raw value to fit the screen
+  sta .tempA ;Update the masurement preserving register to contain the scaled value
+  ldy #5
+  jsr drawGraph ;Draw a graph for the scaled value
+  lda .tempA ;Restore the scaled value to the accumulator
+  jsr simpleMovingAverage ;Apply simple moving average smoothing
+  ldy #10
+  jsr drawGraph ;Draw a graph for the simple average smoothed value 
+  lda .tempA
+  ;jsr weightedMovingAverage
+  ;ldx #10
+  ;jsr drawGraph
+  ;pla
+  ;pha
+  ;jsr exponentialMovingAverage
+  ;ldx #15
+  ;jsr drawGraph
+  ;pla
+  jmp apploop
+}
 
-;Process padel 2
-lda sidADC1
-ldx #21
-pha
-jsr exponentialMovingAverage
-ldx #25
-jsr drawGraph
-pla
-pha
-jsr weightedMovingAverage
-ldx #30
-jsr drawGraph
-pla
-pha 
-jsr simpleMovingAverage
-ldx #35
-jsr drawGraph
-pla
-ldx #39
-jsr drawGraph
-
-;Repeat
-jmp apploop
-
-drawGraph:
-!zone drawGraph {
-  ;Check if A is geater then 8
-  ;If yes substract 8 and add block to bar
-  ;Repeart until A is less then or equal to 8. Then selected coresponding top block by offset lookup
-
-  ;Point pointer to start of lowest screen row
-  rowStartPointerLowByte = 253
-  rowStartPointerHighByte = 254
-  +poke rowStartPointerLowByte, <screenRows*screenColumns-screenColumns
-  +poke rowStartPointerHighByte, >screenRows*screenColumns-screenColumns
-  
-  ;Then add the column index to get the start of the bar
-  pha 
-  txa
-  +add16a rowStartPointerLowByte
-  pla
-
-  .loop
-  sec
-  sbc #8
-  cmp #8
-  bcc .selectTop
-  pha
-  
-  jmp loop
+readPaddel:
+!zone readPadel {
+;Disable keyboard scan
+  sei
+  sta cia1portB
+;Short delay
+  ldy #$80
+delayloop:
+  dey
+  bne delayloop
+;Read adc masurement
+  lda sidADC0
+  cli
   rts
 }
 
+;long map(long x, long in_min, long in_max, long out_min, long out_max) {
+;  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+;}
+;with in_min=0 and out_min=0 simplifies to x * out_max / in_max
+;with A=x, X=in_max and Y=out_max
+scale:
+!zone scale {
+  .xValue = $c010
+  .inMax = $c011
+  .outMax = $c012
+  .resultLow = $c013
+  .resultHigh = $c014
+  .remainder = $c015
+  sta .xValue
+  stx .inMax
+  sty .outMax
+;Multiply: result = x * out_max
+  +mul8816 .xValue, .outMax, .resultLow, .resultHigh
+;Divide: result = result / in_max
+  +div1688 .resultLow, .resultHigh, .inMax, .xValue, .remainder
+;Result in .xValue
+  lda .xValue
+  rts
+}
+
+drawGraph:
+!zone drawGraph {
+;Input: A = value (0-255), Y = column to draw at
+  rowStartPointerLowByte = 253
+  rowStartPointerHighByte = 254
+  .tempA = $cff0
+  .tempX = $cff1
+  .tempY = $cff2
+  sta .tempA
+  stx .tempX
+  sty .tempY
+;Set pointer to start of screen + offset to bottom row
+  lda #<screen
+  clc
+  adc #<(screenRows*screenColumns - screenColumns)
+  sta rowStartPointerLowByte
+  lda #>screen
+  adc #>(screenRows*screenColumns - screenColumns)
+  sta rowStartPointerHighByte
+  ldx #0
+  lda .tempA
+.loop:
+  cmp #8
+  bcc .partial
+  lda #8
+  ldy .tempY
+  sta (rowStartPointerLowByte), y
+  +sub168i rowStartPointerLowByte, screenColumns
+  inx
+  lda .tempA
+  sec
+  sbc #8
+  sta .tempA
+  cpx #screenRows
+  beq .done
+  jmp .loop
+.partial:
+  cmp #0
+  beq .clearRest
+  ldy .tempY
+  sta (rowStartPointerLowByte), y
+.clearRest:
+  +sub168i rowStartPointerLowByte, screenColumns
+  inx
+.clearLoop:
+  cpx #screenRows
+  beq .done
+  +sub168i rowStartPointerLowByte, screenColumns
+  inx
+  lda #0
+  ldy .tempY
+  sta (rowStartPointerLowByte), y
+  jmp .clearLoop
+.done:
+  lda .tempA
+  ldx .tempX
+  ldy .tempY
+  rts
+}
+
+measurementCount = 16
+sumAccumulator = $c030 ;($c030-$c031)
 simpleMovingAverage:
-;Not yet implemented
-lda #0 
-rts
+!zone simpleMovingAverage {
+;Clear the sum accumulator. Note the accumulator needs to be larger then the value being read in but 2 bytes (16 bits) are already enough for up to 256 8 bit massurements since (2^16)/(2^8)=256
+  +poke sumAccumulator, 0
+  +poke sumAccumulator+1, 0
+;Keep track of how many measurements have yet to be taken
+  ldx #measurementCount
+  clc
+.readingLoop
+  jsr readPaddel
+  +add16a sumAccumulator ;Sum up the messurements into the sumAccumulator
+  dex
+  bne .readingLoop
+;Divide by the number of messurements
+  lsr sumAccumulator+1
+  ror sumAccumulator
+  lsr sumAccumulator+1
+  ror sumAccumulator
+  lsr sumAccumulator+1
+  ror sumAccumulator
+  lsr sumAccumulator+1
+  ror sumAccumulator
+  lda sumAccumulator
+  rts
+}
+
 
 weightedMovingAverage:
 ;Not yet implemented
@@ -200,7 +353,7 @@ exponentialMovingAverage:
 lda #0
 rts
 
-*=$3000
+*=7*2048
 customchars:
 ;0 filled 8 empty
 !byte %00000000
