@@ -198,18 +198,19 @@ apploop:
   jsr drawGraph ;Draw a graph for the scaled value
   lda .tempA ;Restore the scaled value to the accumulator
   jsr simpleMovingAverage ;Apply simple moving average smoothing
+  ldx #255
+  ldy #200
+  jsr scale
   ldy #10
   jsr drawGraph ;Draw a graph for the simple average smoothed value 
   lda .tempA
-  ;jsr weightedMovingAverage
-  ;ldx #10
-  ;jsr drawGraph
-  ;pla
-  ;pha
-  ;jsr exponentialMovingAverage
-  ;ldx #15
-  ;jsr drawGraph
-  ;pla
+  jsr weightedMovingAverage
+  ldy #15
+  jsr drawGraph
+  lda .tempA
+  jsr exponentialMovingAverage
+  ldy #20
+  jsr drawGraph
   jmp apploop
 }
 
