@@ -17,7 +17,7 @@
       ];
     in flake-utils.lib.eachSystem supportedSystems (system: let
         pkgs = import nixpkgs { inherit system; };
-        llvm-mos = pkgs.callPackage (dotfiles-llamato + "/nixos/packages/llvm-mos-bin/package.nix") { };
+        llvm-mos = pkgs.callPackage (dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
         acme-build = name: pkgs.stdenv.mkDerivation {
           name = name;
           version = "0.0.1";
