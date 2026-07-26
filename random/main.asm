@@ -208,7 +208,7 @@ sta screenAndChargenMemoryPointersRegister
 }
 
 ;Init random middle square algorithm
-+mov previousMidSqrtNumber, sidVoice3ValueRegister
++mov midSqrtNumber, sidVoice3ValueRegister
 ;Init app logic
 ldx #0; currentIteration
 
@@ -219,7 +219,7 @@ sta screen, x
 lda kernelTextColorRegister
 sta colorRam, x
 jsr randomMidSquare
-lda previousMidSqrtNumber
+lda midSqrtNumber
 sta screen+256, x
 lda kernelTextColorRegister
 clc
