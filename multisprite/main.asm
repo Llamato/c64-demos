@@ -14,8 +14,6 @@ sprite1BlockPointer = $07f8
 sprite2BlockPointer = sprite1BlockPointer+1
 
 ;System Constants
-sprite1Block = 250 ;(*64=16000)
-sprite2Block = 251 ;(*64=16064)
 vicColorBlack = 0
 vicColorWhite = 1
 vicColorRed = 2
@@ -34,7 +32,8 @@ vicColorLightPurple = 14
 vicColorLightGray = 15
 
 ;Application constants
-
+sprite1Block = 250 ;(*64=16000)
+sprite2Block = 251 ;(*64=16064)
 
 ;Setting shared colors
 *= $1000

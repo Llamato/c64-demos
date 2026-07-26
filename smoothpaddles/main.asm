@@ -120,9 +120,8 @@ chargenAddress = $3800 ;7 * 2048 = 14336 = $3800
 +poke kernelTextColorRegister, vicColorWhite
 
 ;Setup custom character set
-;+poke vicScreenAndChargenMemoryPointersRegister, (7<<1) ;7 * 2048 = 14336 = $3800. Shift by 1 to hit bits 1-3
 lda vicScreenAndChargenMemoryPointersRegister
-ora #14
+ora #14 ;(7<<1) ;7 * 2048 = 14336 = $3800. Shift by 1 to hit bits 1-3
 sta vicScreenAndChargenMemoryPointersRegister
 
 ;Setup paddel input
