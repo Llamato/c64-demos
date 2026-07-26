@@ -60,6 +60,16 @@ next_line:
   plp
 }
 
+!macro push .addr {
+  lda .addr
+  pha
+}
+
+!macro pull .addr {
+  pla
+  sta .addr
+}
+
 !macro swp {
     asl 
     adc #$80
@@ -67,6 +77,24 @@ next_line:
     asl 
     adc #$80
     rol 
+}
+
+!macro swpSlow {
+    ; Swap nibbles in A (correct version)
+    sta r0          ; Save original
+    and #$0f        ; Get low nibble
+    asl
+    asl
+    asl
+    asl             ; Low nibble → high nibble
+    sta r1          ; Save swapped low nibble
+    lda r0          ; Get original
+    lsr
+    lsr
+    lsr
+    lsr             ; High nibble → low nibble
+    ora r1          ; Combine
+
 }
 
 !macro mov16 .destination, .source {
@@ -211,6 +239,7 @@ sta screenAndChargenMemoryPointersRegister
 +mov midSqrtNumber, sidVoice3ValueRegister
 ;Init app logic
 ldx #0; currentIteration
+ldy #0
 
 apploop:
 ;Display sid voice
@@ -218,6 +247,8 @@ lda sidVoice3ValueRegister
 sta screen, x
 lda kernelTextColorRegister
 sta colorRam, x
+
+;Use random mid square algorithm
 jsr randomMidSquare
 lda midSqrtNumber
 sta screen+256, x
@@ -226,6 +257,11 @@ clc
 adc #16/4
 sta colorRam+256, x
 inx
+beq reseed
+jmp apploop
+
+reseed:
++mov midSqrtNumber, sidVoice3ValueRegister
 jmp apploop
 
 randomMidSquare: ;Compute a number of n bits length by taking n bits from the middle of the bit sequence created by (f(n)-1)^2
@@ -248,7 +284,9 @@ plp
 rts
 
 midSqrtNumber:
-!byte 0 ;Note the seed must not be 0 as the algorithm collapses would collapse due to 0 being the destructive element of multiplication.
+!byte $b6 ;Note the seed must not be 0 as the algorithm collapses would collapse due to 0 being the destructive element of multiplication.
+previousMidSqrtNumber
+!byte 0
 
 *=vicCharsetBlock*2048
 hexcharset:
