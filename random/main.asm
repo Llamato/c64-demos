@@ -47,12 +47,12 @@ next_line:
 }
 
 !macro swp {
-    asl 
-    adc #$80
-    rol 
-    asl 
-    adc #$80
-    rol 
+  asl 
+  adc #$80
+  rol 
+  asl 
+  adc #$80
+  rol 
 }
 
 !macro mov16 .destination, .source {
@@ -108,6 +108,18 @@ next_line:
   bne .loop
 }
 
+!macro tst .bit {
+  and #1<<.bit
+  beq .zero
+  lda #1
+  .zero
+}
+
+!macro lsl .addr {
+  clc
+  rol .addr
+}
+
 ;Hardware registers
 sidVoice3FrequencyRegisterLow = $d40e
 sidVoice3FrequencyRegisterHigh = $d40f
@@ -158,6 +170,8 @@ r1 = $00fc
 r2 = $00fd
 r3 = $00fe
 r4 = $0002
+midSqState = $cfff
+lfsrState = $cffe
 
 *=$080d
 ;Setup sid voice 3 for random number generation (seeding)
@@ -193,9 +207,16 @@ sta screenAndChargenMemoryPointersRegister
   bne .loop
 }
 
+;Compilation flags
+reseedEnable = 1
+
+reseed:
 ;Init random middle square algorithm
-+mov midSqNumber, sidVoice3ValueRegister
-+poke midSqNumber, $aa
++mov midSqState, sidVoice3ValueRegister
+
+;Init linear feedback shift register
++mov lfsrState, midSqState
+
 ;Init app logic
 ldx #0; currentIteration
 ldy #0
@@ -206,42 +227,65 @@ lda sidVoice3ValueRegister
 sta screen, x
 lda kernelTextColorRegister
 sta colorRam, x
+
+;Call and display random middle square
 jsr randomMidSquare
-lda midSqNumber
+lda midSqState
 sta screen+256, x
 lda kernelTextColorRegister
 clc
 adc #16/4
 sta colorRam+256, x
+
+;Call and display random linear feedback shift register
+jsr randomLfsr
+lda lfsrState
+sta screen+512, x
+lda kernelTextColorRegister
+clc
+adc #2*16/4
+sta colorRam+512, x
+
+;Next Round
 inx
-beq reseed
-jmp apploop
-
-reseed:
-+mov midSqNumber, sidVoice3ValueRegister
-jmp apploop
-
+bne apploop
+!if reseedEnable == 0 {
+  jmp apploop
+} else {
+  jmp reseed
+}
 randomMidSquare: ;Compute a number of n bits length by taking n bits from the middle of the bit sequence created by (f(n)-1)^2
 php
 +phx
-+mov r2, midSqNumber
-+mov r4, midSqNumber
++mov r2, midSqState
++mov r4, midSqState
 +mul8816 r4, r2, r0, r1 ;Multiply the result of the previous iteration with itself
 lda r0
 and #$f0 ;take the high nibble of the low byte of the multiplication result
 +swp ;swap the results in the high nibble with the zeros in the low nibble
-sta midSqNumber ;let the high nibble of the low byte of the multiplication result be the low nibble of the iteration result
+sta midSqState ;let the high nibble of the low byte of the multiplication result be the low nibble of the iteration result
 lda r1
 and #$0f ;take the low nibble of the high byte of the multiplication result
 +swp ;swap the results in the low nibble with the zeros in the high nibble
-ora midSqNumber ;let the low nibble of the high byte of the multiplication result be the high nibble of the iteration result
-sta midSqNumber ;Store the result of this iteration as previousMidSqNumber for the next iteration
+ora midSqState ;let the low nibble of the high byte of the multiplication result be the high nibble of the iteration result
+sta midSqState ;Store the result of this iteration as previousmidSqState for the next iteration
 +plx
 plp
 rts
 
-midSqNumber = $c000
-;!byte 4 ;Note the seed must not be 0 as the algorithm collapses would collapse due to 0 being the destructive element of multiplication.
+randomLfsr: ;Simulates a shift register with bit 6 and 7 connected to the inputs of a xor gate and the output of the gate connected to the input of the shift register
+php
+lda lfsrState
++tst 7
+sta r0
+lda lfsrState
++tst 6
+eor r0
++lsl lfsrState
+ora lfsrState
+sta lfsrState
+plp
+rts
 
 *=vicCharsetBlock*2048
 hexcharset:
