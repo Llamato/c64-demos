@@ -3,4 +3,5 @@
 *.elf
 *.o
 *.spm
+*.chrs
 result

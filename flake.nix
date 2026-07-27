@@ -83,23 +83,7 @@
           multisprite = acme-build "multisprite";
           spritemultiplexing = acme-build "spritemultiplexing";
           smoothpaddles = acme-build "smoothpaddles";
-          random =
-            let
-              hexcharset = fetchD64 {
-                url = "https://csdb.dk/release/download.php?id=186121";
-                sha256 = "sha256:1ajv10800l9mdhvzn0bcc2s2hv7k4ixy550ixwxcfld9m7n5ylzl";
-              };
-            in
-            pkgs.stdenv.mkDerivation {
-              name = "random";
-              version = "0.0.1";
-              buildPhase = ''
-                runHook preBuild
-                ln -s ${hexcharset}/hexcharset1.prg ./
-                ${pkgs.acme}/bin/acme --cpu 6510 --format cbm -o result.prg main.asm
-                runHook postBuild
-              '';
-            };
+          random = acme-build "random";
         };
       in
       {
