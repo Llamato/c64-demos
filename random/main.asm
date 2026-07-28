@@ -108,7 +108,9 @@ next_line:
   bne .loop
 }
 
-!macro tst .bit {
+;Is bit in accumulator set? If yes then store 1 into the accumulator else keep zero left from the and operation.
+;Apply this macro to two values to align two misaligned bits in the accumulator, so they can be used in further logic operations with each other. 
+!macro tst .bit { 
   and #1<<.bit
   beq .zero
   lda #1
@@ -268,22 +270,22 @@ lda r1
 and #$0f ;take the low nibble of the high byte of the multiplication result
 +swp ;swap the results in the low nibble with the zeros in the high nibble
 ora midSqState ;let the low nibble of the high byte of the multiplication result be the high nibble of the iteration result
-sta midSqState ;Store the result of this iteration as previousmidSqState for the next iteration
+sta midSqState ;Store the result of this iteration for the next iteration
 +plx
 plp
 rts
 
 randomLfsr: ;Simulates a shift register with bit 6 and 7 connected to the inputs of a xor gate and the output of the gate connected to the input of the shift register
 php
-lda lfsrState
-+tst 7
+lda lfsrState ;Take the value of the previous stage
++tst 7 ;If bit 7 of the previous stage is 1 then load 1 into the accumulator. The equivalent of wiring bit 7 of the lsfr to the first input of the xor gate
 sta r0
 lda lfsrState
-+tst 6
-eor r0
-+lsl lfsrState
-ora lfsrState
-sta lfsrState
++tst 6 ;Perform the same test as above, The equivalent of wiring bit 6 of the lsfr to the second input of the xor gate
+eor r0 ;Perform the xor operation
++lsl lfsrState ;Logically shift the shift register left. Logical shift leaves a zero in the rightmost bit. 
+ora lfsrState ;Replace that zero with the result of the xor operation. The equivalent of wiring the output of the xor gate to the input of the lsfr
+sta lfsrState ;Store the result of this interration for the next iteration.
 plp
 rts
 
