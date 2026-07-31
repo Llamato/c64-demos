@@ -1,8 +1,5 @@
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
 #include "gllm/gllm.h"
 
 //Memory Mapping Macros
@@ -156,6 +153,11 @@ struct BitmapPosition spritePixelPositionToBitmapPosition(const struct Vector2ui
 void setSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position) {
     struct BitmapPosition bitmapPosition = spritePixelPositionToBitmapPosition(position);
     bitmapPointer[bitmapPosition.byte] |= (1<<((BITS_PER_BYTE - 1) - bitmapPosition.bit)); 
+}
+
+int16_t abs(int16_t a) {
+    if(a < 0) return -a;
+    return a;
 }
 
 void makeLineSpriteBresenham(volatile unsigned char* bitmapPointer, const struct Vector2uis origin, const struct Vector2uis destination) {

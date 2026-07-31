@@ -1,7 +1,6 @@
 #include "gllm.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 
 //#define GLLM_DEBUG
 
