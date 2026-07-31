@@ -1,6 +1,6 @@
 ;Compilation flags
 reseedEnable = 1
-mtEnable = 1
+mtEnable = 0
 
 *=$0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
 ; --- BASIC Upstart Stub (10 SYS 2061) ---
