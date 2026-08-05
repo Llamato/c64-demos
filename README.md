@@ -5,7 +5,7 @@ This repo is primarily intended for students of my retro coding lab course, but 
 
 The individual demos can be built using the Nix build system.
 
-Currently supported are:
+Currently available are:
 
 | Demo                | Build command                    | Target system | Description                                                                                                                                                                                                                                                                                             |
 | ------------------- | -------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
