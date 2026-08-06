@@ -42,6 +42,13 @@ kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
 ;Program
 sprite0block = 128
+sprite1block = 129
+sprite2block = 130
+sprite3block = 131
+sprite4block = 132
+sprite5block = 133
+sprite6block = 134
+sprite7block = 135
 
 *=$080d
 ;set colors
@@ -361,12 +368,12 @@ jmp kernelRestoreRegistersAndReturnFromInterruptRoutine ;return from interrupt, 
 
 *=sprite6block*64
 ;Mistral told me this is a fish. I will let you be the judge...
-.byte $00, $00, $00, $00, $00, $00, $00, $00 ; Top border (empty)
-.byte $00, $00, $00, $00, $00, $00, $00, $00
-.byte $00, $00, $00, $18, $18, $00, $00, $00 ; Fish body starts
-.byte $00, $00, $3C, $7E, $7E, $3C, $00, $00 ; Fish body (widest part)
-.byte $00, $00, $7E, $FF, $FF, $7E, $00, $00 ; Fish body (middle)
-.byte $00, $00, $3C, $7E, $7E, $3C, $00, $00 ; Fish body (end)
-.byte $00, $00, $00, $18, $18, $00, $00, $00 ; Fish tail
-.byte $00, $00, $00, $00, $00, $00, $00, $00 ; Bottom border (empty)
-.byte $00, $00, $00, $00, $00, $00, $00, $00
+!byte $00, $00, $00, $00, $00, $00, $00, $00 ; Top border (empty)
+!byte $00, $00, $00, $00, $00, $00, $00, $00
+!byte $00, $00, $00, $18, $18, $00, $00, $00 ; Fish body starts
+!byte $00, $00, $3C, $7E, $7E, $3C, $00, $00 ; Fish body (widest part)
+!byte $00, $00, $7E, $FF, $FF, $7E, $00, $00 ; Fish body (middle)
+!byte $00, $00, $3C, $7E, $7E, $3C, $00, $00 ; Fish body (end)
+!byte $00, $00, $00, $18, $18, $00, $00, $00 ; Fish tail
+!byte $00, $00, $00, $00, $00, $00, $00, $00 ; Bottom border (empty)
+!byte $00, $00, $00, $00, $00, $00, $00, $00
