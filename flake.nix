@@ -59,14 +59,15 @@
             src = ./${name};
             buildPhase = ''
               runHook preBuild
-              ${pkgs.acme}/bin/acme --cpu 6510 --format cbm -o result.prg main.asm
+              ${pkgs.acme}/bin/acme --cpu 6510 --format cbm -o ${name}.prg main.asm
               runHook postBuild
             '';
             installPhase = ''
-              cp result.prg $out
+              mkdir -p $out
+              cp ${name}.prg $out
             '';
           };
-        packages = {
+        demos = {
           kneedeepin3d = pkgs.stdenv.mkDerivation {
             name = "kneedeepin3d";
             version = "0.0.1";
@@ -77,6 +78,7 @@
               runHook postBuild
             '';
             installPhase = ''
+              mkdir -p $out
               cp kneedeepin3d.prg $out
             '';
           };
@@ -87,20 +89,14 @@
         };
       in
       {
-        inherit packages;
+        packages = {
+          default = pkgs.symlinkJoin {
+            name = "c64-demos";
+            paths = builtins.attrValues demos;
+          };
+        } // demos;
         apps = {
-          multisprite = {
-            type = "app";
-            program = "${pkgs.vice}/bin/x64sc ${packages.multisprite}";
-          };
-          spritemultiplexing = {
-            type = "app";
-            program = "${pkgs.vice}/bin/x64sc ${packages.spritemultiplexing}";
-          };
-          smoothpaddles = {
-            type = "app";
-            program = "${pkgs.vice}/bin/x64sc ${packages.smoothpaddles}";
-          };
+          
         };
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
