@@ -95,9 +95,14 @@
             paths = builtins.attrValues demos;
           };
         } // demos;
-        apps = {
-          
-        };
+        apps = builtins.mapAttrs (name: drv: let
+          wrapper = pkgs.writeShellScript "run-${name}" ''
+            exec ${pkgs.vice}/bin/x64sc ${drv}/${name}.prg "$@"
+          '';
+        in {
+          type = "app";
+          program = "${wrapper}";
+        }) demos;
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             acme
