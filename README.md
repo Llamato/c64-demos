@@ -14,6 +14,8 @@ Currently available are:
 | Sprite multiplexing | `nix build .#spritemultiplexing` | c64           | A demonstration showing how to display more than 8 sprites at once using sprite multiplexing                                                                                                                                                                                                                     |
 | Paddle smoothing    | `nix build .#paddlesmoothing`    | c64           | A demonstration of different smoothing algorithms using a paddle as input and bar graphs as displays. From left to right the bars represent. The raw paddle readout, the paddle readout scaled to fit the screen height, the paddle value after applying the simple moving average smoothing algorithm. |
 | Random              | `nix build .#random`             | c64           | A visual comparison of the SID voice 3 noise output, the mid-square algorithm seeded with voice 3 noise, and a linear feedback shift register seeded with voice 3 noise. Intended as an aid to determine a suitable random number generator algorithm for your project. Credit for the Hexadecimal Character set to Vent: https://csdb.dk/release/?id=150190 |
+| Sidplay | `nix build .#sidplay` | c64 | A minimal sid player, playing a sid file included in the program via !bin directive. Credit for the Song to Jeff Long (Dr. Doom) |
+
 
 If there are problems, feel free to open issues.
 
