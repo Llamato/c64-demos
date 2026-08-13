@@ -9,33 +9,6 @@
 next_line:
     !16 $0000       ; End of BASIC program
 
-;Macros
-!macro cmpSpritePosition .nr, . {
-
-}
-
-!macro handleSprite .nr .highOrLow {
-    .temp = 253
-    .lowerSpritePositionXregister = $c000 + .currentSprite * 4
-    .lowerSpritePositionYregister = $c000 + .currentSprite * 4 + 1
-    .higherSpritePositionXregister = $c000 + .currentSprite * 4 + 2
-    .higherSpritePositionYregister = $c000 + .currentSprite * 4 + 3
-    .lowerXbound = bitmapScreenWidth / .currentSprite
-    .upperXbound = bitmapScreenWidth - bitmapScreenWidth / .currentSprite
-    lda $d012 ;Current Rasterline according to the VIC
-    cmp #100 ;Compare with rasterline of first interrupt
-    bcc .handleLowerSprite
-    jmp .handleHigherSprite
-.handleLowerSprite
-    lda .lowerSpritePositionXregister
-    cmp
-    .currentSpritePositionYregister = .lowerSpritePositionYregister
-} 
-
-;Maschine constants
-bitmapScreenWidth = 320
-bitmapScreenHeight = 200
-
 ;Petscii text
 petsciiBlank = 32
 
@@ -134,9 +107,11 @@ sta vicSpriteEnableRegister ;enable sprite 1
 lda #vicColorWhite
 sta vicSprite0colorRegister
 
-;set initial sprite positions
+
+;animation code starts here
+
+;set sprite positions
 lda #0
-sta 253 ;temporary storage for boundry calculations
 sta $cffe ;lower sprites x position high bits
 sta $cfff ;higher sprites x position high bits
 lda #50
@@ -148,10 +123,6 @@ sta $c003 ;sprite 0 higher position y = 150
 
 ;set upper sprite positions
 gameloop:
-!for .currentSprite, 0, 8 {
-
-
-}
 jmp gameloop
 
 rasterISR100:
@@ -184,6 +155,7 @@ lda #>rasterISR250
 sta kernelrqVector+1 ;setup next raster interrupt
 cli
 jmp kernelRestoreRegistersAndReturnFromInterruptRoutine ;return from interrupt, restoring regs using kernel rotinue
+
 
 rasterISR250:
 sei
