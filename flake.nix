@@ -30,7 +30,7 @@
       let
         pkgs = import nixpkgs { inherit system; };
         psid = pkgs.callPackage (dotfiles-llamato + "/nixos/packages/psid/package.nix") { };
-        llvm-mos = pkgs.callPackage (dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
+        llvm-mos-sdk = pkgs.callPackage (dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
         fetchD64 =
           {
             url,
@@ -75,7 +75,7 @@
             src = ./kneedeepin3d/.;
             buildPhase = ''
               runHook preBuild
-              ${llvm-mos}/bin/mos-c64-clang -Os main.c gllm/gllm.c -o kneedeepin3d.prg
+              ${llvm-mos-sdk}/bin/mos-c64-clang -Os main.c gllm/gllm.c -o kneedeepin3d.prg
               runHook postBuild
             '';
             installPhase = ''
@@ -111,7 +111,7 @@
             vice
             sidplayfp
             psid
-            llvm-mos
+            llvm-mos-sdk
           ];
         };
       }
