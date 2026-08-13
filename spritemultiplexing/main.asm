@@ -9,6 +9,29 @@
 next_line:
     !16 $0000       ; End of BASIC program
 
+;Macros
+!macro cmpSpritePosition .nr, . {
+
+}
+
+!macro handleSprite .nr .highOrLow {
+    .temp = 253
+    .lowerSpritePositionXregister = $c000 + .currentSprite * 4
+    .lowerSpritePositionYregister = $c000 + .currentSprite * 4 + 1
+    .higherSpritePositionXregister = $c000 + .currentSprite * 4 + 2
+    .higherSpritePositionYregister = $c000 + .currentSprite * 4 + 3
+    .lowerXbound = bitmapScreenWidth / .currentSprite
+    .upperXbound = bitmapScreenWidth - bitmapScreenWidth / .currentSprite
+    lda $d012 ;Current Rasterline according to the VIC
+    cmp #100 ;Compare with rasterline of first interrupt
+    bcc .handleLowerSprite
+    jmp .handleHigherSprite
+.handleLowerSprite
+    lda .lowerSpritePositionXregister
+    cmp
+    .currentSpritePositionYregister = .lowerSpritePositionYregister
+} 
+
 ;Maschine constants
 bitmapScreenWidth = 320
 bitmapScreenHeight = 200
@@ -126,22 +149,8 @@ sta $c003 ;sprite 0 higher position y = 150
 ;set upper sprite positions
 gameloop:
 !for .currentSprite, 0, 8 {
-    .temp = 253
-    .lowerSpritePositionXregister = $c000 + .currentSprite * 4
-    .lowerSpritePositionYregister = $c000 + .currentSprite * 4 + 1
-    .higherSpritePositionXregister = $c000 + .currentSprite * 4 + 2
-    .higherSpritePositionYregister = $c000 + .currentSprite * 4 + 3
-    .lowerXbound = bitmapScreenWidth / .currentSprite
-    .upperXbound = bitmapScreenWidth - bitmapScreenWidth / .currentSprite
-    lda $d012 ;Current Rasterline according to the VIC
-    cmp #100 ;Compare with rasterline of first interrupt
-    bcc .handleLowerSprite
-    jmp .handleHigherSprite
-    .handleLowerSprite
-    !zone moveLowerSprite {
-        .currentSpritePositionXregister = .lowerSpritePositionXregister
-        .currentSpritePositionYregister = .higherSpritePositionYregister
-    }
+
+
 }
 jmp gameloop
 

@@ -29,6 +29,7 @@
       system:
       let
         pkgs = import nixpkgs { inherit system; };
+        psid = pkgs.callPackage (dotfiles-llamato + "/nixos/packages/psid/package.nix") { };
         llvm-mos = pkgs.callPackage (dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
         fetchD64 =
           {
@@ -86,6 +87,7 @@
           spritemultiplexing = acme-build "spritemultiplexing";
           smoothpaddles = acme-build "smoothpaddles";
           random = acme-build "random";
+          sidplay = acme-build "sidplay";
         };
       in
       {
@@ -107,6 +109,8 @@
           packages = with pkgs; [
             acme
             vice
+            sidplayfp
+            psid
             llvm-mos
           ];
         };
