@@ -17,7 +17,7 @@ vicColorBlack = 0
 vicColorWhite = 1
 
 ;Vic Registers
-screen = $400; 4*256 = 1024
+screen = $400 ;4*256 = 1024
 vicBorderColorRegister = $d020
 vicBackgroundColorRegister = $d021
 vicControlRegister = $d01a
@@ -81,7 +81,7 @@ sta cia2ControlRegister
 lda #$7f
 and vicInterruptControlRegister
 sta vicInterruptControlRegister
-lda #100 ; line 100
+lda #100 ;line 100
 sta vicRasterInterruptScanlineSelectRegister
 
 ;set IRQ handler pointer to ISR
@@ -238,47 +238,26 @@ jmp kernelRestoreRegistersAndReturnFromInterruptRoutine ;return from interrupt, 
 
 *=sprite2block*64
 ;Github copilot told me this is a fish. I will let you be the judge...
-; Row  1
 !byte %00000000, %00000000, %00000000
-; Row  2
 !byte %00000000, %00000000, %00000000
-; Row  3
 !byte %00000000, %00011100, %00000000
-; Row  4
 !byte %00000000, %00111110, %00000000
-; Row  5
 !byte %00000000, %01111111, %00000000
-; Row  6
 !byte %00000000, %11111111, %10000000
-; Row  7
 !byte %00000001, %11111111, %11000000
-; Row  8
 !byte %00000011, %11111111, %11100000
-; Row  9
 !byte %00000111, %11111111, %11110000
-; Row 10
 !byte %00001111, %11011111, %11111000   ; eye gap hint
-; Row 11
 !byte %00011111, %10111111, %11111100   ; eye pixel region
-; Row 12
 !byte %00001111, %11011111, %11111000
-; Row 13
 !byte %00000111, %11111111, %11110000
-; Row 14
 !byte %00000011, %11111111, %11100000
-; Row 15
 !byte %00000001, %11111111, %11000000
-; Row 16
 !byte %00000000, %11111111, %10000000
-; Row 17
 !byte %00000000, %01111111, %00000000
-; Row 18
 !byte %00000000, %00111110, %00000000
-; Row 19
 !byte %00000000, %00011100, %00000000
-; Row 20
 !byte %00000000, %00001000, %00000000
-; Row 21
 !byte %00000000, %00000000, %00000000
 
 *=sprite3block*64
@@ -307,37 +286,24 @@ jmp kernelRestoreRegistersAndReturnFromInterruptRoutine ;return from interrupt, 
 
 *=sprite4block*64
 ;Gamini told me this is a fish. I will let you be the judge...
-; Row 1-3: Top fin starting
 !byte %00000000, %00001100, %00000000
 !byte %00000000, %00011110, %00000000
 !byte %00000000, %00111111, %00000000
-
-; Row 4-6: Upper body & tail top expansion
 !byte %00000001, %11111111, %10000000
 !byte %00000111, %11111111, %11000000
 !byte %00001111, %11111111, %11100000
-
-; Row 7-9: Eye level & main body
 !byte %00011111, %11011111, %11110000   ; Contains eye space
 !byte %00111111, %10011111, %01111000
 !byte %01111111, %11111111, %00111100   ; Tail narrows
-
-; Row 10-12: Center body & tail fin split
 !byte %01111111, %11111110, %00011110   ; Tail tip 1
 !byte %01111111, %11111100, %00001111   ; Tail split
 !byte %01111111, %11111110, %00011110   ; Tail tip 2
-
-; Row 13-15: Lower body & tail bottom expansion
 !byte %00111111, %11111111, %00111100
 !byte %00011111, %11111111, %01111000
 !byte %00001111, %11111111, %11100000
-
-; Row 16-18: Lower fin & tail base
 !byte %00000111, %11111111, %11000000
 !byte %00000001, %11111111, %10000000
 !byte %00000000, %00111111, %00000000
-
-; Row 19-21: Bottom fin end
 !byte %00000000, %00011110, %00000000
 !byte %00000000, %00001100, %00000000
 !byte %00000000, %00000000, %00000000
