@@ -66,13 +66,15 @@ r9 = $c007
 r10 = $c008
 r11 = $c009
 r12 = $c00a
-rExtra = $cfff
+r13 = $c00b
+backBufferPointer = $cffe ;cffe:cfff
 
 ;Visualisation constants
 sprite0block = 128
 sprite1block = 129
 sprite2block = 130
 sprite3block = 131
+backbufferBlock = 132
 spriteBytesPerRow = 3
 bitsPerByte = 8
 spriteColumns = 24
@@ -356,44 +358,43 @@ jsr sidFileStartAddress ;run sid initializer
 ;0
 +poke r0, spriteColumns / 2
 +poke r1, spriteRows / 2
-+poke rExtra, spriteRows / 2
++poke r13, spriteRows / 2
 +ldi16 r2, sprite0block * spriteStride
 jsr makeCircleSpriteBresenham
 ;1
 +poke r0, spriteColumns / 2
 +poke r1, spriteRows / 2
-+poke rExtra, spriteRows / 2
++poke r13, spriteRows / 2
 +ldi16 r2, sprite1block * spriteStride
 jsr makeCircleSpriteBresenham
 ;2
 +poke r0, spriteColumns / 2
 +poke r1, spriteRows / 2
-+poke rExtra, spriteRows / 2
++poke r13, spriteRows / 2
 +ldi16 r2, sprite2block * spriteStride
 jsr makeCircleSpriteBresenham
 ;3
 +poke r0, spriteColumns / 2
 +poke r1, spriteRows / 2
-+poke rExtra, spriteRows / 2
++poke r13, spriteRows / 2
 +ldi16 r2, sprite3block * spriteStride
 jsr makeCircleSpriteBresenham
 
 +poke r12, 0 ;r12 = line destination.x
++ldi16 backBufferPointer, backbufferBlock * spriteStride
 
 visloop:
 !zone visloop {
-;clear sprite canves
-    +fmb sprite0block * spriteStride, spriteLength, $00
-;draw circle
+;draw circle to backbuffer
     +poke r0, spriteColumns / 2
     +poke r1, spriteRows / 2
-    +poke rExtra, spriteRows / 2
-    +ldi16 r2, sprite0block * spriteStride
+    +poke r13, spriteRows / 2
+    +mov16 r2, backBufferPointer
     jsr makeCircleSpriteBresenham
-;draw line
+;draw line backbuffer
     +poke r0, spriteColumns / 2
     +poke r1, spriteRows -1
-    +ldi16 r2, sprite0block * spriteStride
+    +mov16 r2, backBufferPointer
     +mov r4, r12
     +poke r5, 0
     inc r12
@@ -403,18 +404,31 @@ visloop:
     +poke r12, 0
 .skipWarpAround
     jsr makeLineSpriteBresenham
+;Swap back and front Buffers
+    lda #sprite0block
+    cmp vicSprite0bitmapBlockPointerRegister
+    bne .backbufferToFront
+.frontBufferToBack
+    +fmb sprite0block * spriteStride, spriteLength, $00
+    +ldi16 backBufferPointer, sprite0block * spriteStride
+    +poke vicSprite0bitmapBlockPointerRegister, backbufferBlock
+    jmp visloop
+.backbufferToFront
+    +fmb backbufferBlock * spriteStride, spriteLength, $00
+    +ldi16 backBufferPointer, backbufferBlock * spriteStride
+    +poke vicSprite0bitmapBlockPointerRegister, sprite0block
     jmp visloop
 }
 
 ;r0 = position.x
 ;r1 = position.y
 spritePixelPositionToBitmapPosition:
-+poke rExtra, spriteBytesPerRow*bitsPerByte
-+mul8816 rExtra, r1, r2, r3 ;r2:r3 = position.y * SPRITE_BYTES_PER_ROW * BITS_PER_BYTE
++poke r13, spriteBytesPerRow*bitsPerByte
++mul8816 r13, r1, r2, r3 ;r2:r3 = position.y * SPRITE_BYTES_PER_ROW * BITS_PER_BYTE
 +add168 r2, r0 ;r2:r3 = bitPosition = position.y * SPRITE_BYTES_PER_ROW * BITS_PER_BYTE + position.x
-+poke rExtra, bitsPerByte ;rExtra = bitsPerByte = 8
++poke r13, bitsPerByte ;r13 = bitsPerByte = 8
 +mov16 r0, r2
-+div168 r0, rExtra, r2 ;r0:r1 = bitPosition / bitsPerByte = byte, r2 = bitPosition % bitsPerByte = bit
++div168 r0, r13, r2 ;r0:r1 = bitPosition / bitsPerByte = byte, r2 = bitPosition % bitsPerByte = bit
 rts
 
 ;r0 = position.x
@@ -437,11 +451,11 @@ setSpritePixel:
     dey ;Y=Y-1
     jmp .shift
 .nomoreshift
-    sta rExtra ;rExtra=A=(1<<((bitsPerByte - 1) - bitmapPosition.bit)), Y=0
+    sta r13 ;r13=A=(1<<((bitsPerByte - 1) - bitmapPosition.bit)), Y=0
     +pull r3
     +pull r2
     ldy r0 ;Y=bitmapPosition.byte
-    lda rExtra ;A=(1<<((bitsPerByte - 1) - bitmapPosition.bit)), Y=bitmapPosition.byte
+    lda r13 ;A=(1<<((bitsPerByte - 1) - bitmapPosition.bit)), Y=bitmapPosition.byte
     ora (r2), y ;A=spriteBaseAddress[Y] | (1<<((bitsPerByte - 1) - bitmapPosition.bit))
     sta (r2), y ;spriteBaseAddress[Y] = spriteBaseAddress[Y] | (1<<((bitsPerByte - 1) - bitmapPosition.bit))
     rts
@@ -626,28 +640,28 @@ rts
 ;r0 = center.x
 ;r1 = center.y
 ;r2:r3 = spriteBaseAddress
-;rExtra = radius
+;r13 = radius
 makeCircleSpriteBresenham:
 !zone makeCircleSpriteBresenham {
     +poke r4, 0
-    +mov r5, rExtra ;r4:r5 = circumfrancePoint = {0, r}
-    asl rExtra
+    +mov r5, r13 ;r4:r5 = circumfrancePoint = {0, r}
+    asl r13
     lda #3
     sec
-    sbc rExtra
-    sta rExtra ;rExtra = d = 3 - (2 * r)
-    +push rExtra
+    sbc r13
+    sta r13 ;r13 = d = 3 - (2 * r)
+    +push r13
     +push r0
     +push r1
     jsr mirrorCircleSegment ;mirrorCircleSegment(bitmapPointer, center, circumfrancePoint);
     +pull r1
     +pull r0
-    +pull rExtra
+    +pull r13
 .loopHead ;while(circumfrancePoint.x < circumfrancePoint.y)
     lda r4
     cmp r5
     bcs .loopEnd
-    lda rExtra
+    lda r13
     bmi .dNegative
 .dPositive
     dec r5 ;circumfrancePoint.y--;
@@ -658,8 +672,8 @@ makeCircleSpriteBresenham:
     asl ;A=4 * (circumfrancePoint.x - circumfrancePoint.y)
     clc
     adc #10 ;A=4 * (circumfrancePoint.x - circumfrancePoint.y) + 10
-    adc rExtra ;A=d + 4 * (circumfrancePoint.x - circumfrancePoint.y) + 10
-    sta rExtra ;rExtra = A = d + 4 * (circumfrancePoint.x - circumfrancePoint.y) + 10
+    adc r13 ;A=d + 4 * (circumfrancePoint.x - circumfrancePoint.y) + 10
+    sta r13 ;r13 = A = d + 4 * (circumfrancePoint.x - circumfrancePoint.y) + 10
     jmp .loopFooter
 .dNegative
     lda r4 ;A=circumfrancePoint.x
@@ -667,17 +681,17 @@ makeCircleSpriteBresenham:
     asl ;A=4 * circumfrancePoint.x
     clc
     adc #6 ;A=4 * circumfrancePoint.x + 6
-    adc rExtra ;A=d + 4 * circumfrancePoint.x + 6
-    sta rExtra ;rExtra = A = d + 4 * circumfrancePoint.x + 6
+    adc r13 ;A=d + 4 * circumfrancePoint.x + 6
+    sta r13 ;r13 = A = d + 4 * circumfrancePoint.x + 6
 .loopFooter
     inc r4 ;circumfrancePoint.x++;
-    +push rExtra
+    +push r13
     +push r0
     +push r1
     jsr mirrorCircleSegment ;mirrorCircleSegment(bitmapPointer, center, circumfrancePoint);
     +pull r1
     +pull r0
-    +pull rExtra
+    +pull r13
     jmp .loopHead
 .loopEnd
     rts
