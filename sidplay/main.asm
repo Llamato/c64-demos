@@ -395,8 +395,15 @@ visloop:
     +poke r0, spriteColumns / 2
     +poke r1, spriteRows -1
     +mov16 r2, backBufferPointer
-    +mov r4, r12
-    +poke r5, 0
+    ldx r12
+    lda circleOffsetX, x
+    clc
+    adc #(spriteColumns / 2)
+    sta r4 ;destination.x = (spriteColumns / 2) + circleOffsetX
+    lda circleOffsetY, x
+    clc
+    adc #(spriteRows / 2)
+    sta r5 ;destination.y = (spriteRows / 2) + circleOffsetY
     inc r12
     lda r12
     cmp #spriteColumns
@@ -704,6 +711,19 @@ inc vicBorderColorRegister
 jsr sidFilePlaybackAddress ;jump to sid play address. Playing next note.
 dec vicBorderColorRegister
 jmp kernelRestoreRegistersAndReturnFromInterruptRoutine
+
+;lookup tables are derived from
+;circleX = r * cos(a)
+;circleY = r * sin(a)
+;as follows:
+;We have 24 possible x values from the width of the sprite.
+;We want to cover an arch from 330° to 210° for a analog meter look.
+;Therefor each step in the circle function needs to be (330° - 210°) / (24 -1) = 120° / (24-1) = 5.217° in arc size.
+;With that it holds that for k in range 0 to 23: alpha(k) = 210° + 5.217° * k
+circleOffsetX: ;r * cos(alpha(k))
+!byte -9,-8,-8,-7,-6,-6,-5,-4,-3,-2,-1,0,0,1,2,3,4,5,6,6,7,8,8,9
+circleOffsetY: ;r * sin(alpha(k))
+!byte -5,-6,-6,-7,-8,-8,-9,-9,-9,-10,-10,-10,-10,-10,-10,-9,-9,-9,-8,-8,-7,-6,-6,-5
 
 *=sidFileStartAddress
 !bin "drdoom.sid",, $7c+2
