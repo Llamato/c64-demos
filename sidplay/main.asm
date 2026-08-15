@@ -17,9 +17,8 @@ cia2ControlRegister = $dd0d
 kernelrqVector = $0314 ;$0314-0315
 kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
-;Sid file constants
-sidFileStartAddress = $1200
-sidFilePlaybackAddress = sidFileStartAddress+3
+;Sid Registers
+sidVoice3ValueRegister = $d41b
 
 ;Vic Registers
 vicBorderColorRegister = $d020
@@ -28,6 +27,8 @@ vicSpritesPositionXhighRegister = $d010
 vicInterruptControlRegister = $d011
 vicRasterInterruptScanlineSelectRegister = $d012
 vicSpriteEnableRegister = $d015
+vicSpriteDoubleHeightRegister = $d017
+vicSpriteDoubleWidthRegister = $d01d
 vicSprite0positionXregister = $d000
 vicSprite0positionYregister = $d001
 vicSprite0bitmapBlockPointerRegister = $07f8
@@ -47,6 +48,10 @@ vicSprite3positionXregister = $d006
 vicSprite3positionYregister = $d007
 vicSprite3bitmapBlockPointerRegister = $07fb
 
+;Sid file constants
+sidFileStartAddress = $1200
+sidFilePlaybackAddress = sidFileStartAddress+3
+
 ;Program registers
 r0 = $c000
 r1 = $c001
@@ -56,7 +61,12 @@ r4 = $c002
 r5 = $c003
 r6 = $c004
 r7 = $c005
-rExtra = $c006
+r8 = $c006
+r9 = $c007
+r10 = $c008
+r11 = $c009
+r12 = $c00a
+rExtra = $cfff
 
 ;Visualisation constants
 sprite0block = 128
@@ -113,6 +123,16 @@ spriteLength = 63
     sta .addr
 }
 
+!macro phx {
+    txa
+    pha
+}
+
+!macro plx {
+    pla
+    tax
+}
+
 !macro setBit .byteAddr, .bitNr {
     lda #(1<<.bitNr)
     ora .byteAddr
@@ -156,6 +176,16 @@ spriteLength = 63
   lda .accumulator+1
   adc .accumulative+1
   sta .accumulator+1
+}
+
+!macro add16i .accumulator, .accumulative {
+    lda .accumulator
+    clc
+    adc #<.accumulative
+    sta .accumulator
+    lda .accumulator+1
+    adc #>.accumulative
+    sta .accumulator+1
 }
 
 !macro mul8816 .factor1addr, .factor2addr, .resultLow, .resultHigh {
@@ -225,6 +255,35 @@ spriteLength = 63
     rts
 }
 
+!macro eor16i .addr, .mask {
+    lda .addr
+    eor #<.mask
+    sta .addr
+    lda .addr+1
+    eor #>.mask
+    sta .addr+1
+}
+
+!macro flipSign {
+    eor #$ff
+    clc
+    adc #1
+}
+
+!macro abs {
+    bpl .done
+    +flipSign
+.done
+}
+
+!macro abs16 .x {
+    lda .x+1
+    bpl .done
+    +eor16i .x, $ff
+    +add16i .x, 1
+.done
+}
+
 ;setup raster interrupt
 sei ;disable interrupts globally
 ;disable CIA's
@@ -261,14 +320,18 @@ cli ;reenable interrupts
 +poke vicSprite2bitmapBlockPointerRegister, sprite2block
 +poke vicSprite3bitmapBlockPointerRegister, sprite3block
 
+;set sprite dimensions
++poke vicSpriteDoubleHeightRegister, $0f
++poke vicSpriteDoubleWidthRegister, $0f
+
 ;position sprites
-+setSpritePositionX 0, 40
++setSpritePositionX 0, 50
 +setSpritePositionY 0, 100
-+setSpritePositionX 1, 80
++setSpritePositionX 1, 100
 +setSpritePositionY 1, 100
-+setSpritePositionX 2, 120
++setSpritePositionX 2, 150
 +setSpritePositionY 2, 100
-+setSpritePositionX 3, 220
++setSpritePositionX 3, 200
 +setSpritePositionY 3, 100
 
 ;color sprites
@@ -315,9 +378,33 @@ jsr makeCircleSpriteBresenham
 +ldi16 r2, sprite3block * spriteStride
 jsr makeCircleSpriteBresenham
 
-visloop:
++poke r12, 0 ;r12 = line destination.x
 
-jmp visloop
+visloop:
+!zone visloop {
+;clear sprite canves
+    +fmb sprite0block * spriteStride, spriteLength, $00
+;draw circle
+    +poke r0, spriteColumns / 2
+    +poke r1, spriteRows / 2
+    +poke rExtra, spriteRows / 2
+    +ldi16 r2, sprite0block * spriteStride
+    jsr makeCircleSpriteBresenham
+;draw line
+    +poke r0, spriteColumns / 2
+    +poke r1, spriteRows -1
+    +ldi16 r2, sprite0block * spriteStride
+    +mov r4, r12
+    +poke r5, 0
+    inc r12
+    lda r12
+    cmp #spriteColumns
+    bne .skipWarpAround
+    +poke r12, 0
+.skipWarpAround
+    jsr makeLineSpriteBresenham
+    jmp visloop
+}
 
 ;r0 = position.x
 ;r1 = position.y
@@ -358,6 +445,100 @@ setSpritePixel:
     ora (r2), y ;A=spriteBaseAddress[Y] | (1<<((bitsPerByte - 1) - bitmapPosition.bit))
     sta (r2), y ;spriteBaseAddress[Y] = spriteBaseAddress[Y] | (1<<((bitsPerByte - 1) - bitmapPosition.bit))
     rts
+}
+
+;r0 = origin.x
+;r1 = origin.y
+;r2:r3 = spriteBaseAddress
+;r4 = destination.x
+;r5 = destination.y
+makeLineSpriteBresenham:
+!zone makeLineSpriteBresenham {
+    lda r4
+    sec
+    sbc r0
+    +abs
+    sta r6 ;r6 = dx = abs(destination.x - origin.x)
+    lda r5
+    sec
+    sbc r1
+    +abs
+    sta r7 ;r7 = dy = abs(destination.y - origin.y)
+    +poke r8, 1 ;r8 = sx = 1
+    lda r0
+    cmp r4
+    bcc .skipInvSx
+    lda r8
+    sec
+    sbc #2
+    sta r8 ;r8 = sx = -1
+.skipInvSx
+    +poke r9, 1 ;r9 = sy = 1
+    lda r1
+    cmp r5
+    bcc .skipInvSy
+    lda r9
+    sec
+    sbc #2
+    sta r9 ;r9 = sy = -1
+.skipInvSy
+    lda r6
+    sec
+    sbc r7
+    sta r10 ; r10 = err = dx - dy
+.drawLoop
+    lda r0
+    bmi .skipSetPixel
+    cmp #spriteColumns
+    bcs .skipSetPixel
+    lda r1
+    bmi .skipSetPixel
+    cmp #spriteRows
+    bcs .skipSetPixel
+    +push r0
+    +push r1
+    jsr setSpritePixel ;setSpritePixel(bitmapPointer, (struct Vector2uis) {x, y});
+    +pull r1
+    +pull r0
+.skipSetPixel
+    lda r0
+    cmp r4
+    bne .dontBreak ;if(x != destination.x) then goto dontBreak
+    lda r1
+    cmp r5
+    bne .dontBreak ;if(y != destination.y) then goto dontBreak
+    rts ;if (x == destination.x && y == destination.y) break;
+.dontBreak
+    lda r10
+    asl
+.checkForXerror
+    sta r11 ;r11 = e2
+    lda r7
+    +flipSign ;A = -dy
+    cmp r11
+    bpl .checkForYerror ;if(-dy >= e2) then goto noXerror with (-dy >= e2) equivalent to (!(e2 > -dy))
+    lda r10
+    sec
+    sbc r7
+    sta r10 ;err = err - dy
+    lda r0
+    clc
+    adc r8
+    sta r0 ;x = x + sx
+.checkForYerror
+    lda r11
+    cmp r6
+    bpl .noYerror
+    lda r10
+    clc
+    adc r6
+    sta r10 ;err = err + dx
+    lda r1
+    clc
+    adc r9
+    sta r1 ;y = y + sy
+.noYerror
+    jmp .drawLoop
 }
 
 ;r0 = center.x
@@ -509,7 +690,6 @@ inc vicBorderColorRegister
 jsr sidFilePlaybackAddress ;jump to sid play address. Playing next note.
 dec vicBorderColorRegister
 jmp kernelRestoreRegistersAndReturnFromInterruptRoutine
-
 
 *=sidFileStartAddress
 !bin "drdoom.sid",, $7c+2
