@@ -112,6 +112,7 @@
             sidplayfp
             psid
             llvm-mos-sdk
+            ghc
           ];
         };
       }
