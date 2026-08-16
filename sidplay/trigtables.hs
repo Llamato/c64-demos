@@ -34,6 +34,5 @@ main = do
                 fromAngle = degToRad fromAngleDegrees
                 toAngle = degToRad toAngleDegrees
                 (xTable, yTable) = genTrigTables radius steps (fromAngle, toAngle)
-            print args
             printAcmeLookupTable xHeader xTable
             printAcmeLookupTable yHeader yTable
