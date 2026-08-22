@@ -31,27 +31,6 @@
         pkgs = import nixpkgs { inherit system; };
         psid = pkgs.callPackage (dotfiles-llamato + "/nixos/packages/psid/package.nix") { };
         llvm-mos-sdk = pkgs.callPackage (dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
-        fetchD64 =
-          {
-            url,
-            sha256 ? "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-          }:
-          let
-            name =
-              let
-                path = builtins.head (lib.splitString "?" url);
-                parts = lib.splitString "/" path;
-                filtered = lib.filter (s: s != "") parts;
-              in
-              if filtered == [ ] then "downloaded-file" else lib.last filtered;
-          in
-          pkgs.stdenv.mkDerivation {
-            name = "${name}-extracted";
-            src = builtins.fetchurl { inherit url sha256 name; };
-            buildPhase = ''
-              ${pkgs.vice}/bin/c1541 -attach "$src" -extract
-            '';
-          };
         acme-build =
           name:
           pkgs.stdenv.mkDerivation {

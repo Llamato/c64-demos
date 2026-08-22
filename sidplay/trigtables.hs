@@ -24,8 +24,8 @@ main = do
     if length args < 6
         then hPutStrLn stderr "Not enough arguments! Usage: program radius steps fromAngle toAngle"
         else do
-            let 
-                xHeader = args !! 0
+            let
+                xHeader = head args
                 yHeader = args !! 1
                 radius = read (args !! 2) :: Int
                 steps = read (args !! 3) :: Int
