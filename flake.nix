@@ -10,7 +10,8 @@
     };
   };
 
-  outputs = {self, nixpkgs, ...}@inputs:
+  outputs =
+    { self, nixpkgs, ... }@inputs:
     let
       supportedSystems = [
         "x86_64-linux"
@@ -26,7 +27,9 @@
       let
         pkgs = import nixpkgs { inherit system; };
         psid = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/psid/package.nix") { };
-        llvm-mos-sdk = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
+        llvm-mos-sdk = pkgs.callPackage (
+          inputs.dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix"
+        ) { };
         acme-build =
           name:
           pkgs.stdenv.mkDerivation {
@@ -71,15 +74,20 @@
             name = "c64-demos";
             paths = builtins.attrValues demos;
           };
-        } // demos;
-        apps = builtins.mapAttrs (name: drv: let
-          wrapper = pkgs.writeShellScript "run-${name}" ''
-            exec ${pkgs.vice}/bin/x64sc ${drv}/${name}.prg "$@"
-          '';
-        in {
-          type = "app";
-          program = "${wrapper}";
-        }) demos;
+        }
+        // demos;
+        apps = builtins.mapAttrs (
+          name: drv:
+          let
+            wrapper = pkgs.writeShellScript "run-${name}" ''
+              exec ${pkgs.vice}/bin/x64sc ${drv}/${name}.prg "$@"
+            '';
+          in
+          {
+            type = "app";
+            program = "${wrapper}";
+          }
+        ) demos;
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             acme
