@@ -3,18 +3,15 @@
 
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs/nixos-26.05";
-    dotfiles-llamato.url = "github:llamato/dotfiles";
     flake-utils.url = "github:numtide/flake-utils";
+    dotfiles-llamato = {
+      url = "github:llamato/dotfiles";
+      flake = false;
+    };
   };
 
   outputs =
-    {
-      self,
-      nixpkgs,
-      flake-utils,
-      dotfiles-llamato,
-      ...
-    }:
+    { self, nixpkgs, ... }@inputs:
     let
       supportedSystems = [
         "x86_64-linux"
@@ -23,14 +20,15 @@
         "aarch64-darwin"
         "x86_64-darwin"
       ];
-      lib = nixpkgs.lib;
     in
-    flake-utils.lib.eachSystem supportedSystems (
+    inputs.flake-utils.lib.eachSystem supportedSystems (
       system:
       let
         pkgs = import nixpkgs { inherit system; };
-        psid = pkgs.callPackage (dotfiles-llamato + "/nixos/packages/psid/package.nix") { };
-        llvm-mos-sdk = pkgs.callPackage (dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
+        psid = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/psid/package.nix") { };
+        llvm-mos-sdk = pkgs.callPackage (
+          inputs.dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix"
+        ) { };
         acme-build =
           name:
           pkgs.stdenv.mkDerivation {
@@ -75,15 +73,20 @@
             name = "c64-demos";
             paths = builtins.attrValues demos;
           };
-        } // demos;
-        apps = builtins.mapAttrs (name: drv: let
-          wrapper = pkgs.writeShellScript "run-${name}" ''
-            exec ${pkgs.vice}/bin/x64sc ${drv}/${name}.prg "$@"
-          '';
-        in {
-          type = "app";
-          program = "${wrapper}";
-        }) demos;
+        }
+        // demos;
+        apps = builtins.mapAttrs (
+          name: drv:
+          let
+            wrapper = pkgs.writeShellScript "run-${name}" ''
+              exec ${pkgs.vice}/bin/x64sc ${drv}/${name}.prg "$@"
+            '';
+          in
+          {
+            type = "app";
+            program = "${wrapper}";
+          }
+        ) demos;
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             acme
