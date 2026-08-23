@@ -10,14 +10,7 @@
     };
   };
 
-  outputs =
-    {
-      self,
-      nixpkgs,
-      flake-utils,
-      dotfiles-llamato,
-      ...
-    }:
+  outputs = {self, nixpkgs, ...}@inputs:
     let
       supportedSystems = [
         "x86_64-linux"
@@ -28,12 +21,12 @@
       ];
       lib = nixpkgs.lib;
     in
-    flake-utils.lib.eachSystem supportedSystems (
+    inputs.flake-utils.lib.eachSystem supportedSystems (
       system:
       let
         pkgs = import nixpkgs { inherit system; };
-        psid = pkgs.callPackage (dotfiles-llamato + "/nixos/packages/psid/package.nix") { };
-        llvm-mos-sdk = pkgs.callPackage (dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
+        psid = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/psid/package.nix") { };
+        llvm-mos-sdk = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
         acme-build =
           name:
           pkgs.stdenv.mkDerivation {
