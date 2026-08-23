@@ -20,7 +20,6 @@
         "aarch64-darwin"
         "x86_64-darwin"
       ];
-      lib = nixpkgs.lib;
     in
     inputs.flake-utils.lib.eachSystem supportedSystems (
       system:
