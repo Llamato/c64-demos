@@ -3,8 +3,11 @@
 
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs/nixos-26.05";
-    dotfiles-llamato.url = "github:llamato/dotfiles";
     flake-utils.url = "github:numtide/flake-utils";
+    dotfiles-llamato = {
+      url = "github:llamato/dotfiles";
+      flake = false;
+    };
   };
 
   outputs =
