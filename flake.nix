@@ -18,7 +18,6 @@
         "aarch64-linux"
         "riscv64-linux"
         "aarch64-darwin"
-        "x86_64-darwin"
       ];
     in
     inputs.flake-utils.lib.eachSystem supportedSystems (
@@ -50,6 +49,7 @@
             name = "kneedeepin3d";
             version = "0.0.1";
             src = ./kneedeepin3d/.;
+            
             buildPhase = ''
               runHook preBuild
               ${llvm-mos-sdk}/bin/mos-c64-clang -Os main.c gllm/gllm.c -o kneedeepin3d.prg
@@ -60,6 +60,7 @@
               cp kneedeepin3d.prg $out
             '';
           };
+          
           multisprite = acme-build "multisprite";
           spritemultiplexing = acme-build "spritemultiplexing";
           smoothpaddles = acme-build "smoothpaddles";
