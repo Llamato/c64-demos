@@ -24,10 +24,9 @@
       system:
       let
         pkgs = import nixpkgs { inherit system; };
+        llvm-mos-sdk = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
         psid = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/psid/package.nix") { };
-        llvm-mos-sdk = pkgs.callPackage (
-          inputs.dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix"
-        ) { };
+        vchar64 = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/vchar64/package.nix") { };
         acme-build =
           name:
           pkgs.stdenv.mkDerivation {
@@ -60,7 +59,6 @@
               cp kneedeepin3d.prg $out
             '';
           };
-          
           multisprite = acme-build "multisprite";
           spritemultiplexing = acme-build "spritemultiplexing";
           smoothpaddles = acme-build "smoothpaddles";
@@ -76,26 +74,20 @@
           };
         }
         // demos;
-        apps = builtins.mapAttrs (
-          name: drv:
-          let
-            wrapper = pkgs.writeShellScript "run-${name}" ''
-              exec ${pkgs.vice}/bin/x64sc ${drv}/${name}.prg "$@"
-            '';
-          in
-          {
+        apps = builtins.mapAttrs (name: drv: {
             type = "app";
-            program = "${wrapper}";
-          }
-        ) demos;
+            program = "${pkgs.writeShellScript "run-${name}" ''exec ${pkgs.vice}/bin/x64sc ${drv}/${name}.prg "$@"''}";
+          }) demos;
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             acme
             vice
             sidplayfp
-            psid
-            llvm-mos-sdk
             ghc
+            rehex
+            llvm-mos-sdk
+            psid
+            vchar64
           ];
         };
       }
