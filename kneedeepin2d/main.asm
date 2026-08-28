@@ -1,25 +1,3 @@
-*= $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
-
-; --- BASIC Upstart Stub (10 SYS 2061) ---
-    !16 next_line   ; Pointer to next line
-    !16 10          ; Line number 10
-    !byte $9e         ; BASIC token for SYS
-    !text "2061"      ; Address of our code (Decimal: 2061 = Hex $080D)
-    !byte $00         ; End of BASIC line
-next_line:
-    !16 $0000       ; End of BASIC program
-
-;CIA
-cia1ControlRegister = $dc0d
-cia2ControlRegister = $dd0d
-
-;Kernel
-kernelrqVector = $0314 ;$0314-0315
-kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
-
-;Sid Registers
-sidVoice3ValueRegister = $d41b
-
 ;Vic Registers
 vicBorderColorRegister = $d020
 vicControlRegister = $d01a
@@ -47,10 +25,6 @@ vicSprite3colorRegister = $d02a
 vicSprite3positionXregister = $d006
 vicSprite3positionYregister = $d007
 vicSprite3bitmapBlockPointerRegister = $07fb
-
-;Sid file constants
-sidFileStartAddress = $1200
-sidFilePlaybackAddress = sidFileStartAddress+3
 
 ;Program registers
 r0 = $c000
@@ -286,32 +260,6 @@ spriteLength = 63
 .done
 }
 
-;setup raster interrupt
-sei ;disable interrupts globally
-;disable CIA's
-lda #$7f ;everything except highest bit
-sta cia1ControlRegister
-sta cia2ControlRegister
-
-;set rasterline for interrupt to fire on
-lda #$7f
-and vicInterruptControlRegister
-sta vicInterruptControlRegister
-lda #100 ;line 100
-sta vicRasterInterruptScanlineSelectRegister
-
-;set IRQ handler pointer to ISR
-lda #<rasterISR100
-sta kernelrqVector ;low byte set
-lda #>rasterISR100
-sta kernelrqVector+1 ;high byte set
-
-;enable raster interrupt
-lda vicControlRegister
-ora #$01 ;set raster interrupt enable bit to 1
-sta vicControlRegister
-cli ;reenable interrupts
-
 ;visualisation starts here
 ;enable sprites
 +poke vicSpriteEnableRegister, $0f
@@ -347,12 +295,6 @@ cli ;reenable interrupts
 +fmb sprite1block * spriteStride, spriteLength, 0
 +fmb sprite2block * spriteStride, spriteLength, 0
 +fmb sprite3block * spriteStride, spriteLength, 0
-
-;initialize sid
-lda #0
-tax
-tay
-jsr sidFileStartAddress ;run sid initializer
 
 ;draw Circles
 ;0
@@ -704,14 +646,6 @@ makeCircleSpriteBresenham:
     rts
 }
 
-rasterISR100:
-lda #$01
-sta $d019 ;acknowledge interrupt
-inc vicBorderColorRegister
-jsr sidFilePlaybackAddress ;jump to sid play address. Playing next note.
-dec vicBorderColorRegister
-jmp kernelRestoreRegistersAndReturnFromInterruptRoutine
-
 ;lookup tables are derived from
 ;circleX = r * cos(a)
 ;circleY = r * sin(a)
@@ -725,5 +659,4 @@ circleOffsetX: ;r * cos(alpha(k))
 circleOffsetY: ;r * sin(alpha(k))
 !byte -5,-6,-6,-7,-8,-8,-9,-9,-9,-10,-10,-10,-10,-10,-10,-9,-9,-9,-8,-8,-7,-6,-6,-5
 
-*=sidFileStartAddress
-!bin "drdoom.sid",, $7c+2
+*=sidFileStartAddress:

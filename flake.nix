@@ -63,7 +63,7 @@
           spritemultiplexing = acme-build "spritemultiplexing";
           smoothpaddles = acme-build "smoothpaddles";
           random = acme-build "random";
-          sidplay = acme-build "sidplay";
+          sidplayer = acme-build "sidplayer";
         };
       in
       {
@@ -82,9 +82,9 @@
           packages = with pkgs; [
             acme
             vice
-            sidplayfp
             ghc
             rehex
+            sidplayfp
             llvm-mos-sdk
             psid
             vchar64
