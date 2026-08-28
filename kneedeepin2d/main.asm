@@ -1,9 +1,17 @@
+*= $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
+
+; --- BASIC Upstart Stub (10 SYS 2061) ---
+    !16 next_line   ; Pointer to next line
+    !16 10          ; Line number 10
+    !byte $9e         ; BASIC token for SYS
+    !text "2061"      ; Address of our code (Decimal: 2061 = Hex $080D)
+    !byte $00         ; End of BASIC line
+next_line:
+    !16 $0000       ; End of BASIC program
+
 ;Vic Registers
 vicBorderColorRegister = $d020
-vicControlRegister = $d01a
 vicSpritesPositionXhighRegister = $d010
-vicInterruptControlRegister = $d011
-vicRasterInterruptScanlineSelectRegister = $d012
 vicSpriteEnableRegister = $d015
 vicSpriteDoubleHeightRegister = $d017
 vicSpriteDoubleWidthRegister = $d01d
@@ -658,5 +666,3 @@ circleOffsetX: ;r * cos(alpha(k))
 !byte -9,-8,-8,-7,-6,-6,-5,-4,-3,-2,-1,0,0,1,2,3,4,5,6,6,7,8,8,9
 circleOffsetY: ;r * sin(alpha(k))
 !byte -5,-6,-6,-7,-8,-8,-9,-9,-9,-10,-10,-10,-10,-10,-10,-9,-9,-9,-8,-8,-7,-6,-6,-5
-
-*=sidFileStartAddress:

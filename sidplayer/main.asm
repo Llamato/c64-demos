@@ -9,13 +9,9 @@
 next_line:
     !16 $0000       ; End of BASIC program
 
-;CIA
+;CIA Registers
 cia1ControlRegister = $dc0d
 cia2ControlRegister = $dd0d
-
-;Kernel
-kernelrqVector = $0314 ;$0314-0315
-kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
 ;Vic Registers
 vicInterruptControlRegister = $d011
@@ -25,6 +21,10 @@ vicBorderColorRegister = $d020
 
 ;Sid Registers
 sidVoice3ValueRegister = $d41b
+
+;Kernel Registers
+kernelrqVector = $0314 ;$0314-0315
+kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
 ;Sid file constants
 sidFileStartAddress = $1200

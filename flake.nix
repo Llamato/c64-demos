@@ -64,6 +64,7 @@
           smoothpaddles = acme-build "smoothpaddles";
           random = acme-build "random";
           sidplayer = acme-build "sidplayer";
+          kneedeepin2d = acme-build "kneedeepin2d";
         };
       in
       {
