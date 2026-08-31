@@ -27,28 +27,66 @@
         llvm-mos-sdk = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
         psid = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/psid/package.nix") { };
         vchar64 = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/vchar64/package.nix") { };
-        acme-build =
-          name:
-          pkgs.stdenv.mkDerivation {
-            name = name;
-            version = "0.0.1";
-            src = ./${name};
-            buildPhase = ''
-              runHook preBuild
-              ${pkgs.acme}/bin/acme --cpu 6510 --format cbm -o ${name}.prg main.asm
-              runHook postBuild
-            '';
-            installPhase = ''
-              mkdir -p $out
-              cp ${name}.prg $out
-            '';
+        acme-build = name: pkgs.stdenv.mkDerivation {
+          name = "${name}-acme";
+          version = "0.0.1";
+          src = ./${name};
+          buildPhase = ''
+            runHook preBuild
+            ${pkgs.acme}/bin/acme --cpu 6510 --format cbm -o ${name}.prg main.asm
+            runHook postBuild
+          '';
+          installPhase = ''
+            mkdir -p $out
+            cp ${name}.prg $out
+          '';
+        };
+        basic-build = name: pkgs.stdenv.mkDerivation {
+          name = "${name}-basic";
+          version = "0.0.1";
+          src = ./${name};
+          buildPhase = ''
+            runHook preBuild
+            find . -name "*.bas" -execdir sh -c '${pkgs.vice}/bin/petcat -w2 -o $(basename $1 .bas).prg -- $1' sh {} \;
+            runHook postBuild
+          '';
+          installPhase = ''
+            mkdir -p $out
+            cp *.prg $out
+          '';
+        };
+        binary-build = name: pkgs.stdenv.mkDerivation {
+          name = "${name}-bins";
+          version = "0.0.1";
+          src = ./${name};
+          installPhase = ''
+            mkdir -p $out
+            cp *.bin $out
+          '';
+        };
+        disk-build = paths: name: pkgs.stdenv.mkDerivation {
+          name = "${name}-d64";
+          version = "0.0.1";
+          src = pkgs.symlinkJoin {
+            inherit name;
+            inherit paths;
           };
+          buildPhase = ''
+            ${pkgs.vice}/bin/c1541 -format ${name},0 d64 ${name}.d64
+            find . -name "*.prg" -execdir sh -c '${pkgs.vice}/bin/c1541 -attach ${name}.d64 -write "$1" "$(basename "$1" .prg)"' sh {} \;
+            find . -name "*.seq" -execdir sh -c '${pkgs.vice}/bin/c1541 -attach ${name}.d64 -write "$1" "$(basename "$1" .seq)"' sh {} \;
+            find . -name "*.bin" -execdir sh -c '${pkgs.vice}/bin/c1541 -attach ${name}.d64 -write "$1" "$(basename "$1" .bin)"' sh {} \;
+          '';
+          installPhase = ''
+            mkdir -p $out
+            cp ${name}.d64 $out
+          '';
+        };
         demos = {
           kneedeepin3d = pkgs.stdenv.mkDerivation {
             name = "kneedeepin3d";
             version = "0.0.1";
             src = ./kneedeepin3d/.;
-            
             buildPhase = ''
               runHook preBuild
               ${llvm-mos-sdk}/bin/mos-c64-clang -Os main.c gllm/gllm.c -o kneedeepin3d.prg
@@ -65,6 +103,7 @@
           random = acme-build "random";
           sidplayer = acme-build "sidplayer";
           kneedeepin2d = acme-build "kneedeepin2d";
+          charsets = disk-build [(acme-build "charsets") (basic-build "charsets") (binary-build "charsets")] "charsets";
         };
       in
       {
@@ -75,9 +114,10 @@
           };
         }
         // demos;
-        apps = builtins.mapAttrs (name: drv: {
+        apps = builtins.mapAttrs (name: drv: 
+        {
             type = "app";
-            program = "${pkgs.writeShellScript "run-${name}" ''exec ${pkgs.vice}/bin/x64sc ${drv}/${name}.prg "$@"''}";
+            program = "${pkgs.writeShellScript "run-${name}" ''exec ${pkgs.vice}/bin/x64sc $(find ${drv}/ -name "${name}.prg" -o -name "${name}.d64" | head -1) "$@"''}";
           }) demos;
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [

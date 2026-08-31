@@ -37,7 +37,7 @@ cia2ControlRegister = $dd0d
 
 ;Kernel
 kernelrqVector = $0314 ;$0314-0315
-kernelTextColor = $286
+kernelTextColor = $0286
 kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
 ;Program

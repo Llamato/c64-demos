@@ -13,13 +13,13 @@ next_line:
 cia1ControlRegister = $dc0d
 cia2ControlRegister = $dd0d
 
-;Vic Registers
+;VIC Registers
 vicInterruptControlRegister = $d011
 vicRasterInterruptScanlineSelectRegister = $d012
 vicControlRegister = $d01a
 vicBorderColorRegister = $d020
 
-;Sid Registers
+;SID Registers
 sidVoice3ValueRegister = $d41b
 
 ;Kernel Registers
