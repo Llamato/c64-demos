@@ -10,7 +10,7 @@ next_line:
     !16 $0000       ; End of BASIC program
 
 ;Assembly options
-useKernelPrintRotines = 1
+visualize = 1
 
 ;CIA Registers
 cia1ControlRegister = $dc0d
@@ -22,16 +22,20 @@ cia1ddrB = $dc03
 cia1interruptControlRegister = $dc0d
 
 ;VIC Registers
-screen = $400 ;4*256 = 1024 = $400
-vicInterruptControlRegister = $d011
+vicScreenControl1Register = $d011
 vicRasterInterruptScanlineSelectRegister = $d012
+vicScreenControl2Register = $d016
+vicMemoryPointersRegister = $d018
 vicAcknowlageInterruptRegister = $d019
+vicInterruptControlRegister = $d01a
 vicBorderColorRegister = $d020
 vicBackgroundColorRegister = $d021
 vicScreenAndChargenMemoryPointersRegister = $d018
 colorRam = $d800 ;d800-dbe7 = 1000 * 4 bit (lower byte only)
 
 ;Hardware constants
+pageSize = 256
+vicBitmapSize = 8000
 vicColorBlack = 0
 vicColorWhite = 1
 vicColorRed = 2
@@ -51,11 +55,14 @@ screenColumns = 40
 screenRows = 25
 
 ;Kernel registers
+kernelLastUsedIoId = $ba
 kernelSaveDataStartPointer = $fb ;$fb:$fc
 kernelIrqVector = $0314 ;$0314-0315
 
 ;Kernel rotines
+kernelIrqHandler = $ea31
 kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
+kernelKeyboardScanRoutine = $ea87
 kernelGetChar = $ffcf
 kernelCharOut = $ffd2
 kernelSetLfs = $ffba
@@ -65,6 +72,10 @@ kernelSave = $ffd8
 
 ;Basic rotines
 basicPlot = $fff0
+basicCls = $e544
+
+;Basic constants
+basicBytesFree = 38911
 
 ;General purpose registers
 rExtra = $02
@@ -73,17 +84,25 @@ r1 = $fc
 r2 = $fd
 r3 = $fe
 
-;Program memory
-userInputBuffer = $c000
-bitmapStart = $2000
-
 ;Program constants
 commandPromptColumn = 0
 commandPromptRow = 20
-charsetSize = 4096
+charSize = 8
+charsetSize = 2048
+charromSize = 4096
+charsetPages = 32 ;32=8192/256
+charsPerCharset = 256
 diskFilenameMaxLength = 16
 diskFileNameExtensionLength = 3
 filenameSize = diskFilenameMaxLength + diskFileNameExtensionLength +1 ;+1 traditionally for null terminator byte
+
+;Program memory
+userInputBuffer = $c000
+bitmapStart = $2000
+textScreen = $400 ;4*256 = 1024 = $400
+inputCharset1start = bitmapStart
+inputCharset2start = bitmapStart+charromSize
+outputCharsetStart = bitmapStart+charromSize*2
 
 ;Macros
 !macro poke .addr, .value {
@@ -185,24 +204,39 @@ filenameSize = diskFilenameMaxLength + diskFileNameExtensionLength +1 ;+1 tradit
     bne .copyByte
 }
 
-;output: X = length of .str
-!macro strlen .str {
-    ldx #0
-    lda .str, x
-    beq .done
+!macro fillMemoryPages .start, .pageCount, .value {
+    ldx #0 ;currentByte
+    lda #.value
+.loop
+    !for .currentPage, 0, .pageCount {
+        sta .start+pageSize*.currentPage, x
+    }
     inx
-.done
+    bne .loop
 }
 
 !macro copyMemoryPages .source, .destination, .pageCount {
     ldx #0 ;currentByte
 .loop
     !for .currentPage, 0, .pageCount {
-        lda .source+256*.currentPage, x
-        sta .source+256*.currentPage, x
+        lda .source+pageSize*.currentPage, x
+        sta .source+pageSize*.currentPage, x
     }
     inx
-    bne .loop
+    beq .done
+    jmp .loop
+.done
+}
+
+;output: X = length of .str
+!macro strlen .str {
+    ldx #0
+loop:
+    lda .str, x
+    beq .done
+    inx
+    jmp loop
+.done
 }
 
 ;output: X = index of first differing character, carry set if strings match. carry clear if strings differ
@@ -292,22 +326,6 @@ filenameSize = diskFilenameMaxLength + diskFileNameExtensionLength +1 ;+1 tradit
     +input .output
 }
 
-!macro gprint .str, .column, .row {
-    ldx #0
-.printchar
-    lda .str, x
-    beq .done
-    sta screen+.row*screenColumns+.column, x
-    inx
-    jmp .printchar
-.done
-}
-
-!macro gprompt .str, .column, .row, .output {
-    +gprint .str, .column, .row
-    +input .output
-}
-
 !macro loadFileFromDisk .logicalFileNumber, .deviceNumber, .filenamePointer, .filenameLengthRegister, .xyOrPrgAddr {
     !if .xyOrPrgAddr == 0 {
         +phx
@@ -315,7 +333,7 @@ filenameSize = diskFilenameMaxLength + diskFileNameExtensionLength +1 ;+1 tradit
     }
     lda #.logicalFileNumber
     !if .deviceNumber == 0 {
-        ldx $ba ;last used drive id
+        ldx kernelLastUsedIoId
     } else {
         ldx #.deviceNumber
     }
@@ -335,7 +353,7 @@ filenameSize = diskFilenameMaxLength + diskFileNameExtensionLength +1 ;+1 tradit
 !macro saveFileToDisk .logicalFileNumber, .deviceNumber, .filenamePointer, .filenameLengthRegister, .dataStart, .dataEnd {
     lda #.logicalFileNumber
     !if .deviceNumber == 0 {
-        ldx $ba ;last used drive id
+        ldx kernelLastUsedIoId
     } 
     !else {
         ldx #.deviceNumber
@@ -352,89 +370,94 @@ filenameSize = diskFilenameMaxLength + diskFileNameExtensionLength +1 ;+1 tradit
 }
 
 !macro setCursorPosition .column, .row {
-    ldx #.column
-    ldy #.row
+    clc
+    ldx #.row
+    ldy #.column
     jsr basicPlot
 }
 
 !macro setTextDisplayMode {
-    +poke $dd00, $97
-    +poke $d011, $1b
-    +poke $d016, $c8
-    +poke $d018, $15
-    +poke $d021, $f6
+    +poke vicScreenControl1Register, $1b
+    +poke vicScreenControl2Register, $c8
+    +poke vicMemoryPointersRegister, $15
 }
 
 !macro setBitmapDisplayMode {
-;Set VIC bank to $C000-$FFFF (bank 3)
-    lda $dd00
-    and #$fc
-    ora #$03
-    sta $dd00
-    +poke $d011, (1<<5) ;Bitmap mode on
-    +poke $d016, (1<<4) ;Multicolor mode off
-    +poke $d018, (1<<3) ;Set screen position to 0x2000
-    +poke $d021, 0
+    +poke vicScreenControl1Register, $1b | (1<<5) ;Bitmap mode on
+    +poke vicScreenControl2Register, $c8 & ((1<<4) xor $ff) 
+    +poke vicMemoryPointersRegister, (1<<3) | (1<<4) ;Set bitmap position to 0x2000 and keep screen at $0400
 }
-
-;Set colors
-;+poke vicBorderColorRegister, vicColorLightGreen
-;+poke vicBackgroundColorRegister, vicColorBlack
-
-;Setup raster interrupt
-;sei ;Disable interrupts globally
-;disable CIA's
-;lda #$7f ;everything except highest bit
-;sta cia1ControlRegister
-;sta cia2ControlRegister
-
-;Set rasterline for interrupt to fire on
-;lda #$7f
-;and vicInterruptControlRegister
-;sta vicInterruptControlRegister
-;+poke vicRasterInterruptScanlineSelectRegister, 50
-
-;Set IRQ handler pointer to ISR
-;+ldi16 kernelIrqVector, ISR200
-
-;Renable interrupt
-;cli
 
 ;Clear input buffers
-+fillMemoryBlock userInputBuffer, filenameSize*2, $00
++fillMemoryBlock userInputBuffer, filenameSize*4, $00
+
+;Clear text screen
+jsr basicCls ;cls = clear last screen
+
+;Clear bitmap memory
++fillMemoryPages bitmapStart, charsetPages, $00 ;TODO: Replace with clear memory Chunks
+
+;Reset cursor
++setCursorPosition commandPromptColumn, commandPromptRow
 
 ;Prompt for charsets
-!if useKernelPrintRotines == 1 {
-    +setCursorPosition commandPromptColumn, commandPromptRow
-    +kprintln inputCharset1promptText
-    +kprompt filenamePromptText, userInputBuffer
-} else {
-    +gprint inputCharset1promptText, commandPromptColumn, commandPromptRow
-    +gprompt filenamePromptText, commandPromptColumn, commandPromptRow+1, userInputBuffer
-}
++setCursorPosition commandPromptColumn, commandPromptRow
++kprintln inputCharset1promptText
++kprompt filenamePromptText, userInputBuffer
++kcrlf
++kprompt charsetSelectionPromptText, userInputBuffer+filenameSize
++kcrlf
 
-;Load charset 1
+;Load first charrom
 +strlen userInputBuffer
 stx r0
-+ldi16xy inputCharset1start
++ldi16xy inputCharset1start-6 ;-6 = char alignment offset
 +loadFileFromDisk 1, 0, userInputBuffer, r0, 0
+
+;Load first or second charset?
+cmp #'1'
+bne replaceCharst
+jmp skipCharsetReplace
+
+replaceCharst:
++copyMemoryPages inputCharset1start+charsetSize, inputCharset1start, charsetPages
+
+skipCharsetReplace:
+!if visualize == 1 {
+    sei ;Disable interrupts globally
+
+    ;Set colors
+    +fillMemoryBlock textScreen, 0, vicColorWhite
+    +fillMemoryBlock textScreen+pageSize, 0, vicColorGreen
+    ;+fillMemoryBlock textScreen+pageSize*2, 96, vicColorBrown
+
+    ;Disable CIA's
+    lda #$7f ;everything except highest bit
+    sta cia1ControlRegister
+    ;sta cia2ControlRegister
+
+    ;Set rasterline for interrupt to fire on
+    lda vicInterruptControlRegister
+    ora #$01
+    ora vicInterruptControlRegister
+    sta vicInterruptControlRegister
+    +poke vicRasterInterruptScanlineSelectRegister, 50
+
+    ;Set IRQ handler pointer to ISR
+    +ldi16 kernelIrqVector, ISR200
+
+    cli ;Renable interrupt
+}
 
 mainloop:
 ;Clear user input buffers
-+fillMemoryBlock userInputBuffer, filenameSize*2, $00
++fillMemoryBlock userInputBuffer, filenameSize, $00
 
 ;Let user input ranges to take from each charset
-!if useKernelPrintRotines == 1 {
-    +kprompt takeFromCharset1promptText, userInputBuffer
-} else {
-    +gprompt takeFromCharset1promptText, commandPromptColumn, commandPromptRow+2, userInputBuffer
-}
++kprompt takeFromCharset1promptText, userInputBuffer
 +strtoi userInputBuffer, r0
-!if useKernelPrintRotines == 1 {
-    +kprompt untilPromptText, userInputBuffer+filenameSize
-} else {
-    +gprompt untilPromptText, commandPromptColumn, commandPromptRow+3, userInputBuffer+filenameSize
-}
++kprompt untilPromptText, userInputBuffer+filenameSize
++kcrlf
 +strtoi userInputBuffer+filenameSize, r2
 
 ;Transfer range specified by user into destination charset
@@ -448,15 +471,19 @@ sta rExtra ;Calculate the range length in characters from range start and range 
 +poke r3, 0 ;Clear out upper byte of output charset address buffer
 +lsl16 r2, 3 ;Multiply end offset in characters by 8=(2^3) bytes per character to starting byte of last character
 +add16i r2, outputCharsetStart ;Add start address to offset. Forming the full address of the selected region in charset 2
-+copyMemoryChunks r0, r2, rExtra, 8 ;Copy the selected ranges from charset 1 and 2 into charset 3
++copyMemoryChunks r0, r2, rExtra, charSize ;Copy the selected ranges from charset 1 and 2 into charset 3
 
-;Update charset display (optional)
-+copyMemoryPages inputCharset1start, bitmapStart, 8
-+copyMemoryPages inputCharset2start, bitmapStart+screenColumns*8*7, 8
-+copyMemoryPages outputCharsetStart, bitmapStart+screenColumns+8*7*2, 8
+;Update charset display
+!if visualize = 1 {
+    +copyMemoryPages inputCharset1start, bitmapStart, charSize
+    +copyMemoryPages inputCharset2start, bitmapStart+screenColumns*8*7, charSize
+    +copyMemoryPages outputCharsetStart, bitmapStart+screenColumns+8*7*2, charSize
+}
+
+;Clear screen
+jsr basicCls ;cls = clear last screen
 
 ;Reset cursor
-clc
 +setCursorPosition commandPromptColumn, commandPromptRow
 jmp mainloop
 
@@ -465,25 +492,25 @@ rts
 
 ISR50:
 sei
-inc vicAcknowlageInterruptRegister
-dec vicBorderColorRegister
+lda #$01
+ora vicAcknowlageInterruptRegister
+sta vicAcknowlageInterruptRegister
 +setBitmapDisplayMode
-inc vicBackgroundColorRegister
 +ldi16 kernelIrqVector, ISR200
 +poke vicRasterInterruptScanlineSelectRegister, 200
 cli
-jmp kernelRestoreRegistersAndReturnFromInterruptRoutine
+jmp kernelIrqHandler
 
 ISR200:
 sei
-inc vicAcknowlageInterruptRegister
-inc vicBorderColorRegister
+lda #$01
+ora vicAcknowlageInterruptRegister
+sta vicAcknowlageInterruptRegister
 +setTextDisplayMode
-dec vicBackgroundColorRegister
 +ldi16 kernelIrqVector, ISR50
 +poke vicRasterInterruptScanlineSelectRegister, 50
 cli
-jmp kernelRestoreRegistersAndReturnFromInterruptRoutine
+jmp kernelIrqHandler
 
 inputCharset1promptText:
 !pet "load input charset 1: ", 0
@@ -506,14 +533,8 @@ drivePromptText:
 filenamePromptText:
 !pet "filename: ", 0
 
+charsetSelectionPromptText:
+!pet "charset in rom (1 or 2): ", 0
+
 doneText:
 !pet "done", 0
-
-inputCharset1start:
-*=*+charsetSize
-
-inputCharset2start:
-*=*+charsetSize
-
-outputCharsetStart:
-*=*+charsetSize
