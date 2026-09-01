@@ -93,6 +93,7 @@ commandPromptRow = 20
 charSize = 8
 charsetSize = 2048
 charromSize = 4096
+bitmapSize = 8192
 charsetPages = 8 ;8=256/8
 charsPerCharset = 256
 diskFilenameMaxLength = 16
@@ -106,8 +107,8 @@ textScreen = $400 ;4*256 = 1024 = $400
 inputCharset1start = bitmapStart
 inputCharset2start = bitmapStart+charsetSize
 outputCharsetStart = bitmapStart+charsetSize*2
-inputCharrom1loadinAddress = bitmapStart+charromSize
-inputCharrom2loadinAddress = bitmapStart+charromSize*2
+inputCharrom1loadinAddress = bitmapStart+bitmapSize
+inputCharrom2loadinAddress = bitmapStart+bitmapSize*2
 
 ;Macros
 !macro poke .addr, .value {
@@ -165,8 +166,10 @@ inputCharrom2loadinAddress = bitmapStart+charromSize*2
 !macro add16i .addr, .value {
     clc
     lda #<.value
+    adc .addr
     sta .addr
     lda #>.value
+    adc .addr+1
     sta .addr+1
 }
 
@@ -178,6 +181,7 @@ inputCharrom2loadinAddress = bitmapStart+charromSize*2
     asl ;A=.addr*2
     asl ;A=.addr*4
     asl ;A=.addr*8
+    clc
     adc rExtra ;A=(.addr*8)+(.addr*2)=.addr*10
 }
 
@@ -203,6 +207,7 @@ inputCharrom2loadinAddress = bitmapStart+charromSize*2
     jmp .copyByte
 .nextChunk
     +add16i .sourcePointer, .chunkSize
+    +add16i .destinationPointer, .chunkSize
     ldy #0
     inx
     cpx .chunkCountPointer
@@ -277,14 +282,15 @@ inputCharrom2loadinAddress = bitmapStart+charromSize*2
     lda .str, x
     beq .done
     sec
-    sbc #'0'
+    sbc #'0'          ; A = digit value (0-9)
+    tay               ; stash digit
+    +mul10 .output    ; A = .output * 10  (using OLD output)
+    sta .output
+    tya
     clc
-    adc #.output
+    adc .output        ; add the digit to output*10
     sta .output
     inx
-    beq .done
-    +mul10 .output
-    sta .output
     jmp .loop
 .done
 }
@@ -401,6 +407,33 @@ inputCharrom2loadinAddress = bitmapStart+charromSize*2
     +poke vicMemoryPointersRegister, (1<<3) | (1<<4) ;Set bitmap position to 0x2000 and keep screen at $0400
 }
 
+!macro copyFromCharset .inputCharset, .outputCharset {
+    lda r2
+    sec
+    sbc r0
+    sta rExtra ;Calculate the range length in characters from range start and range end specified by user
+
+    +lsl16 r0, 3 ;Multiply start offset in characters by 8=(2^3) bytes per character to get starting byte
+    clc
+    lda r0
+    adc #<.inputCharset
+    sta r0
+    lda r0+1
+    adc #>.inputCharset
+    sta r0+1 ;r0 = inputCharset + (from*8)
+
+    +lsl16 r2, 3 ;Multiply end offset in characters by 8=(2^3) bytes per character to starting byte of last character
+    clc
+    lda r2
+    adc #<.outputCharset
+    sta r2
+    lda r2+1
+    adc #>.outputCharset
+    sta r2+1 ;r2 = outputCharset + (until*8)
+
+    +copyMemoryChunks r0, r2, rExtra, charSize ;Copy the selected ranges from charset 1 and 2 into charset 3
+}
+
 ;Clear input buffers
 +fillMemoryBlock userInputBuffer, filenameSize*4, $00
 
@@ -498,34 +531,30 @@ mainloop:
     +fillMemoryBlock textScreen+pageSize*2, 0, vicColorViolet
 }
 ;Clear user input buffers
-+fillMemoryBlock userInputBuffer, filenameSize, $00
++fillMemoryBlock userInputBuffer, filenameSize*2, $00
 
-;Let user input ranges to take from each charset
+;Let user input ranges to take from first charset
 +kprompt takeFromCharset1promptText, userInputBuffer
 +strtoi userInputBuffer, r0
 +kprompt untilPromptText, userInputBuffer+filenameSize
 +kcrlf
 +strtoi userInputBuffer+filenameSize, r2
 
-;Transfer range specified by user into destination charset
-lda r2
-sec
-sbc r0
-sta rExtra ;Calculate the range length in characters from range start and range end specified by user
-+poke r1, 0 ;Clear out upper byte of input charset address buffer
-+lsl16 r0, 3 ;Multiply start offset in characters by 8=(2^3) bytes per character to get starting byte
-+add16i r0, inputCharset1start ;Add start address to offset. Forming the full address of the selected region in charset 1
-+poke r3, 0 ;Clear out upper byte of output charset address buffer
-+lsl16 r2, 3 ;Multiply end offset in characters by 8=(2^3) bytes per character to starting byte of last character
-+add16i r2, outputCharsetStart ;Add start address to offset. Forming the full address of the selected region in charset 2
-+copyMemoryChunks r0, r2, rExtra, charSize ;Copy the selected ranges from charset 1 and 2 into charset 3
+;Transfer selected range into destination charset
++copyFromCharset inputCharset1start, outputCharsetStart
 
-;Update charset display
-!if visualize = 1 {
-    +copyMemoryPages inputCharset1start, bitmapStart, charSize
-    +copyMemoryPages inputCharset2start, bitmapStart+screenColumns*8*7, charSize
-    +copyMemoryPages outputCharsetStart, bitmapStart+screenColumns+8*7*2, charSize
-}
+;Clear user input buffers
++fillMemoryBlock userInputBuffer, filenameSize*2, $00
+
+;Let user input ranges to take from second charset
++kprompt takeFromCharset2promptText, userInputBuffer
++strtoi userInputBuffer, r0
++kprompt untilPromptText, userInputBuffer+filenameSize
++kcrlf
++strtoi userInputBuffer+filenameSize, r2
+
+;Transfer selected range into destination charset
++copyFromCharset inputCharset2start, outputCharsetStart
 
 ;Clear screen
 jsr basicCls ;cls = clear last screen
