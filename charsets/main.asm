@@ -106,6 +106,8 @@ textScreen = $400 ;4*256 = 1024 = $400
 inputCharset1start = bitmapStart
 inputCharset2start = bitmapStart+charsetSize
 outputCharsetStart = bitmapStart+charsetSize*2
+inputCharrom1loadinAddress = bitmapStart+charromSize
+inputCharrom2loadinAddress = bitmapStart+charromSize*2
 
 ;Macros
 !macro poke .addr, .value {
@@ -223,7 +225,7 @@ outputCharsetStart = bitmapStart+charsetSize*2
 .loop
     !for .currentPage, 0, .pageCount {
         lda .source+pageSize*.currentPage, x
-        sta .source+pageSize*.currentPage, x
+        sta .destination+pageSize*.currentPage, x
     }
     inx
     beq .done
@@ -431,13 +433,13 @@ jsr basicCls
 ;Load first charrom
 +strlen userInputBuffer
 stx r0
-+ldi16xy inputCharset1start+2
++ldi16xy inputCharrom1loadinAddress+2
 +loadFileFromDisk 1, 0, userInputBuffer, r0, 0
 
 ;Load second charrom
 +strlen userInputBuffer+filenameSize*2
 stx r0
-+ldi16xy inputCharset2start+2
++ldi16xy inputCharrom2loadinAddress+2
 +loadFileFromDisk 1, 0, userInputBuffer+filenameSize*2, r0, 0
 
 ;Load first or second charset from first charrom?
@@ -448,17 +450,23 @@ cmp #'1'
 bne replaceFirstCharst
 jmp skipFirstCharsetReplace
 replaceFirstCharst:
-+copyMemoryPages inputCharset1start+charsetSize, inputCharset1start, charsetPages
++copyMemoryPages inputCharrom1loadinAddress+charsetSize, bitmapStart, charsetPages
+jmp selectSecondCharset
 skipFirstCharsetReplace:
++copyMemoryPages inputCharrom1loadinAddress, bitmapStart, charsetPages
+
+selectSecondCharset:
 lda userInputBuffer+filenameSize*3
 cmp #'1'
 bne replaceSecondCharset
 jmp skipSecondCharsetReplace
 replaceSecondCharset:
-+copyMemoryPages inputCharset2start+charsetSize, inputCharset2start, charsetPages
++copyMemoryPages inputCharrom2loadinAddress+charsetSize, bitmapStart+charsetSize, charsetPages
+jmp clearOutputCharsetBitmap
 skipSecondCharsetReplace:
-+fillMemoryPages inputCharset2start+charsetSize, charsetPages, $00
-;Clear output charset memory
++copyMemoryPages inputCharrom2loadinAddress, bitmapStart+charsetSize, charsetPages
+
+clearOutputCharsetBitmap:
 +fillMemoryPages outputCharsetStart, charsetPages, $00
 
 !if visualize == 1 {
@@ -487,7 +495,7 @@ mainloop:
     ;Set colors
     +fillMemoryBlock textScreen, 0, vicColorWhite
     +fillMemoryBlock textScreen+pageSize, 0, vicColorGreen
-    ;+fillMemoryBlock textScreen+pageSize*2, 96, vicColorBrown
+    +fillMemoryBlock textScreen+pageSize*2, 0, vicColorViolet
 }
 ;Clear user input buffers
 +fillMemoryBlock userInputBuffer, filenameSize, $00
