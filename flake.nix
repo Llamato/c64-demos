@@ -64,13 +64,10 @@
             cp *.bin $out
           '';
         };
-        disk-build = paths: name: pkgs.stdenv.mkDerivation {
+        disk-build = paths: name: pkgs.symlinkJoin {
+          inherit paths;
           name = "${name}-d64";
           version = "0.0.1";
-          src = pkgs.symlinkJoin {
-            inherit name;
-            inherit paths;
-          };
           buildPhase = ''
             ${pkgs.vice}/bin/c1541 -format ${name},0 d64 ${name}.d64
             find . -name "*.prg" -a \! \( -name "*.bas.*" \) -execdir sh -c '${pkgs.vice}/bin/c1541 -attach "${name}.d64" -write "$1" "$(basename "$1" .prg)"' sh {} \;
