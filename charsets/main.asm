@@ -35,6 +35,7 @@ colorRam = $d800 ;d800-dbe7 = 1000 * 4 bit (lower byte only)
 
 ;Hardware constants
 pageSize = 256
+bitmapPages = 32 ;32=8192/256
 vicBitmapSize = 8000
 vicColorBlack = 0
 vicColorWhite = 1
@@ -90,7 +91,7 @@ commandPromptRow = 20
 charSize = 8
 charsetSize = 2048
 charromSize = 4096
-charsetPages = 32 ;32=8192/256
+charsetPages = 8 ;8=256/8
 charsPerCharset = 256
 diskFilenameMaxLength = 16
 diskFileNameExtensionLength = 3
@@ -297,10 +298,18 @@ loop:
 !macro kcrlf {
     sec ;calling basicPlot while carry bit is set means read cursor position into X and Y
     jsr basicPlot
+    cpx #screenRows-1
+    beq .scrollScreen
     inx ;move to the next row
     ldy #0 ;move to the beginning of that row
     clc; calling basicPlot while carry bit is clear means move cursor to x:y position
     jsr basicPlot
+    jmp .done
+.scrollScreen
+    ldy #0
+    clc
+    jsr basicPlot
+.done
 }
 
 !macro kprintln .str {
@@ -395,7 +404,7 @@ loop:
 jsr basicCls ;cls = clear last screen
 
 ;Clear bitmap memory
-+fillMemoryPages bitmapStart, charsetPages, $00 ;TODO: Replace with clear memory Chunks
++fillMemoryPages bitmapStart, bitmapPages, $00
 
 ;Reset cursor
 +setCursorPosition commandPromptColumn, commandPromptRow
@@ -426,11 +435,6 @@ skipCharsetReplace:
 !if visualize == 1 {
     sei ;Disable interrupts globally
 
-    ;Set colors
-    +fillMemoryBlock textScreen, 0, vicColorWhite
-    +fillMemoryBlock textScreen+pageSize, 0, vicColorGreen
-    ;+fillMemoryBlock textScreen+pageSize*2, 96, vicColorBrown
-
     ;Disable CIA's
     lda #$7f ;everything except highest bit
     sta cia1ControlRegister
@@ -450,6 +454,12 @@ skipCharsetReplace:
 }
 
 mainloop:
+!if visualize = 1 {
+    ;Set colors
+    +fillMemoryBlock textScreen, 0, vicColorWhite
+    +fillMemoryBlock textScreen+pageSize, 0, vicColorGreen
+    ;+fillMemoryBlock textScreen+pageSize*2, 96, vicColorBrown
+}
 ;Clear user input buffers
 +fillMemoryBlock userInputBuffer, filenameSize, $00
 
