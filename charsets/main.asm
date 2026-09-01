@@ -86,6 +86,8 @@ r2 = $fd
 r3 = $fe
 
 ;Program constants
+bitmapRasterline = 50
+textRasterline = 200
 commandPromptColumn = 0
 commandPromptRow = 20
 charSize = 8
@@ -445,10 +447,10 @@ skipCharsetReplace:
     ora #$01
     ora vicInterruptControlRegister
     sta vicInterruptControlRegister
-    +poke vicRasterInterruptScanlineSelectRegister, 50
+    +poke vicRasterInterruptScanlineSelectRegister, bitmapRasterline
 
     ;Set IRQ handler pointer to ISR
-    +ldi16 kernelIrqVector, ISR200
+    +ldi16 kernelIrqVector, ISRtext
 
     cli ;Renable interrupt
 }
@@ -500,25 +502,25 @@ jmp mainloop
 ;Write result charset back to disk on user entering "done"
 rts
 
-ISR50:
+ISRbitmap:
 sei
 lda #$01
 ora vicAcknowlageInterruptRegister
 sta vicAcknowlageInterruptRegister
 +setBitmapDisplayMode
-+ldi16 kernelIrqVector, ISR200
-+poke vicRasterInterruptScanlineSelectRegister, 200
++ldi16 kernelIrqVector, ISRtext
++poke vicRasterInterruptScanlineSelectRegister, textRasterline
 cli
 jmp kernelIrqHandler
 
-ISR200:
+ISRtext:
 sei
 lda #$01
 ora vicAcknowlageInterruptRegister
 sta vicAcknowlageInterruptRegister
 +setTextDisplayMode
-+ldi16 kernelIrqVector, ISR50
-+poke vicRasterInterruptScanlineSelectRegister, 50
++ldi16 kernelIrqVector, ISRbitmap
++poke vicRasterInterruptScanlineSelectRegister, bitmapRasterline
 cli
 jmp kernelIrqHandler
 
