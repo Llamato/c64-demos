@@ -87,7 +87,7 @@ r3 = $fe
 
 ;Program constants
 bitmapRasterline = 50
-textRasterline = 200
+textRasterline = 210
 commandPromptColumn = 0
 commandPromptRow = 20
 charSize = 8
@@ -104,8 +104,8 @@ userInputBuffer = $c000
 bitmapStart = $2000
 textScreen = $400 ;4*256 = 1024 = $400
 inputCharset1start = bitmapStart
-inputCharset2start = bitmapStart+charromSize
-outputCharsetStart = bitmapStart+charromSize*2
+inputCharset2start = bitmapStart+charsetSize
+outputCharsetStart = bitmapStart+charsetSize*2
 
 ;Macros
 !macro poke .addr, .value {
@@ -234,18 +234,18 @@ outputCharsetStart = bitmapStart+charromSize*2
 ;output: X = length of .str
 !macro strlen .str {
     ldx #0
-loop:
+.loop:
     lda .str, x
     beq .done
     inx
-    jmp loop
+    jmp .loop
 .done
 }
 
 ;output: X = index of first differing character, carry set if strings match. carry clear if strings differ
 !macro strcmp .str1, .str2 {
     ldx #0
-.loop
+.loo
     lda .str1, x
     cmp #0
     beq .loopend
@@ -411,12 +411,21 @@ jsr basicCls ;cls = clear last screen
 ;Reset cursor
 +setCursorPosition commandPromptColumn, commandPromptRow
 
-;Prompt for charsets
+;Prompt for first charset
 +setCursorPosition commandPromptColumn, commandPromptRow
 +kprintln inputCharset1promptText
 +kprompt filenamePromptText, userInputBuffer
 +kcrlf
 +kprompt charsetSelectionPromptText, userInputBuffer+filenameSize
++kcrlf
+
+;Prompt for second charset
+jsr basicCls
++setCursorPosition commandPromptColumn, commandPromptRow
++kprintln inputCharset2promptText
++kprompt filenamePromptText, userInputBuffer+filenameSize*2
++kcrlf
++kprompt charsetSelectionPromptText, userInputBuffer+filenameSize*3
 +kcrlf
 
 ;Load first charrom
@@ -425,15 +434,33 @@ stx r0
 +ldi16xy inputCharset1start+2
 +loadFileFromDisk 1, 0, userInputBuffer, r0, 0
 
-;Load first or second charset?
+;Load second charrom
++strlen userInputBuffer+filenameSize*2
+stx r0
++ldi16xy inputCharset2start+2
++loadFileFromDisk 1, 0, userInputBuffer+filenameSize*2, r0, 0
+
+;Load first or second charset from first charrom?
+;If we are to load the second charset then we have already done so, since the kernel routine can only load whole files.
+;Therefor we can load the second charset into the correct memory location by copying it over the first charset.
+lda userInputBuffer+filenameSize
 cmp #'1'
-bne replaceCharst
-jmp skipCharsetReplace
-
-replaceCharst:
+bne replaceFirstCharst
+jmp skipFirstCharsetReplace
+replaceFirstCharst:
 +copyMemoryPages inputCharset1start+charsetSize, inputCharset1start, charsetPages
+skipFirstCharsetReplace:
+lda userInputBuffer+filenameSize*3
+cmp #'1'
+bne replaceSecondCharset
+jmp skipSecondCharsetReplace
+replaceSecondCharset:
++copyMemoryPages inputCharset2start+charsetSize, inputCharset2start, charsetPages
+skipSecondCharsetReplace:
++fillMemoryPages inputCharset2start+charsetSize, charsetPages, $00
+;Clear output charset memory
++fillMemoryPages outputCharsetStart, charsetPages, $00
 
-skipCharsetReplace:
 !if visualize == 1 {
     sei ;Disable interrupts globally
 
