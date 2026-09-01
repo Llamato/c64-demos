@@ -420,7 +420,7 @@ jsr basicCls ;cls = clear last screen
 ;Load first charrom
 +strlen userInputBuffer
 stx r0
-+ldi16xy inputCharset1start-6 ;-6 = char alignment offset
++ldi16xy inputCharset1start+2
 +loadFileFromDisk 1, 0, userInputBuffer, r0, 0
 
 ;Load first or second charset?
