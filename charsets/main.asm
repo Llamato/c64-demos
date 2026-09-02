@@ -573,11 +573,12 @@ jsr basicCls ;cls = clear last screen
 ;16 bit compare between currentOutputCharacterOffset and charsetSize. If  charsetSize < currentOutputCharacterOffset then goto checkForSaveCommand else goto saveOutputCharsetToDisk
 lda currentOutputCharacterOffset+1
 cmp #>charsetSize
-bcc checkForSaveCommand
+bcc checkForSaveCommand      ; high byte less -> definitely not full, continue
+bne saveOutputCharsetToDisk  ; high byte greater (not equal, not less) -> definitely full
 lda currentOutputCharacterOffset
-cmp #<charromSize
-bcc checkForSaveCommand
-jmp saveOutputCharsetToDisk
+cmp #<charsetSize
+bcc checkForSaveCommand      ; high bytes equal, low byte less -> not full
+jmp saveOutputCharsetToDisk   ; or just fall through / jsr, depending on layout
 
 checkForSaveCommand:
 
@@ -589,7 +590,7 @@ saveOutputCharsetToDisk:
 +fillMemoryBlock userInputBuffer, filenameSize, $00
 
 ;Prompt user for save file
-+kprompt toPromptText, userInputBuffer
++kprompt saveToPromptText, userInputBuffer
 +strlen userInputBuffer
 stx rExtra
 
@@ -695,8 +696,8 @@ charsetSelectionPromptText:
 saveText:
 !pet "save", 0
 
-toPromptText:
-!pet "to: ", 0
+saveToPromptText:
+!pet " save to: ", 0
 
 cia1InitialSate:
 !byte 0
