@@ -107,6 +107,7 @@ textScreen = $400 ;4*256 = 1024 = $400
 inputCharset1start = bitmapStart
 inputCharset2start = bitmapStart+charsetSize
 outputCharsetStart = bitmapStart+charsetSize*2
+outputCharsetEnd = outputCharsetStart+charsetSize
 inputCharrom1loadinAddress = bitmapStart+bitmapSize
 inputCharrom2loadinAddress = bitmapStart+bitmapSize*2
 
@@ -157,10 +158,20 @@ inputCharrom2loadinAddress = bitmapStart+bitmapSize*2
 }
 
 !macro lsl16 .result, .times {
-    !for .i, 0, .times {
+    !for .i, 1, .times {
         asl .result
         rol .result+1
     }
+}
+
+!macro add16 .accumulator, .additive {
+    clc
+    lda .accumulator
+    adc .additive
+    sta .accumulator
+    lda .accumulator+1
+    adc .additive+1
+    sta .accumulator+1
 }
 
 !macro add16i .addr, .value {
@@ -170,6 +181,26 @@ inputCharrom2loadinAddress = bitmapStart+bitmapSize*2
     sta .addr
     lda #>.value
     adc .addr+1
+    sta .addr+1
+}
+
+!macro sub16 .minuend, .subtrahend {
+    sec
+    lda .minuend
+    sbc .subtrahend
+    sta .minuend
+    lda .minuend+1
+    sbc .subtrahend+1
+    sta .minuend+1
+}
+
+!macro sub16i .addr, .value {
+    sec
+    lda .addr
+    sbc #<.value
+    sta .addr
+    lda .addr+1
+    sbc #>.value
     sta .addr+1
 }
 
@@ -407,33 +438,6 @@ inputCharrom2loadinAddress = bitmapStart+bitmapSize*2
     +poke vicMemoryPointersRegister, (1<<3) | (1<<4) ;Set bitmap position to 0x2000 and keep screen at $0400
 }
 
-!macro copyFromCharset .inputCharset, .outputCharset {
-    lda r2
-    sec
-    sbc r0
-    sta rExtra ;Calculate the range length in characters from range start and range end specified by user
-
-    +lsl16 r0, 3 ;Multiply start offset in characters by 8=(2^3) bytes per character to get starting byte
-    clc
-    lda r0
-    adc #<.inputCharset
-    sta r0
-    lda r0+1
-    adc #>.inputCharset
-    sta r0+1 ;r0 = inputCharset + (from*8)
-
-    +lsl16 r2, 3 ;Multiply end offset in characters by 8=(2^3) bytes per character to starting byte of last character
-    clc
-    lda r2
-    adc #<.outputCharset
-    sta r2
-    lda r2+1
-    adc #>.outputCharset
-    sta r2+1 ;r2 = outputCharset + (until*8)
-
-    +copyMemoryChunks r0, r2, rExtra, charSize ;Copy the selected ranges from charset 1 and 2 into charset 3
-}
-
 ;Clear input buffers
 +fillMemoryBlock userInputBuffer, filenameSize*4, $00
 
@@ -541,7 +545,8 @@ mainloop:
 +strtoi userInputBuffer+filenameSize, r2
 
 ;Transfer selected range into destination charset
-+copyFromCharset inputCharset1start, outputCharsetStart
+ldx #'0'
+jsr copyFromCharset
 
 ;Clear user input buffers
 +fillMemoryBlock userInputBuffer, filenameSize*2, $00
@@ -554,16 +559,19 @@ mainloop:
 +strtoi userInputBuffer+filenameSize, r2
 
 ;Transfer selected range into destination charset
-+copyFromCharset inputCharset2start, outputCharsetStart
+ldx #'1'
+jsr copyFromCharset
 
 ;Clear screen
 jsr basicCls ;cls = clear last screen
 
 ;Reset cursor
 +setCursorPosition commandPromptColumn, commandPromptRow
+
+;Write result charset back to disk on user entering "done" or currentOutputCharacterOffset>=charsetSize (meaning the output charset is full)
+
 jmp mainloop
 
-;Write result charset back to disk on user entering "done"
 rts
 
 ISRbitmap:
@@ -587,6 +595,38 @@ sta vicAcknowlageInterruptRegister
 +poke vicRasterInterruptScanlineSelectRegister, bitmapRasterline
 cli
 jmp kernelIrqHandler
+
+;r0 = From character
+;r2 = Until character
+;X = first or second charset as input ('1' or '0')
+copyFromCharset:
+pha
+lda r2
+sec
+sbc r0
+clc
+adc #1
+sta rExtra ;rExtra = r2-r0 = until-from = length of range
++poke r1, 0 ; free r0:r1 high byte for input charset address + from Character offset
++lsl16 r0, 3 ;r0:r1 = r0*2^3 = r0*8
+cpx #'1'
+beq inputIsSecondCharset
+inputIsFirstCharset:
++add16i r0, inputCharset1start ;r0:r1 = inputCharset1start+r0*8
+jmp copyChars
+inputIsSecondCharset:
++add16i r0, inputCharset2start ;r0:r1 = inputCharset2start+r0*8
+copyChars:
++ldi16 r2, outputCharsetStart
++add16 r2, currentOutputCharacterOffset ;r2:r3 = outputCharsetStart + currentOutputCharacterOffset
++copyMemoryChunks r0, r2, rExtra, charSize ;perform copy with r2:r3 becoming = outputCharsetStart + currentOutputCharacterOffset + bytesCopied
++sub16i r2, outputCharsetStart ;r2:r3 = currentOutputCharacterOffset + bytesCopied
++mov16 currentOutputCharacterOffset, r2 ;currentOutputCharacterOffset = currentOutputCharacterOffset + bytesCopied
+pla
+rts
+
+currentOutputCharacterOffset:
+!word 0
 
 inputCharset1promptText:
 !pet "load input charset 1: ", 0
@@ -612,5 +652,3 @@ filenamePromptText:
 charsetSelectionPromptText:
 !pet "charset in rom (1 or 2): ", 0
 
-doneText:
-!pet "done", 0
