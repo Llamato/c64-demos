@@ -60,6 +60,7 @@ kernelLastUsedIoId = $ba
 kernelSaveDataStartPointer = $fb ;$fb:$fc
 kernelIrqVector = $0314 ;$0314-0315
 
+
 ;Kernel rotines
 kernelIrqHandler = $ea31
 kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
@@ -404,8 +405,7 @@ inputCharrom2loadinAddress = bitmapStart+bitmapSize*2
     lda #.logicalFileNumber
     !if .deviceNumber == 0 {
         ldx kernelLastUsedIoId
-    } 
-    !else {
+    } else {
         ldx #.deviceNumber
     }
     ldy #1
@@ -413,8 +413,8 @@ inputCharrom2loadinAddress = bitmapStart+bitmapSize*2
     lda .filenameLengthRegister
     +ldi16xy .filenamePointer
     jsr kernelSetName
-    +mov16 .kernelSaveDataStartPointer, .dataStart
-    lda #.kernelSaveDataStartPointer
+    +mov16 kernelSaveDataStartPointer, .dataStart
+    lda #kernelSaveDataStartPointer
     +ldi16xy .dataEnd
     jsr kernelSave
 }
@@ -510,6 +510,7 @@ clearOutputCharsetBitmap:
     sei ;Disable interrupts globally
 
     ;Disable CIA's
+    +mov cia1InitialSate, cia1ControlRegister
     lda #$7f ;everything except highest bit
     sta cia1ControlRegister
     ;sta cia2ControlRegister
@@ -522,6 +523,7 @@ clearOutputCharsetBitmap:
     +poke vicRasterInterruptScanlineSelectRegister, bitmapRasterline
 
     ;Set IRQ handler pointer to ISR
+    +mov16 kernelIrqInitialState, kernelIrqVector
     +ldi16 kernelIrqVector, ISRtext
 
     cli ;Renable interrupt
@@ -568,11 +570,49 @@ jsr basicCls ;cls = clear last screen
 ;Reset cursor
 +setCursorPosition commandPromptColumn, commandPromptRow
 
-;Write result charset back to disk on user entering "done" or currentOutputCharacterOffset>=charsetSize (meaning the output charset is full)
+;16 bit compare between currentOutputCharacterOffset and charsetSize. If  charsetSize < currentOutputCharacterOffset then goto checkForSaveCommand else goto saveOutputCharsetToDisk
+lda currentOutputCharacterOffset+1
+cmp #>charsetSize
+bcc checkForSaveCommand
+lda currentOutputCharacterOffset
+cmp #<charromSize
+bcc checkForSaveCommand
+jmp saveOutputCharsetToDisk
 
+checkForSaveCommand:
+
+continue:
 jmp mainloop
 
-rts
+saveOutputCharsetToDisk:
+;Clear user input buffers
++fillMemoryBlock userInputBuffer, filenameSize, $00
+
+;Prompt user for save file
++kprompt toPromptText, userInputBuffer
++strlen userInputBuffer
+stx rExtra
+
+;Reset graphics modes and interrupt states for disk timing
+!if visualize = 1 {
+    sei ;Disable interrupts globally
+
+    ;Disable CIA's
+    +mov cia1ControlRegister, cia1InitialSate
+
+    ;Set rasterline for interrupt to fire on
+    lda vicInterruptControlRegister
+    and #$fe
+    sta vicInterruptControlRegister
+
+    ;Set IRQ handler pointer to ISR
+    +mov16 kernelIrqVector, kernelIrqInitialState
+
+    cli ;Renable interrupt
+}
+
++saveFileToDisk 2, 0, userInputBuffer, rExtra, outputCharsetStart, outputCharsetEnd
+rts ;End of program. Exit to basic
 
 ISRbitmap:
 sei
@@ -652,3 +692,14 @@ filenamePromptText:
 charsetSelectionPromptText:
 !pet "charset in rom (1 or 2): ", 0
 
+saveText:
+!pet "save", 0
+
+toPromptText:
+!pet "to: ", 0
+
+cia1InitialSate:
+!byte 0
+
+kernelIrqInitialState:
+!word 0
