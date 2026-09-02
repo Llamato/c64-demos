@@ -413,9 +413,9 @@ inputCharrom2loadinAddress = bitmapStart+bitmapSize*2
     lda .filenameLengthRegister
     +ldi16xy .filenamePointer
     jsr kernelSetName
-    +mov16 kernelSaveDataStartPointer, .dataStart
-    lda #kernelSaveDataStartPointer
+    +ldi16 kernelSaveDataStartPointer, .dataStart
     +ldi16xy .dataEnd
+    lda #kernelSaveDataStartPointer
     jsr kernelSave
 }
 
@@ -510,7 +510,6 @@ clearOutputCharsetBitmap:
     sei ;Disable interrupts globally
 
     ;Disable CIA's
-    +mov cia1InitialSate, cia1ControlRegister
     lda #$7f ;everything except highest bit
     sta cia1ControlRegister
     ;sta cia2ControlRegister
@@ -530,7 +529,7 @@ clearOutputCharsetBitmap:
 }
 
 mainloop:
-!if visualize = 1 {
+!if visualize == 1 {
     ;Set colors
     +fillMemoryBlock textScreen, 0, vicColorWhite
     +fillMemoryBlock textScreen+pageSize, 0, vicColorGreen
@@ -598,21 +597,31 @@ stx rExtra
 !if visualize = 1 {
     sei ;Disable interrupts globally
 
-    ;Disable CIA's
+    ;Renable cia
     +mov cia1ControlRegister, cia1InitialSate
 
-    ;Set rasterline for interrupt to fire on
+    ;Disable Vic interrupt
     lda vicInterruptControlRegister
     and #$fe
     sta vicInterruptControlRegister
 
-    ;Set IRQ handler pointer to ISR
+    ;Set IRQ handler pointer to kernel ISR
     +mov16 kernelIrqVector, kernelIrqInitialState
+
+    ;Reject graphics go back to text
+    +setTextDisplayMode
 
     cli ;Renable interrupt
 }
 
 +saveFileToDisk 2, 0, userInputBuffer, rExtra, outputCharsetStart, outputCharsetEnd
+
+;End of program
++kcrlf
++kprintln programCompletedText
++kprintln restartComputerText
+holdAndCatchFire:
+jmp holdAndCatchFire
 rts ;End of program. Exit to basic
 
 ISRbitmap:
@@ -640,13 +649,17 @@ jmp kernelIrqHandler
 ;r0 = From character
 ;r2 = Until character
 ;X = first or second charset as input ('1' or '0')
+copyNothing:
+rts
+
 copyFromCharset:
-pha
 lda r2
 sec
 sbc r0
 clc
-adc #1
+;adc #1
+cmp #0
+beq copyNothing
 sta rExtra ;rExtra = r2-r0 = until-from = length of range
 +poke r1, 0 ; free r0:r1 high byte for input charset address + from Character offset
 +lsl16 r0, 3 ;r0:r1 = r0*2^3 = r0*8
@@ -663,7 +676,6 @@ copyChars:
 +copyMemoryChunks r0, r2, rExtra, charSize ;perform copy with r2:r3 becoming = outputCharsetStart + currentOutputCharacterOffset + bytesCopied
 +sub16i r2, outputCharsetStart ;r2:r3 = currentOutputCharacterOffset + bytesCopied
 +mov16 currentOutputCharacterOffset, r2 ;currentOutputCharacterOffset = currentOutputCharacterOffset + bytesCopied
-pla
 rts
 
 currentOutputCharacterOffset:
@@ -697,10 +709,16 @@ saveText:
 !pet "save", 0
 
 saveToPromptText:
-!pet " save to: ", 0
+!pet "save to: ", 0
+
+programCompletedText:
+!pet "the program is completed", 0
+
+restartComputerText:
+!pet "please restart your computer", 0
 
 cia1InitialSate:
-!byte 0
+!byte %10000001 
 
 kernelIrqInitialState:
 !word 0
