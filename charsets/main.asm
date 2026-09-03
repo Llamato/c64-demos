@@ -667,7 +667,7 @@ clc
 cmp #0
 beq copyNothing
 sta rExtra ;rExtra = r2-r0 = until-from = length of range
-+poke r1, 0 ; free r0:r1 high byte for input charset address + from Character offset
+^+poke r1, 0 ;free r0:r1 high byte for input charset address + from Character offset
 +lsl16 r0, 3 ;r0:r1 = r0*2^3 = r0*8
 cpx #'1'
 beq inputIsSecondCharset
