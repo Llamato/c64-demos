@@ -435,8 +435,9 @@ inputCharrom2loadinAddress = bitmapStart+bitmapSize*2
 
 !macro setBitmapDisplayMode {
     +poke vicScreenControl1Register, $1b | (1<<5) ;Bitmap mode on
-    +poke vicScreenControl2Register, $c8 & ((1<<4) xor $ff) 
-    +poke vicMemoryPointersRegister, (1<<3) | (1<<4) ;Set bitmap position to 0x2000 and keep screen at $0400
+;Set bitmap position to 0x2000 and keep screen at $0400
+    +poke vicScreenControl2Register, $c8 & ((1<<4) xor $ff)
+    +poke vicMemoryPointersRegister, (1<<3) | (1<<4)
 }
 
 ;Clear input buffers
@@ -536,37 +537,16 @@ mainloop:
     +fillMemoryBlock textScreen+pageSize, 0, vicColorGreen
     +fillMemoryBlock textScreen+pageSize*2, 0, vicColorViolet
 }
-;Clear user input buffers
-+fillMemoryBlock userInputBuffer, filenameSize*2, $00
-
-;Let user input ranges to take from first charset
-+kprompt takeFromCharset1promptText, userInputBuffer
-+strcmp userInputBuffer, saveText
+jsr takeUntilPrompt
 bcs saveOutputCharsetToDisk
-+strtoi userInputBuffer, r0
-+kprompt untilPromptText, userInputBuffer+filenameSize
-+strcmp userInputBuffer+filenameSize, saveText
-bcs saveOutputCharsetToDisk
-+kcrlf
-+strtoi userInputBuffer+filenameSize, r2
 
 ;Transfer selected range into destination charset
 ldx #'0'
 jsr copyFromCharset
 
-;Clear user input buffers
-+fillMemoryBlock userInputBuffer, filenameSize*2, $00
-
 ;Let user input ranges to take from second charset
-+kprompt takeFromCharset2promptText, userInputBuffer
-+strcmp userInputBuffer, saveText
+jsr takeUntilPrompt
 bcs saveOutputCharsetToDisk
-+strtoi userInputBuffer, r0
-+kprompt untilPromptText, userInputBuffer+filenameSize
-+strcmp userInputBuffer+filenameSize, saveText
-bcs saveOutputCharsetToDisk
-+kcrlf
-+strtoi userInputBuffer+filenameSize, r2
 
 ;Transfer selected range into destination charset
 ldx #'1'
@@ -663,11 +643,10 @@ lda r2
 sec
 sbc r0
 clc
-;adc #1
 cmp #0
 beq copyNothing
 sta rExtra ;rExtra = r2-r0 = until-from = length of range
-^+poke r1, 0 ;free r0:r1 high byte for input charset address + from Character offset
++poke r1, 0 ;free r0:r1 high byte for input charset address + from Character offset
 +lsl16 r0, 3 ;r0:r1 = r0*2^3 = r0*8
 cpx #'1'
 beq inputIsSecondCharset
@@ -683,6 +662,29 @@ copyChars:
 +sub16i r2, outputCharsetStart ;r2:r3 = currentOutputCharacterOffset + bytesCopied
 +mov16 currentOutputCharacterOffset, r2 ;currentOutputCharacterOffset = currentOutputCharacterOffset + bytesCopied
 rts
+
+;Output: user input from take and until prompts in userInputBuffer and userInputBuffer+filesize respectively, rExtra with 0 denoting no save command and 1 denoting a save command
+takeUntilPrompt:
+!zone takeUntil {
+;Clear user input buffers
+    +fillMemoryBlock userInputBuffer, filenameSize*2, $00
+
+;Let user input ranges to take from first charset
+.takePrompt:
+    +kprompt takeFromCharset1promptText, userInputBuffer
+    +strcmp userInputBuffer, saveText
+    bcc .untilPrompt
+    jmp .done ;take prompt input is equal to saveText. Abort!
+.untilPrompt:
+    +strtoi userInputBuffer, r0
+    +kprompt untilPromptText, userInputBuffer+filenameSize
+    +strcmp userInputBuffer, saveText
+    bcs .done ;until prompt input is equal to saveText. Abort!
+    +kcrlf
+    +strtoi userInputBuffer+filenameSize, r2
+.done:
+    rts
+}
 
 currentOutputCharacterOffset:
 !word 0
