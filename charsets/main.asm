@@ -284,7 +284,7 @@ inputCharrom2loadinAddress = bitmapStart+bitmapSize*2
 ;output: X = index of first differing character, carry set if strings match. carry clear if strings differ
 !macro strcmp .str1, .str2 {
     ldx #0
-.loo
+.loop
     lda .str1, x
     cmp #0
     beq .loopend
@@ -293,18 +293,19 @@ inputCharrom2loadinAddress = bitmapStart+bitmapSize*2
     beq .loopend
     cmp .str2, x
     bne .neq
-    jmp loop
-.loopend
     lda .str1, x
     cmp .str2, x
     bne .neq
+    inx
+    jmp .loop
+.loopend
 .eq
     sec
     ldx #0
     jmp .done
 .neq
     clc
-    .done
+.done
 }
 
 !macro strtoi .str, .output {
@@ -378,7 +379,7 @@ inputCharrom2loadinAddress = bitmapStart+bitmapSize*2
 }
 
 !macro loadFileFromDisk .logicalFileNumber, .deviceNumber, .filenamePointer, .filenameLengthRegister, .xyOrPrgAddr {
-    !if .xyOrPrgAddr == 0 {
+    !if .xyOrPrgAddr == 0 { ; 0= Take address to load into from x and y registers, 1 = take address from prg file.
         +phx
         +phy
     }
@@ -540,8 +541,12 @@ mainloop:
 
 ;Let user input ranges to take from first charset
 +kprompt takeFromCharset1promptText, userInputBuffer
++strcmp userInputBuffer, saveText
+bcs saveOutputCharsetToDisk
 +strtoi userInputBuffer, r0
 +kprompt untilPromptText, userInputBuffer+filenameSize
++strcmp userInputBuffer+filenameSize, saveText
+bcs saveOutputCharsetToDisk
 +kcrlf
 +strtoi userInputBuffer+filenameSize, r2
 
@@ -554,8 +559,12 @@ jsr copyFromCharset
 
 ;Let user input ranges to take from second charset
 +kprompt takeFromCharset2promptText, userInputBuffer
++strcmp userInputBuffer, saveText
+bcs saveOutputCharsetToDisk
 +strtoi userInputBuffer, r0
 +kprompt untilPromptText, userInputBuffer+filenameSize
++strcmp userInputBuffer+filenameSize, saveText
+bcs saveOutputCharsetToDisk
 +kcrlf
 +strtoi userInputBuffer+filenameSize, r2
 
@@ -569,17 +578,15 @@ jsr basicCls ;cls = clear last screen
 ;Reset cursor
 +setCursorPosition commandPromptColumn, commandPromptRow
 
-;16 bit compare between currentOutputCharacterOffset and charsetSize. If  charsetSize < currentOutputCharacterOffset then goto checkForSaveCommand else goto saveOutputCharsetToDisk
+;16 bit compare between currentOutputCharacterOffset and charsetSize. If  charsetSize < currentOutputCharacterOffset then goto continue else goto saveOutputCharsetToDisk
 lda currentOutputCharacterOffset+1
 cmp #>charsetSize
-bcc checkForSaveCommand      ; high byte less -> definitely not full, continue
+bcc continue                 ; high byte less -> definitely not full, continue
 bne saveOutputCharsetToDisk  ; high byte greater (not equal, not less) -> definitely full
 lda currentOutputCharacterOffset
 cmp #<charsetSize
-bcc checkForSaveCommand      ; high bytes equal, low byte less -> not full
+bcc continue                  ; high bytes equal, low byte less -> not full
 jmp saveOutputCharsetToDisk   ; or just fall through / jsr, depending on layout
-
-checkForSaveCommand:
 
 continue:
 jmp mainloop
@@ -622,7 +629,6 @@ stx rExtra
 +kprintln restartComputerText
 holdAndCatchFire:
 jmp holdAndCatchFire
-rts ;End of program. Exit to basic
 
 ISRbitmap:
 sei
