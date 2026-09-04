@@ -115,10 +115,22 @@
           };
         }
         // demos;
-        apps = builtins.mapAttrs (name: drv: 
+        apps = builtins.mapAttrs (name: drv: let
+          script = ''
+            NIXFILE=$(find ${drv}/ -name "${name}.d64" | head -1)
+            if [ -n "$NIXFILE" ]; then
+              cp $NIXFILE .
+              FILE=$(find . -name "${name}.d64" | head -1)
+              chmod 755 $FILE
+              exec ${pkgs.vice}/bin/x64sc $FILE
+            else
+              exec ${pkgs.vice}/bin/x64sc ${drv}/${name}.prg
+            fi
+          '';
+        in
         {
             type = "app";
-            program = "${pkgs.writeShellScript "run-${name}" ''exec ${pkgs.vice}/bin/x64sc $(find ${drv}/ -name "${name}.prg" -o -name "${name}.d64" | head -1) "$@"''}";
+            program = "${pkgs.writeShellScript "run-${name}" script}";
           }) demos;
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
