@@ -5,3 +5,4 @@
 *.spm
 *.chrs
 result
+.vscode
