@@ -24,12 +24,18 @@
       system:
       let
         pkgs = import nixpkgs { inherit system; };
+        lib = pkgs.lib;
         llvm-mos-sdk = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
         psid = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/psid/package.nix") { };
         vchar64 = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/vchar64/package.nix") { };
+        metaOf = name: {
+          description = "";
+          maintainers = with lib.maintainers; [ llamato ];
+        };
         acme-build = name: pkgs.stdenv.mkDerivation {
           name = "${name}-acme";
           version = "0.0.1";
+          meta = metaOf name;
           src = ./${name};
           buildPhase = ''
             runHook preBuild
@@ -44,6 +50,7 @@
         basic-build = name: pkgs.stdenv.mkDerivation {
           name = "${name}-basic";
           version = "0.0.1";
+          meta = metaOf name;
           src = ./${name};
           buildPhase = ''
             runHook preBuild
@@ -58,6 +65,7 @@
         binary-build = name: pkgs.stdenv.mkDerivation {
           name = "${name}-bins";
           version = "0.0.1";
+          meta = metaOf name;
           src = ./${name};
           installPhase = ''
             mkdir -p $out
@@ -67,6 +75,7 @@
         disk-build = paths: name: pkgs.stdenv.mkDerivation {
           name = "${name}-d64";
           version = "0.0.1";
+          meta = metaOf name;
           src = pkgs.symlinkJoin {
             inherit name;
             inherit paths;
@@ -119,6 +128,7 @@
         {
             type = "app";
             program = "${pkgs.writeShellScript "run-${name}" ''exec ${pkgs.vice}/bin/x64sc $(find ${drv}/ -name "${name}.prg" -o -name "${name}.d64" | head -1) "$@"''}";
+            meta = metaOf name;
           }) demos;
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
