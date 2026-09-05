@@ -28,4 +28,20 @@ jobs:
         run: nix flake check
 
       - name: Build Default Package
-        run: nix build
+        run: |
+          nix build
+          echo "store_path=$(readlink -f result)" >> $GITHUB_OUTPUT
+
+      - name: Use the path
+        run: |
+          echo "The build output is located at: ${{ steps.nix_build.outputs.store_path }}"
+
+      # 5. Automatically create the GitHub Release and upload assets
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.prg
+            *.d64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
