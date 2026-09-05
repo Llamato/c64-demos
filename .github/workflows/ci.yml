@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - "v*.*.*"
-    branches: ["**"]
+    branches: ["main"]
   pull_request:
 
 permissions:
@@ -16,32 +16,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Check out the repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Install Nix and set up a magic cache
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      # 3. Cache Nix store paths to speed up subsequent runs
       - name: Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@main
 
-      # 4. Run your Nix commands
       - name: Check Nix Flake
         run: nix flake check
 
       - name: Build Default Package
-        run: |
-          nix build
-          echo "store_path=$(readlink -f result)" >> $GITHUB_OUTPUT
+        run: nix build
 
-      - name: Use the path
-        run: |
-          echo "The build output is located at: ${{ steps.nix_build.outputs.store_path }}"
-
-      # 5. Automatically create the GitHub Release and upload assets
       - name: Create automatic release
         if: github.event_name == 'push'
         uses: softprops/action-gh-release@v3
