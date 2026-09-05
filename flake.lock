@@ -3,11 +3,11 @@
     "dotfiles-llamato": {
       "flake": false,
       "locked": {
-        "lastModified": 1787841463,
-        "narHash": "sha256-VyL1HtwglEVB2eDDzztEORp2OyETbnt3NUmo4TE4Jwk=",
+        "lastModified": 1788657367,
+        "narHash": "sha256-m3dOdSBEsN3+ZEePoymi0E/WsJgii3I+F1piGgKzAME=",
         "owner": "llamato",
         "repo": "dotfiles",
-        "rev": "51af92aabe7a6a7dbd9d20c72a20a51f38808a1f",
+        "rev": "11b191f7eafbe72afb58d647b1b3c991a61e8ab8",
         "type": "github"
       },
       "original": {
@@ -36,11 +36,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1787753485,
-        "narHash": "sha256-BZWCi9ZRJiARTuKTbbtvFTj7t1TK4G3UEckT3HyNfRg=",
+        "lastModified": 1788584326,
+        "narHash": "sha256-Fd3OB8J9JhgliQwOKcqx4M672CInxi1I5VnwsaXeSQo=",
         "owner": "NixOs",
         "repo": "nixpkgs",
-        "rev": "062346a6d85bc4b49dfaa61c986e9c5be21217d1",
+        "rev": "6713828a351efa628b025a1adf7f43cbf8597513",
         "type": "github"
       },
       "original": {
