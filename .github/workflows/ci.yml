@@ -39,11 +39,15 @@ jobs:
           echo "The build output is located at: ${{ steps.nix_build.outputs.store_path }}"
 
       # 5. Automatically create the GitHub Release and upload assets
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Create automatic release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v3
         with:
+          tag_name: "build-${{ github.sha }}"
+          name: "Build ${{ github.sha }}"
+          generate_release_notes: true
           files: |
-            *.prg
-            *.d64
+            result/*.prg
+            result/*.d64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
