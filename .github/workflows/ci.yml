@@ -1,0 +1,45 @@
+name: "Nix CI"
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build and Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Check Nix Flake
+        run: nix flake check
+
+      - name: Build Default Package
+        run: nix build
+
+      - name: Create automatic release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: "build-${{ github.sha }}"
+          name: "Build ${{ github.sha }}"
+          generate_release_notes: true
+          files: |
+            result/*.prg
+            result/*.d64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
