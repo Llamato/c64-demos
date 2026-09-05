@@ -3,11 +3,11 @@
     "dotfiles-llamato": {
       "flake": false,
       "locked": {
-        "lastModified": 1788647387,
-        "narHash": "sha256-RoM46SXiRktRxn2qjg6RABt+znu7KCKXiks7lCkno/c=",
+        "lastModified": 1788647855,
+        "narHash": "sha256-15yK4W7YfCc8EEtuquCbwVUsYiqoFoUUcxmZG6GcONU=",
         "owner": "llamato",
         "repo": "dotfiles",
-        "rev": "77b888d60abe978dc059597926ecf52bacb51685",
+        "rev": "795e0e30f1070b00a2e51ecb6f18f6e83740def2",
         "type": "github"
       },
       "original": {
