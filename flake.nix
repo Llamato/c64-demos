@@ -84,7 +84,7 @@
           '';
         };
         demos = {
-          kneedeepin3d = pkgs.stdenv.mkDerivation {
+          /*kneedeepin3d = pkgs.stdenv.mkDerivation {
             name = "kneedeepin3d";
             version = "0.0.1";
             src = ./kneedeepin3d/.;
@@ -97,7 +97,7 @@
               mkdir -p $out
               cp kneedeepin3d.prg $out
             '';
-          };
+          };*/
           multisprite = acme-build "multisprite";
           spritemultiplexing = acme-build "spritemultiplexing";
           smoothpaddles = acme-build "smoothpaddles";
