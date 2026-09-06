@@ -137,7 +137,6 @@
           packages = with pkgs; [
             acme
             vice
-            ghc
             rehex
             sidplayfp
             llvm-mos-sdk

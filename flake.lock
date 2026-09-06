@@ -138,11 +138,11 @@
         "stenc": "stenc"
       },
       "locked": {
-        "lastModified": 1788659137,
-        "narHash": "sha256-Z66oLY+p44OBaPFQ77eVtlbuAv7OPGcj1znN1WWgR9c=",
+        "lastModified": 1788701913,
+        "narHash": "sha256-3PTnKHy4+brQ2LvBkT3fR5Jxb4BtcanzSDMW6tuyxVk=",
         "owner": "llamato",
         "repo": "dotfiles",
-        "rev": "66efa5d70fa38e4bd6f82dd751d8581f71e06a4b",
+        "rev": "bd30419a1c2f68a9abbec70bb4cc5ca2a2e2806a",
         "type": "github"
       },
       "original": {
