@@ -6,28 +6,31 @@
     flake-utils.url = "github:numtide/flake-utils";
     dotfiles-llamato = {
       url = "github:llamato/dotfiles";
-      flake = false;
+      flake = true;
     };
   };
 
   outputs =
     { self, nixpkgs, ... }@inputs:
     let
-      supportedSystems = [
+      darwinSystem = [
+        "aarch64-darwin"
+      ];
+      linuxSystems = [
         "x86_64-linux"
         "aarch64-linux"
         "riscv64-linux"
-        "aarch64-darwin"
       ];
+    allSystems = linuxSystems ++ darwinSystem;
     in
-    inputs.flake-utils.lib.eachSystem supportedSystems (
+    inputs.flake-utils.lib.eachSystem linuxSystems (
       system:
       let
         pkgs = import nixpkgs { inherit system; };
         lib = pkgs.lib;
-        llvm-mos-sdk = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
-        psid = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/psid/package.nix") { };
-        vchar64 = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/vchar64/package.nix") { };
+        llvm-mos-sdk = inputs.dotfiles-llamato.packages.${system}.llvm-mos-sdk;
+        psid = inputs.dotfiles-llamato.packages.${system}.psid;
+        vchar64 = inputs.dotfiles-llamato.packages.${system}.vchar64;
         metaOf = name: {
           description = "";
           maintainers = with lib.maintainers; [ llamato ];
