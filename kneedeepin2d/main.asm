@@ -311,7 +311,7 @@ spriteLength = 63
 !macro basicMoveFacToMem .addr {
     ldx #<.addr
     ldy #>.addr
-    jsr basicMoveMFY
+    jsr basicMoveMF
 }
 
 ;Output: Float from .addr in FAC
@@ -375,33 +375,7 @@ jsr degToRad ;Fac = rad(210.0f)
 +toBasicFloat16is 330 ;Fac = float(330)
 jsr degToRad ;Fac = rad(330.0f)
 +basicMoveFacToMem f1 ;f1 = rad(330.0f)
-
-;Input: (f0 = fromAngle, f1 = toAngle)
-;Outputs: loopTable values in circle1offsetX and circle1offsetY
-!zone calculateLookupTables {
-    +basicMoveMemToFac f0 ;Fac = f0 = fromAngle
-    +basicFloatSubtract f1 ;Fac = f1- Fac = toAngle - fromAngle
-    +basicMoveFacToMem f1 ;f1 = Fac = deltaAngle
-    +toBasicFloat16is spriteColumns-1 ;Fac = 24 - 1 = 23
-    +basicFloatDivision f1 ;Fac = step = (deltaAngle) / (24 -1)
-    +basicMoveFacToMem f1 ;f1 = Fac = step
-    +toBasicFloat16is spriteRows / 2 ;Fac = spriteRows / 2 = 21 / 2 = 10 = r
-    +basicMoveFacToMem f2 ;f2 = Fac = spriteRows / 2 = 21 / 2 = 10 = r
-    ldx #0 ;X = k = 0
-.stepLoop
-    +floatToTableEntry basicCos, circle1offsetX ;handle cos
-    +floatToTableEntry basicSin, circle1offsetY ;handle sin
-    inx ;Incremnt x and thereby k
-    cpx #spriteColumns ;If k = spriteColumns then goto .done else continue
-    beq .done
-    +phx ;Push x to the stack saving k
-    +basicMoveMemToFac f0 ;Fac = f1 = fromAngle
-    +basicFloatAdd f1 ;Fac = fromAngle + step
-    +basicMoveFacToMem f0 ;f0 = fromAngle = fromAngle + step
-    +plx ;Pop x from the stack restoring k
-    jmp .stepLoop
-.done
-}
+jsr calculateLookupTables
 
 ;visualisation starts here
 ;enable sprites
@@ -789,6 +763,16 @@ makeCircleSpriteBresenham:
     rts
 }
 
+;lookup tables are derived from
+;circleX = r * cos(a)
+;circleY = r * sin(a)
+;as follows:
+;We have 24 possible x values from the width of the sprite.
+;We want to cover an arch from 330° to 210° for a analog meter look.
+;Therefor each step in the circle function needs to be (330° - 210°) / (24 -1) = 120° / (24-1) = 5.217° in arc size.
+;With that it holds that for k in range 0 to 23: alpha(k) = 210° + 5.217° * k
+;In this program we use r = spriteRows / 2 = 21 / 2 = 10
+
 ;Input: Fac = degrees
 ;Output: Fac = radians
 ;Equivalent to (Fac = Fac * PI / 180°)
@@ -801,15 +785,34 @@ degToRad:
     rts
 }
 
-;lookup tables are derived from
-;circleX = r * cos(a)
-;circleY = r * sin(a)
-;as follows:
-;We have 24 possible x values from the width of the sprite.
-;We want to cover an arch from 330° to 210° for a analog meter look.
-;Therefor each step in the circle function needs to be (330° - 210°) / (24 -1) = 120° / (24-1) = 5.217° in arc size.
-;With that it holds that for k in range 0 to 23: alpha(k) = 210° + 5.217° * k
-;In this program we use r = spriteRows / 2 = 21 / 2 = 10
+;Input: (f0 = fromAngle, f1 = toAngle)
+;Outputs: loopTable values in circle1offsetX and circle1offsetY
+calculateLookupTables:
+!zone calculateLookupTables {
+    +basicMoveMemToFac f0 ;Fac = f0 = fromAngle
+    +basicFloatSubtract f1 ;Fac = f1- Fac = toAngle - fromAngle
+    +basicMoveFacToMem f1 ;f1 = Fac = deltaAngle
+    +toBasicFloat16is spriteColumns-1 ;Fac = 24 - 1 = 23
+    +basicFloatDivision f1 ;Fac = step = (deltaAngle) / (24 -1)
+    +basicMoveFacToMem f1 ;f1 = Fac = step
+    +toBasicFloat16is spriteRows / 2 ;Fac = spriteRows / 2 = 21 / 2 = 10 = r
+    +basicMoveFacToMem f2 ;f2 = Fac = spriteRows / 2 = 21 / 2 = 10 = r
+    ldx #0 ;X = k = 0
+.stepLoop
+    +floatToTableEntry basicCos, circle1offsetX ;handle cos
+    +floatToTableEntry basicSin, circle1offsetY ;handle sin
+    inx ;Incremnt x and thereby k
+    cpx #spriteColumns ;If k = spriteColumns then goto .done else continue
+    beq .done
+    +phx ;Push x to the stack saving k
+    +basicMoveMemToFac f0 ;Fac = f1 = fromAngle
+    +basicFloatAdd f1 ;Fac = fromAngle + step
+    +basicMoveFacToMem f0 ;f0 = fromAngle = fromAngle + step
+    +plx ;Pop x from the stack restoring k
+    jmp .stepLoop
+.done
+    rts
+}
 
 f0:
 !8 0, 0, 0, 0, 0, 0, 0
