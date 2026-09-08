@@ -311,7 +311,7 @@ spriteLength = 63
 !macro basicMoveFacToMem .addr {
     ldx #<.addr
     ldy #>.addr
-    jsr basicMoveMF
+    jsr basicMoveMFY
 }
 
 ;Output: Float from .addr in FAC
@@ -355,15 +355,15 @@ spriteLength = 63
     sty .addr+1
 }
 
-!macro floatToTows .trig, .addr {
+!macro floatToTableEntry .trig, .addr {
     +phx ;Push x to the stack saving k
     +basicMoveMemToFac f0 ;Fac = f0 = fromAngle
     jsr .trig ;Fac = trig(Fac) = trig(fromAngle)
     +basicFloatMultiply f2 ;Fac = Fac * f2 = sin(fromAngle) * r
-    jsr basicFacinx ;A:Y=int(Fac)
+    jsr basicFacinx ;Y:A=int(Fac)
     +plx ;Pop x from the stack restoring k
-    tya
-    sta .addr, x
+    tya ;A = Y = LB(int(FAC))
+    sta .addr, x ;.addr[x] = A
 }
 
 ;program start at $080d
@@ -389,8 +389,8 @@ jsr degToRad ;Fac = rad(330.0f)
     +basicMoveFacToMem f2 ;f2 = Fac = spriteRows / 2 = 21 / 2 = 10 = r
     ldx #0 ;X = k = 0
 .stepLoop
-    +floatToTows basicCos, circle1offsetX ;handle cos
-    +floatToTows basicSin, circle1offsetY ;handle sin
+    +floatToTableEntry basicCos, circle1offsetX ;handle cos
+    +floatToTableEntry basicSin, circle1offsetY ;handle sin
     inx ;Incremnt x and thereby k
     cpx #spriteColumns ;If k = spriteColumns then goto .done else continue
     beq .done
@@ -791,6 +791,7 @@ makeCircleSpriteBresenham:
 
 ;Input: Fac = degrees
 ;Output: Fac = radians
+;Equivalent to (Fac = Fac * PI / 180°)
 degToRad:
 !zone degToRad {
     +basicFloatMultiply basicPiAddress
