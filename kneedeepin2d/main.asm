@@ -34,6 +34,31 @@ vicSprite3positionXregister = $d006
 vicSprite3positionYregister = $d007
 vicSprite3bitmapBlockPointerRegister = $07fb
 
+;Basic registers
+basicFac = $61 ;fac = floating point accumulator with
+;($61 = exponent) and ($62-$65 = mantisa) and ($66 = sign bit with (0 = positive and $ff = -1)) and $70 = intermediate rounding bits
+basicArg = $69 ;arg = floating point argument with 
+;($69 = exponent) and ($6d-$6d = mantisa) and ($6e = sign bit with (0 = positive and $ff = -1))
+
+;Basic routines
+basicMoveFA = $bc0f
+basicMoveFM = $bba2
+basicMoveMF = $bbd4
+basicGivayf = $b391
+basicFacinx = $b1aa
+basicQint = $bc9b
+basicFadd = $b867
+basicFsub = $b850
+basicFsubT = $b853
+basicFmult = $ba28
+basicFdiv = $bb0f
+basicSin = $e26b
+basicCos = $e264
+basicSign = $bc2b
+
+;Basic constants
+basicPiAddress = $aea8
+
 ;Program registers
 r0 = $c000
 r1 = $c001
@@ -268,6 +293,116 @@ spriteLength = 63
 .done
 }
 
+;Output Float in FAC
+!macro toBasicFloat16is .value {
+    ldy #<.value
+    lda #>.value
+    jsr basicGivayf
+}
+
+;Output: Float in FAC
+!macro toBasicFloat16s .addr {
+    ldy .addr
+    lda .addr+1
+    jsr basicGivayf
+}
+
+;Output: Float from FAC in .addr
+!macro basicMoveFacToMem .addr {
+    ldx #<.addr
+    ldy #>.addr
+    jsr basicMoveMF
+}
+
+;Output: Float from .addr in FAC
+!macro basicMoveMemToFac .addr {
+    lda #<.addr
+    ldy #>.addr
+    jsr basicMoveFM
+}
+
+;Output: Fac=float(Fac)+float(.addr)
+!macro basicFloatAdd .addr {
+    lda #<.addr
+    ldy #>.addr
+    jsr basicFadd
+}
+;Output: Fac=float(.addr)-float(Fac)
+!macro basicFloatSubtract .addr {
+    lda #<.addr
+    ldy #>.addr
+    jsr basicFsub
+}
+
+;Output: Fac=float(Fac)*float(.addr)
+!macro basicFloatMultiply .addr {
+    lda #<.addr
+    ldy #>.addr
+    jsr basicFmult
+}
+
+;Output: Fac=float(Fac)/float(.addr)
+!macro basicFloatDivision .addr {
+    lda #<.addr
+    ldy #>.addr
+    jsr basicFdiv
+}
+
+;Output: .addr=int(Fac)
+!macro basicFloatToInt16 .addr {
+    jsr basicFacinx
+    sta .addr
+    sty .addr+1
+}
+
+!macro floatToTows .trig, .addr {
+    +phx ;Push x to the stack saving k
+    +basicMoveMemToFac f0 ;Fac = f0 = fromAngle
+    jsr .trig ;Fac = trig(Fac) = trig(fromAngle)
+    +basicFloatMultiply f2 ;Fac = Fac * f2 = sin(fromAngle) * r
+    jsr basicFacinx ;A:Y=int(Fac)
+    +plx ;Pop x from the stack restoring k
+    tya
+    sta .addr, x
+}
+
+;program start at $080d
+
+;Convert angles in degrees to radians
++toBasicFloat16is 210 ;Fac = float(210)
+jsr degToRad ;Fac = rad(210.0f)
++basicMoveFacToMem f0 ;f0 = Fac = rad(210.0f)
++toBasicFloat16is 330 ;Fac = float(330)
+jsr degToRad ;Fac = rad(330.0f)
++basicMoveFacToMem f1 ;f1 = rad(330.0f)
+
+;Input: (f0 = fromAngle, f1 = toAngle)
+;Outputs: loopTable values in circle1offsetX and circle1offsetY
+!zone calculateLookupTables {
+    +basicMoveMemToFac f0 ;Fac = f0 = fromAngle
+    +basicFloatSubtract f1 ;Fac = f1- Fac = toAngle - fromAngle
+    +basicMoveFacToMem f1 ;f1 = Fac = deltaAngle
+    +toBasicFloat16is spriteColumns-1 ;Fac = 24 - 1 = 23
+    +basicFloatDivision f1 ;Fac = step = (deltaAngle) / (24 -1)
+    +basicMoveFacToMem f1 ;f1 = Fac = step
+    +toBasicFloat16is spriteRows / 2 ;Fac = spriteRows / 2 = 21 / 2 = 10 = r
+    +basicMoveFacToMem f2 ;f2 = Fac = spriteRows / 2 = 21 / 2 = 10 = r
+    ldx #0 ;X = k = 0
+.stepLoop
+    +floatToTows basicCos, circle1offsetX ;handle cos
+    +floatToTows basicSin, circle1offsetY ;handle sin
+    inx ;Incremnt x and thereby k
+    cpx #spriteColumns ;If k = spriteColumns then goto .done else continue
+    beq .done
+    +phx ;Push x to the stack saving k
+    +basicMoveMemToFac f0 ;Fac = f1 = fromAngle
+    +basicFloatAdd f1 ;Fac = fromAngle + step
+    +basicMoveFacToMem f0 ;f0 = fromAngle = fromAngle + step
+    +plx ;Pop x from the stack restoring k
+    jmp .stepLoop
+.done
+}
+
 ;visualisation starts here
 ;enable sprites
 +poke vicSpriteEnableRegister, $0f
@@ -346,14 +481,14 @@ visloop:
     +poke r1, spriteRows -1
     +mov16 r2, backBufferPointer
     ldx r12
-    lda circleOffsetX, x
+    lda circle1offsetX, x
     clc
     adc #(spriteColumns / 2)
-    sta r4 ;destination.x = (spriteColumns / 2) + circleOffsetX
-    lda circleOffsetY, x
+    sta r4 ;destination.x = (spriteColumns / 2) + circle1offsetX
+    lda circle1offsetY, x
     clc
     adc #(spriteRows / 2)
-    sta r5 ;destination.y = (spriteRows / 2) + circleOffsetY
+    sta r5 ;destination.y = (spriteRows / 2) + circle1offsetY
     inc r12
     lda r12
     cmp #spriteColumns
@@ -654,6 +789,17 @@ makeCircleSpriteBresenham:
     rts
 }
 
+;Input: Fac = degrees
+;Output: Fac = radians
+degToRad:
+!zone degToRad {
+    +basicFloatMultiply basicPiAddress
+    +basicMoveFacToMem f3
+    +toBasicFloat16is 180
+    +basicFloatDivision f3
+    rts
+}
+
 ;lookup tables are derived from
 ;circleX = r * cos(a)
 ;circleY = r * sin(a)
@@ -662,7 +808,22 @@ makeCircleSpriteBresenham:
 ;We want to cover an arch from 330° to 210° for a analog meter look.
 ;Therefor each step in the circle function needs to be (330° - 210°) / (24 -1) = 120° / (24-1) = 5.217° in arc size.
 ;With that it holds that for k in range 0 to 23: alpha(k) = 210° + 5.217° * k
-circleOffsetX: ;r * cos(alpha(k))
-!byte -9,-8,-8,-7,-6,-6,-5,-4,-3,-2,-1,0,0,1,2,3,4,5,6,6,7,8,8,9
-circleOffsetY: ;r * sin(alpha(k))
-!byte -5,-6,-6,-7,-8,-8,-9,-9,-9,-10,-10,-10,-10,-10,-10,-9,-9,-9,-8,-8,-7,-6,-6,-5
+;In this program we use r = spriteRows / 2 = 21 / 2 = 10
+
+f0:
+!8 0, 0, 0, 0, 0, 0, 0
+
+f1:
+!8 0, 0, 0, 0, 0, 0, 0
+
+f2:
+!8 0, 0, 0, 0, 0, 0, 0
+
+f3:
+!8 0, 0, 0, 0, 0, 0, 0
+
+circle1offsetX:
+!fill 24
+
+circle1offsetY:
+!fill 24
