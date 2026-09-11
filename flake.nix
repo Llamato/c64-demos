@@ -28,7 +28,7 @@
       let
         pkgs = import nixpkgs { inherit system; };
         lib = pkgs.lib;
-        llvm-mos-sdk = inputs.nixpkgs-llamato.packages.${system}.llvm-mos-sdk;
+        llvm-mos-sdk = inputs.dotfiles-llamato.packages.${system}.llvm-mos-sdk;
         psid = inputs.dotfiles-llamato.packages.${system}.psid;
         vchar64 = inputs.dotfiles-llamato.packages.${system}.vchar64;
         metaOf = name: {
