@@ -3,7 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs/nixos-26.05";
-    flake-utils.url = "github:numtide/flake-utils";
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     cbmNix.url = "github:llamato/cbmNix";
     dotfiles-llamato = {
       url = "github:llamato/dotfiles";
@@ -29,7 +32,7 @@
       let
         pkgs = import nixpkgs { inherit system; };
         lib = pkgs.lib;
-        cbmNix = inputs.cbmNix.lib.${system};
+        cbmNix = inputs.cbmNix.lib.mk { inherit pkgs; };
 
         llvm-mos-sdk = inputs.dotfiles-llamato.packages.${system}.llvm-mos-sdk;
         psid = inputs.dotfiles-llamato.packages.${system}.psid;
