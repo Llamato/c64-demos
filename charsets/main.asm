@@ -308,6 +308,13 @@ inputCharrom2loadinAddress = bitmapStart+bitmapSize*2
 .done
 }
 
+!macro chrtoi .chr, .output {
+    lda .chr
+    sec
+    sbc #'0'
+    sta .output
+}
+
 !macro strtoi .str, .output {
     +poke .output, 0
     ldx #0
@@ -455,6 +462,8 @@ jsr basicCls ;cls = clear last screen
 ;Prompt for first charset
 +setCursorPosition commandPromptColumn, commandPromptRow
 +kprintln inputCharset1promptText
++kprompt drivePromptText, userInputBuffer
++chrtoi userInputBuffer, $ba
 +kprompt filenamePromptText, userInputBuffer
 +kcrlf
 +kprompt charsetSelectionPromptText, userInputBuffer+filenameSize
@@ -464,6 +473,8 @@ jsr basicCls ;cls = clear last screen
 jsr basicCls
 +setCursorPosition commandPromptColumn, commandPromptRow
 +kprintln inputCharset2promptText
++kprompt drivePromptText, userInputBuffer+filenameSize*2
++chrtoi userInputBuffer+filenameSize*2, $ba
 +kprompt filenamePromptText, userInputBuffer+filenameSize*2
 +kcrlf
 +kprompt charsetSelectionPromptText, userInputBuffer+filenameSize*3
@@ -579,7 +590,10 @@ saveOutputCharsetToDisk:
 +fillMemoryBlock userInputBuffer, filenameSize, $00
 
 ;Prompt user for save file
-+kprompt saveToPromptText, userInputBuffer
++kprintln saveToPromptText
++kprompt drivePromptText, userInputBuffer
++chrtoi userInputBuffer, $ba
++kprompt filenamePromptText, userInputBuffer
 +strlen userInputBuffer
 stx rExtra
 
@@ -711,10 +725,10 @@ currentOutputCharacterOffset:
 !word 0
 
 inputCharset1promptText:
-!pet "load input charset 1: ", 0
+!pet "load input charset 1 from ", 0
 
 inputCharset2promptText:
-!pet "load input charset 2: ", 0
+!pet "load input charset 2 from ", 0
 
 takeFromCharset1promptText:
 !pet "take from charset 1: ", 0
@@ -738,7 +752,7 @@ saveText:
 !pet "save", 0
 
 saveToPromptText:
-!pet "save to: ", 0
+!pet "save to ", 0
 
 programCompletedText:
 !pet "the program is completed", 0
