@@ -2,7 +2,6 @@
 *.d64
 *.elf
 *.o
-*.spm
 *.chrs
 result
 .vscode
