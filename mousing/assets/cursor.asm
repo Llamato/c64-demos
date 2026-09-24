@@ -2,6 +2,7 @@
 ; 1 sprites generated with spritemate on 9/24/2026, 5:12:39 AM
 ; Byte 64 of each sprite contains multicolor (high nibble) & color (low nibble) information
 
+
 LDA #$08 ; sprite multicolor 1
 STA $D025
 LDA #$06 ; sprite multicolor 2
@@ -9,7 +10,7 @@ STA $D026
 
 
 ; sprite 1 / singlecolor / color: $01
-sprite1
+cursor
 !BYTE %00000000,%00011000,%00000000
 !BYTE %00000000,%00011000,%00000000
 !BYTE %00000000,%00011000,%00000000

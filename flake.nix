@@ -5,7 +5,6 @@
     nixpkgs.url = "github:NixOs/nixpkgs/nixos-26.05";
     flake-utils = {
       url = "github:numtide/flake-utils";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
     cbmNix.url = "github:llamato/cbmNix";
     dotfiles-llamato = {
@@ -74,6 +73,7 @@
             (cbmNix.buildBasicPrg (attrsOf "charsets"))
             (cbmNix.buildBinaryAsset (attrsOf "charsets"))
           ] "charsets";
+          mousing = cbmNix.buildAcmePrg (attrsOf "mousing");
         };
       in
       {
