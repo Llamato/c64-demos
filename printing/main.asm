@@ -1,3 +1,7 @@
+;Config flags
+printToScreen = 1
+convertToPetsciiOnTheFly = 1
+
 *= $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
 
 ; --- BASIC Upstart Stub (10 SYS 2061) ---
@@ -281,6 +285,7 @@ writeLoopHeader:
     beq .done
 
 writeLoopBody:
+!if printToScreen == 1 {
     stx r0
     ldx #3 ;3 = screen
     jsr kernelSetOutputChannel
@@ -291,6 +296,7 @@ writeLoopBody:
     ldx #4 ;4 = logical file number of printer
     jsr kernelSetOutputChannel
     ldx r0
+}
     lda dataBuffer, x
     jsr kernelCharOut
     inx
