@@ -37,11 +37,11 @@
     },
     "cbmNix": {
       "locked": {
-        "lastModified": 1790050154,
-        "narHash": "sha256-lsk3SBmpFKPgSfNf8jABYJHDnh6XwWH0+Wx/ht1fe4A=",
+        "lastModified": 1790327281,
+        "narHash": "sha256-7oGkXqVupXgE/8WUEmfFfyT3cub5pOWmGs+7gEfSjlk=",
         "owner": "llamato",
         "repo": "cbmNix",
-        "rev": "dc48cd722cc7fbd808df5ba6fd29685b382d9279",
+        "rev": "881aeabf6488cc0b727a2a8766867e456c5f8369",
         "type": "github"
       },
       "original": {
@@ -131,11 +131,11 @@
         "stenc": "stenc"
       },
       "locked": {
-        "lastModified": 1790039671,
-        "narHash": "sha256-BpMTGBhw6dIcUrExu0mkkJbj+dF5ossirHHUvGXDwMQ=",
+        "lastModified": 1790236565,
+        "narHash": "sha256-aSVbD1LPR3vTGXN5eAYvRNyJ/+ClZzds2DCilDkvPFM=",
         "owner": "llamato",
         "repo": "dotfiles",
-        "rev": "3134c266f1a35456db697c768a94e1f8866bdb0e",
+        "rev": "1ae5c3a29fadbf9035d80bc1c5123e88bdf9c5d8",
         "type": "github"
       },
       "original": {
@@ -561,11 +561,11 @@
     },
     "nixpkgs_11": {
       "locked": {
-        "lastModified": 1789998861,
-        "narHash": "sha256-62XMQD4WLdMAfdT0/8gJmPH2dKeTw908ryNloAplTr8=",
+        "lastModified": 1790218706,
+        "narHash": "sha256-6e4Na3z008XpdVyOXgfasXIn1aN+z8AXFG+jXdQSyuI=",
         "owner": "NixOs",
         "repo": "nixpkgs",
-        "rev": "1e8bc658fc985ef27ccd66d107d767b32bb7ef98",
+        "rev": "c508844df6c28fa6dabc1b6af70f3ccbd65c5201",
         "type": "github"
       },
       "original": {
