@@ -198,7 +198,7 @@ dataBufferSize = $1000
     jsr kernelSetOutputChannel
     bcs .closeThenError
     jmp .done
-.closeThenError
+.closeThenError:
     sta rExtra
     +closeFileStream .logicalFileNumber
     +poke vicBorderColorRegister, vicColorWhite
@@ -228,13 +228,8 @@ jsr basicCls
 
 mainloop:
 jsr readFromDiskIntoBuffer
-;jsr writeFromBufferToPrinter
-;lda vicBorderColorRegister
-;cmp #vicColorGreen
-;bne mainloop
-;cpx #0
-;bne mainloop
-+poke vicBorderColorRegister, vicColorLightGreen
+jsr writeFromBufferToPrinter
++poke vicBorderColorRegister, vicColorGreen
 jmp holdAndCatchFire
 
 !zone readFromDiskIntoBuffer {
@@ -255,16 +250,20 @@ readLoop:
     bne onReadError
     inx
     bne readLoop
+;Block of 256 bytes is full.
+    stx rExtra
     +closeFileStream 8
     rts
 
+;End of file has been reached
 atEof:
+    inx
     stx rExtra
     +closeFileStream 8
-    jsr writeFromBufferToPrinter
-    +poke vicBorderColorRegister, vicColorGreen
-    jmp holdAndCatchFire
+    +poke vicBorderColorRegister, vicColorLightGreen
+    rts
 
+;We have some problem reading the disk. Let's hold and catch fire.
 onReadError:
     sta rExtra
     +poke vicBorderColorRegister, vicColorRed
@@ -282,17 +281,28 @@ writeLoopHeader:
     beq .done
 
 writeLoopBody:
+    stx r0
+    ldx #3 ;3 = screen
+    jsr kernelSetOutputChannel
+    ldx r0
+    lda dataBuffer, x
+    jsr kernelCharOut
+    stx r0
+    ldx #4 ;4 = logical file number of printer
+    jsr kernelSetOutputChannel
+    ldx r0
     lda dataBuffer, x
     jsr kernelCharOut
     inx
     jmp writeLoopHeader
 
 .done:
+    +closeFileStream 4
     rts
 }
 
 holdAndCatchFire:
-jmp holdAndCatchFire ;Done!
+jmp holdAndCatchFire ;Wait! forvever.....
 
 readFromText:
 !pet "read from: ", 0
