@@ -71,8 +71,11 @@ r0 = 251
 r1 = 252
 r2 = 253
 r3 = 254
+
+
 dataBuffer = $c000
 dataBufferSize = $1000
+dataBufferEnd = dataBuffer + dataBufferSize
 
 ;Macros
 !macro poke .addr, .value {
@@ -153,7 +156,6 @@ dataBufferSize = $1000
 }
 
 !macro closeFileStream .logicalFileNumber {
-    jsr kernelClearChannel
     lda #.logicalFileNumber
     jsr kernelClose
 }
@@ -230,15 +232,21 @@ stx filenameContainer+filenameLength
 jsr basicCls
 +chrtoi diskDriveIdContainer, r0
 
+;Open disk and printer streams as input and output respectively
++openDiskFileStream 8, 0, 0, filenameContainer, filenameContainer+filenameLength
++openPrinterStream 4, 4, 7
+
 mainloop:
 jsr readFromDiskIntoBuffer
 jsr writeFromBufferToPrinter
 +poke vicBorderColorRegister, vicColorGreen
-jmp holdAndCatchFire
+jmp mainloop
 
 !zone readFromDiskIntoBuffer {
 readFromDiskIntoBuffer:
-    +openDiskFileStream 8, 8, 0, filenameContainer, filenameContainer+filenameLength
+;Reassign output channel to disk drive 
+    ldx #8 ; 8 = Logical file number of disk drive
+    jsr kernelSetInputChannel
     ldx #0
 
 readLoop:
@@ -254,35 +262,37 @@ readLoop:
     bne onReadError
     inx
     bne readLoop
-;Block of 256 bytes is full.
+    ldx #0
     stx rExtra
-    +closeFileStream 8
+    jsr writeLoopBody
     rts
 
 ;End of file has been reached
 atEof:
     inx
     stx rExtra
-    +closeFileStream 8
     +poke vicBorderColorRegister, vicColorLightGreen
-    rts
+    jsr writeFromBufferToPrinter
+    jmp endProgram
 
 ;We have some problem reading the disk. Let's hold and catch fire.
 onReadError:
     sta rExtra
     +poke vicBorderColorRegister, vicColorRed
-    +closeFileStream 8
-    jmp holdAndCatchFire
+    jmp endProgram
 }
 
 !zone writeFromBufferToPrinter {
 writeFromBufferToPrinter:
-    +openPrinterStream 4, 4, 7
+!if printToScreen == 0 {
+    ldx #4 ;4 = logical file number of printer
+    jsr kernelSetOutputChannel
+}
     ldx #0
 
 writeLoopHeader:
     cpx rExtra
-    beq .done
+    beq doneWriting
 
 writeLoopBody:
 !if printToScreen == 1 {
@@ -302,10 +312,13 @@ writeLoopBody:
     inx
     jmp writeLoopHeader
 
-.done:
-    +closeFileStream 4
+doneWriting:
     rts
 }
+
+endProgram:
++closeFileStream 8
++closeFileStream 4
 
 holdAndCatchFire:
 jmp holdAndCatchFire ;Wait! forvever.....
