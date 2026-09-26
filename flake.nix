@@ -37,7 +37,6 @@
         psid = inputs.dotfiles-llamato.packages.${system}.psid;
         vchar64 = inputs.dotfiles-llamato.packages.${system}.vchar64;
         multipaint = inputs.dotfiles-llamato.packages.${system}.multipaint;
-
         demoMeta = {
           description = "";
           maintainers = with lib.maintainers; [ llamato ];
@@ -47,6 +46,11 @@
           version = "0.0.1";
           src = ./${name};
           meta = demoMeta;
+        };
+        makeDemo = builders: name: if builtins.isList builders then {
+          ${name} = cbmNix.buildD64 (map (f: f (attrsOf name)) builders) name;
+        } else let builder = builders; in {
+          ${name} = builder (attrsOf name);
         };
         demos = {
           kneedeepin3d = pkgs.stdenv.mkDerivation {
@@ -62,23 +66,15 @@
               cp kneedeepin3d.prg $out
             '';
           };
-          multisprite = cbmNix.buildAcmePrg (attrsOf "multisprite");
-          spritemultiplexing = cbmNix.buildAcmePrg (attrsOf "spritemultiplexing");
-          smoothpaddles = cbmNix.buildAcmePrg (attrsOf "smoothpaddles");
-          random = cbmNix.buildAcmePrg (attrsOf "random");
-          sidplayer = cbmNix.buildAcmePrg (attrsOf "sidplayer");
-          kneedeepin2d = cbmNix.buildAcmePrg (attrsOf "kneedeepin2d");
-          charsets = cbmNix.buildD64 [
-            (cbmNix.buildAcmePrg (attrsOf "charsets"))
-            (cbmNix.buildBasicPrg (attrsOf "charsets"))
-            (cbmNix.buildBinaryAsset (attrsOf "charsets"))
-          ] "charsets";
-          printing = cbmNix.buildD64 [
-            (cbmNix.buildAcmePrg (attrsOf "printing"))
-            #(cbmNix.buildBasicPrg (attrsOf "printing"))
-            (cbmNix.buildTextAsset (attrsOf "printing"))
-          ] "printing";
-        };
+        } 
+        // makeDemo cbmNix.buildAcmePrg "multisprite"
+        // makeDemo cbmNix.buildAcmePrg "spritemultiplexing"
+        // makeDemo cbmNix.buildAcmePrg "smoothpaddles"
+        // makeDemo cbmNix.buildAcmePrg "random"
+        // makeDemo cbmNix.buildAcmePrg "sidplayer"
+        // makeDemo cbmNix.buildAcmePrg "kneedeepin2d"
+        // makeDemo [cbmNix.buildAcmePrg cbmNix.buildBasicPrg cbmNix.buildBinaryAsset] "charsets"
+        // makeDemo [cbmNix.buildAcmePrg cbmNix.buildTextAsset] "printing";
       in
       {
         packages = {
