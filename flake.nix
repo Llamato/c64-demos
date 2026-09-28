@@ -47,11 +47,11 @@
           random = cbmNix.buildAcmePrg;
           sidplayer = cbmNix.buildAcmePrg;
           kneedeepin2d = cbmNix.buildAcmePrg;
-          charsets = [
+          /*charsets = [
             cbmNix.buildAcmePrg
             cbmNix.buildBasicPrg
             cbmNix.buildBinaryAsset
-          ];
+          ];*/
           printing = [
             cbmNix.buildAcmePrg
             cbmNix.buildTextAsset
@@ -65,7 +65,7 @@
           maintainers = with lib.maintainers; [ llamato ];
         };
         attrsOf = name: debug: {
-          inherit name;
+          inherit name debug;
           version = "0.0.1";
           src = ./${name};
           meta = demoMeta;
@@ -89,10 +89,23 @@
         makeDemo =
           builders: demoAttrs:
           if builtins.isList builders then
-            cbmNix.buildD64 {
+            let
+              d64 = cbmNix.buildD64 {
               name = demoAttrs.name;
               paths = (map (builder: builder demoAttrs)) builders;
-            }
+              debug = demoAttrs.debug;
+            };
+            sourceFiles = pkgs.runCommand "collect-debug-artifacts" demoAttrs ''
+              mkdir -p $out
+              cp -R $src/* $out
+            '';
+            in if demoAttrs.debug then pkgs.symlinkJoin {
+              name = "${demoAttrs.name}-debug";
+              paths = [
+                d64
+                sourceFiles
+              ];
+            } else d64
           else
             builders demoAttrs;
         demoPackages = builtins.foldl' (

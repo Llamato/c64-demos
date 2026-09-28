@@ -292,16 +292,16 @@ spawnsprites
     cmp #100            
     ; nein, Timer erhoehen
     bcc updatetimer    
-    ; Timer zurücksetzen
+    ; Timer zuruecksetzen
     lda #0              
     sta spawntimer
 
-    ; Nächstes Sprite
+    ; Naechstes Sprite
     lda currentsprite
     ; ueber Sprite 5 
     cmp #6              
     bcc spawnsprite
-    ; ja, zurück zu Sprite 1
+    ; ja, zurueck zu Sprite 1
     lda #1              
     sta currentsprite
     jmp spawnsprite
