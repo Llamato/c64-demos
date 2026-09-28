@@ -37,21 +37,46 @@
         psid = inputs.dotfiles-llamato.packages.${system}.psid;
         vchar64 = inputs.dotfiles-llamato.packages.${system}.vchar64;
         multipaint = inputs.dotfiles-llamato.packages.${system}.multipaint;
+
+        findDemoArtifactCommandFor =
+          name: drv: ''find ${drv}/ -name "${name}.prg" -o -name "${name}.d64" | head -1'';
         demoMeta = {
           description = "";
           maintainers = with lib.maintainers; [ llamato ];
         };
-        attrsOf = name: {
-          inherit name;
+        attrsOf = name: debug: {
+          inherit name debug;
           version = "0.0.1";
           src = ./${name};
           meta = demoMeta;
+          acmeFlags = [
+            "--cpu 6510"
+            "--format cbm"
+            "-o ${name}.prg"
+          ]
+          ++ lib.optional debug [
+            "--vicelabels ${name}.vicelabels"
+          ];
         };
-        makeDemo = builders: name: if builtins.isList builders then {
-          ${name} = cbmNix.buildD64 (map (f: f (attrsOf name)) builders) name;
-        } else let builder = builders; in {
-          ${name} = builder (attrsOf name);
-        };
+        makeDemo =
+          builders: name:
+          let
+            demoAttrs = attrsOf name false;
+          in
+          if builtins.isList builders then
+            {
+              ${name} = cbmNix.buildD64 {
+                inherit name;
+                paths = (map (builder: builder demoAttrs)) builders;
+              };
+            }
+          else
+            let
+              builder = builders;
+            in
+            {
+              ${name} = builder demoAttrs;
+            };
         demos = {
           kneedeepin3d = pkgs.stdenv.mkDerivation {
             name = "kneedeepin3d";
@@ -66,15 +91,15 @@
               cp kneedeepin3d.prg $out
             '';
           };
-        } 
+        }
         // makeDemo cbmNix.buildAcmePrg "multisprite"
         // makeDemo cbmNix.buildAcmePrg "spritemultiplexing"
         // makeDemo cbmNix.buildAcmePrg "smoothpaddles"
         // makeDemo cbmNix.buildAcmePrg "random"
         // makeDemo cbmNix.buildAcmePrg "sidplayer"
         // makeDemo cbmNix.buildAcmePrg "kneedeepin2d"
-        // makeDemo [cbmNix.buildAcmePrg cbmNix.buildBasicPrg cbmNix.buildBinaryAsset] "charsets"
-        // makeDemo [cbmNix.buildAcmePrg cbmNix.buildTextAsset] "printing";
+        // makeDemo [ cbmNix.buildAcmePrg cbmNix.buildBasicPrg cbmNix.buildBinaryAsset ] "charsets"
+        // makeDemo [ cbmNix.buildAcmePrg cbmNix.buildTextAsset ] "printing";
       in
       {
         packages = {
@@ -84,11 +109,53 @@
           };
         }
         // demos;
+
         apps = builtins.mapAttrs (name: drv: {
           type = "app";
-          program = "${pkgs.writeShellScript "run-${name}" ''exec ${pkgs.vice}/bin/x64sc $(find ${drv}/ -name "${name}.prg" -o -name "${name}.d64" | head -1) "$@"''}";
+          program = "${pkgs.writeShellScript "run-${name}" ''exec ${pkgs.vice}/bin/x64sc $(${findDemoArtifactCommandFor name drv}) "$@"''}";
           meta = demoMeta;
         }) demos;
+
+        checks =
+          let
+            checksFile = ./checks.nix;
+          in
+          builtins.mapAttrs (
+            name: drv:
+            pkgs.linkFarm "${name}-checks" (
+              [
+                {
+                  name = "build-artifacts-exists";
+                  path = (
+                    pkgs.runCommand "${name}-runner-test"
+                      {
+
+                      }
+                      ''
+                        ARTIFACTS=$(${findDemoArtifactCommandFor name drv})
+                        [ -f $ARTIFACTS ] || exit 1
+                        mkdir -p $out
+                        echo $ARTIFACTS > $out/artifacts.txt
+                      ''
+                  );
+                }
+              ]
+              ++ lib.optionals (builtins.pathExists checksFile) (
+                lib.mapAttrsToList
+                  (tname: tdrv: {
+                    name = tname;
+                    path = tdrv;
+                  })
+                  (
+                    import checksFile {
+                      inherit pkgs;
+                      
+                    }
+                  )
+              )
+            )
+          ) demos;
+
         devShells =
           let
             packagesByDevShell = rec {
