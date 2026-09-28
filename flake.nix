@@ -29,14 +29,34 @@
     inputs.flake-utils.lib.eachSystem allSystems (
       system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        gpkgs = {
+          llvm-mos-sdk = inputs.dotfiles-llamato.packages.${system}.llvm-mos-sdk;
+          psid = inputs.dotfiles-llamato.packages.${system}.psid;
+          vchar64 = inputs.dotfiles-llamato.packages.${system}.vchar64;
+          multipaint = inputs.dotfiles-llamato.packages.${system}.multipaint;
+        };
+        pkgs = import nixpkgs { inherit system; } // gpkgs;
         lib = pkgs.lib;
         cbmNix = inputs.cbmNix.lib.mk { inherit pkgs; };
 
-        llvm-mos-sdk = inputs.dotfiles-llamato.packages.${system}.llvm-mos-sdk;
-        psid = inputs.dotfiles-llamato.packages.${system}.psid;
-        vchar64 = inputs.dotfiles-llamato.packages.${system}.vchar64;
-        multipaint = inputs.dotfiles-llamato.packages.${system}.multipaint;
+        demos = {
+          kneedeepin3d = cbmNix.buildClangPrg;
+          multisprite = cbmNix.buildAcmePrg;
+          spritemultiplexing = cbmNix.buildAcmePrg;
+          smoothpaddles = cbmNix.buildAcmePrg;
+          random = cbmNix.buildAcmePrg;
+          sidplayer = cbmNix.buildAcmePrg;
+          kneedeepin2d = cbmNix.buildAcmePrg;
+          charsets = [
+            cbmNix.buildAcmePrg
+            cbmNix.buildBasicPrg
+            cbmNix.buildBinaryAsset
+          ];
+          printing = [
+            cbmNix.buildAcmePrg
+            cbmNix.buildTextAsset
+          ];
+        };
 
         findDemoArtifactCommandFor =
           name: drv: ''find ${drv}/ -name "${name}.prg" -o -name "${name}.d64" | head -1'';
@@ -45,111 +65,107 @@
           maintainers = with lib.maintainers; [ llamato ];
         };
         attrsOf = name: debug: {
-          inherit name debug;
+          inherit name;
           version = "0.0.1";
           src = ./${name};
           meta = demoMeta;
+          targetSystem = "c64";
+          clangFlags = [
+            "-Os"
+            "main.c"
+            "gllm/gllm.c"
+            "-o ${name}.prg"
+          ];
           acmeFlags = [
             "--cpu 6510"
             "--format cbm"
             "-o ${name}.prg"
           ]
-          ++ lib.optional debug [
-            "--vicelabels ${name}.vicelabels"
+          ++ lib.optional debug "--vicelabels ${name}.vicelabels"
+          ++ [ 
+            "main.asm" 
           ];
         };
         makeDemo =
-          builders: name:
-          let
-            demoAttrs = attrsOf name false;
-          in
+          builders: demoAttrs:
           if builtins.isList builders then
-            {
-              ${name} = cbmNix.buildD64 {
-                inherit name;
-                paths = (map (builder: builder demoAttrs)) builders;
-              };
+            cbmNix.buildD64 {
+              name = demoAttrs.name;
+              paths = (map (builder: builder demoAttrs)) builders;
             }
           else
-            let
-              builder = builders;
-            in
-            {
-              ${name} = builder demoAttrs;
-            };
-        demos = {
-          kneedeepin3d = pkgs.stdenv.mkDerivation {
-            name = "kneedeepin3d";
-            src = ./kneedeepin3d/.;
-            buildPhase = ''
-              runHook preBuild
-              ${llvm-mos-sdk}/bin/mos-c64-clang -Os main.c gllm/gllm.c -o kneedeepin3d.prg
-              runHook postBuild
-            '';
-            installPhase = ''
-              mkdir -p $out
-              cp kneedeepin3d.prg $out
-            '';
-          };
-        }
-        // makeDemo cbmNix.buildAcmePrg "multisprite"
-        // makeDemo cbmNix.buildAcmePrg "spritemultiplexing"
-        // makeDemo cbmNix.buildAcmePrg "smoothpaddles"
-        // makeDemo cbmNix.buildAcmePrg "random"
-        // makeDemo cbmNix.buildAcmePrg "sidplayer"
-        // makeDemo cbmNix.buildAcmePrg "kneedeepin2d"
-        // makeDemo [ cbmNix.buildAcmePrg cbmNix.buildBasicPrg cbmNix.buildBinaryAsset ] "charsets"
-        // makeDemo [ cbmNix.buildAcmePrg cbmNix.buildTextAsset ] "printing";
+            builders demoAttrs;
+        demoPackages = builtins.foldl' (
+          demoBuilds: demoAttributes:
+          demoBuilds
+          // {
+            ${demoAttributes.name} = makeDemo demoAttributes.value (attrsOf demoAttributes.name false);
+          }
+        ) { } (lib.attrsToList demos);
       in
       {
         packages = {
           default = pkgs.symlinkJoin {
             name = "c64-demos";
-            paths = builtins.attrValues demos;
+            paths = builtins.attrValues demoPackages;
           };
         }
-        // demos;
+        // demoPackages;
 
         apps = builtins.mapAttrs (name: drv: {
           type = "app";
           program = "${pkgs.writeShellScript "run-${name}" ''exec ${pkgs.vice}/bin/x64sc $(${findDemoArtifactCommandFor name drv}) "$@"''}";
           meta = demoMeta;
-        }) demos;
+        }) demoPackages;
 
         checks =
           let
-            checksFile = ./checks.nix;
+            checksFilename = "checks.nix";
+            testPkgs = {
+              vice-headless = pkgs.vice.overrideAttrs (old: {
+                configureFlags = [
+                  "--enable-headlessui"
+                  "--disable-pdf-docs"
+                  "--with-gif"
+                ];
+              });
+            };
           in
           builtins.mapAttrs (
-            name: drv:
-            pkgs.linkFarm "${name}-checks" (
+            drvname: builders:
+            let
+              checksFilePath = ./${drvname}/${checksFilename};
+              drvattrs = attrsOf drvname true;
+              drv = makeDemo builders drvattrs;
+            in
+            pkgs.linkFarm "${drvname}-checks" (
               [
                 {
                   name = "build-artifacts-exists";
                   path = (
-                    pkgs.runCommand "${name}-runner-test"
+                    pkgs.runCommand "${drvname}-runner-test"
                       {
 
                       }
                       ''
-                        ARTIFACTS=$(${findDemoArtifactCommandFor name drv})
+                        ARTIFACTS=$(${findDemoArtifactCommandFor drvname drv})
                         [ -f $ARTIFACTS ] || exit 1
                         mkdir -p $out
                         echo $ARTIFACTS > $out/artifacts.txt
+                        touch $out/pass
                       ''
                   );
                 }
               ]
-              ++ lib.optionals (builtins.pathExists checksFile) (
+              ++ lib.optionals (builtins.pathExists checksFilePath) (
                 lib.mapAttrsToList
                   (tname: tdrv: {
                     name = tname;
                     path = tdrv;
                   })
                   (
-                    import checksFile {
-                      inherit pkgs;
-                      
+                    import checksFilePath {
+                      inherit pkgs testPkgs drvname drvattrs drv;
                     }
                   )
               )
@@ -168,8 +184,7 @@
                 vchar64
                 multipaint
               ];
-              cc = default ++ [ llvm-mos-sdk ];
-
+              cc = default ++ [ pkgs.llvm-mos-sdk ];
             };
           in
           builtins.mapAttrs (

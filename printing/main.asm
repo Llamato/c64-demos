@@ -13,6 +13,9 @@ convertToPetsciiOnTheFly = 1
 next_line:
     !16 $0000       ; End of BASIC program
 
+programStart:
+*=$080d
+
 ;Hardware registers
 screenRam = $400
 vicBorderColorRegister = $d020
