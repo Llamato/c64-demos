@@ -37,11 +37,11 @@
     },
     "cbmNix": {
       "locked": {
-        "lastModified": 1790629677,
-        "narHash": "sha256-Jp/ye2lU6XWIaYsGtleSoKs30F1Tks7tKTlaCat6yoU=",
+        "lastModified": 1790630365,
+        "narHash": "sha256-J+SEqdfvjRvovy7I31Xqua5NE7mLYxOoplzb2jFz20E=",
         "owner": "llamato",
         "repo": "cbmNix",
-        "rev": "ba11d3ab02f9f07e05f05513def596a211470643",
+        "rev": "b1c24073c36c572ca1e0238c185a16041f816958",
         "type": "github"
       },
       "original": {

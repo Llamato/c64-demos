@@ -47,11 +47,11 @@
           random = cbmNix.buildAcmePrg;
           sidplayer = cbmNix.buildAcmePrg;
           kneedeepin2d = cbmNix.buildAcmePrg;
-          /*charsets = [
+          charsets = [
             cbmNix.buildAcmePrg
             cbmNix.buildBasicPrg
             cbmNix.buildBinaryAsset
-          ];*/
+          ];
           printing = [
             cbmNix.buildAcmePrg
             cbmNix.buildTextAsset
