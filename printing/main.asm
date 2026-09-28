@@ -12,8 +12,7 @@ convertToPetsciiOnTheFly = 1
     !byte $00         ; End of BASIC line
 next_line:
     !16 $0000       ; End of BASIC program
-
-programStart:
+    
 *=$080d
 
 ;Hardware registers

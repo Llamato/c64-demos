@@ -6,7 +6,9 @@
     flake-utils = {
       url = "github:numtide/flake-utils";
     };
-    cbmNix.url = "github:llamato/cbmNix";
+    cbmNix = {
+      url = "github:llamato/cbmNix";
+    };
     dotfiles-llamato = {
       url = "github:llamato/dotfiles";
       flake = true;
