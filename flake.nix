@@ -136,15 +136,6 @@
         checks =
           let
             checksFilename = "checks.nix";
-            testPkgs = {
-              vice-headless = pkgs.vice.overrideAttrs (old: {
-                configureFlags = [
-                  "--enable-headlessui"
-                  "--disable-pdf-docs"
-                  "--with-gif"
-                ];
-              });
-            };
           in
           builtins.mapAttrs (
             drvname: builders:
@@ -180,7 +171,7 @@
                   })
                   (
                     import checksFilePath {
-                      inherit pkgs testPkgs drvname drvattrs drv;
+                      inherit pkgs drvname drvattrs drv;
                     }
                   )
               )
@@ -197,7 +188,7 @@
                 acme
                 psid
                 vchar64
-                multipaint
+                #multipaint
               ];
               cc = default ++ [ pkgs.llvm-mos-sdk ];
             };
