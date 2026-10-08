@@ -51,12 +51,12 @@
           kneedeepin2d = cbmNix.buildAcmePrg;
           charsets = [
             cbmNix.buildAcmePrg
-            cbmNix.buildBasicPrg
-            cbmNix.buildBinaryAsset
+            cbmNix.buildBasicPrgs
+            cbmNix.buildBinaryPrgs
           ];
           printing = [
             cbmNix.buildAcmePrg
-            cbmNix.buildTextAsset
+            cbmNix.buildPetsciiTextFiles
           ];
         };
 
