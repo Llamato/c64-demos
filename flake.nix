@@ -171,7 +171,7 @@
                   })
                   (
                     import checksFilePath {
-                      inherit pkgs drvname drvattrs drv;
+                      inherit pkgs cbmNix drvname drv;
                     }
                   )
               )

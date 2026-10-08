@@ -1,7 +1,6 @@
 { pkgs, cbmNix, drvname, drv, ... }: {
   prinoutMatchesInput = let 
     srcTextFilePath = ./test.txt;
-    prgFilePath = "./printing.prg";
     configFile = pkgs.writeTextFile {
       name = "emulatorconfig.txt";
       text = ''
@@ -40,5 +39,10 @@
     name = "printoutMatchesInput";
     emulator = "x64sc";
     fileUnderTest = "${drv}/${drvname}.d64";
+    nativeTestPhase = ''
+      cmp print.dump ${srcTextFilePath}
+      mkdir -p $out 
+      touch $out/pass
+    '';
   };
 }
