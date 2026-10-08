@@ -1,23 +1,23 @@
 { pkgs, cbmNix, drvname, drv, ... }: {
   prinoutMatchesInput = let 
     srcTextFilePath = ./test.txt;
+    srcTextFilename = baseNameOf srcTextFilePath;
     monitorCommandsFile = pkgs.writeTextFile {
       name = "moncommands.txt";
       text = ''
         load_labels "${drv}/${drvname}.vicelabels"
         until .holdAndCatchFire
+        log on
+        trace
         quit
       ''; 
     };
-    keystrokesFile = pkgs.writeTextFile {
-      name = "keystrokes.txt";
-      text = ''8\x0dtest.txt\x0d'';
-    };
   in
   cbmNix.checkWithVice {
-    inherit monitorCommandsFile keystrokesFile;
+    inherit monitorCommandsFile;
     name = "printoutMatchesInput";
     emulator = "x64sc";
+    failAfterSeconds = 30;
     fileUnderTest = "${drv}/${drvname}.d64";
     extraViceFlags = [
       ''-trapdevice4''
@@ -25,10 +25,10 @@
       ''-pr4output text''
       ''-pr4drv ascii''
       ''-prtxtdev1 print.dump''
+      ''-keybuf \"8\\x0d${srcTextFilename}\\x0d\"''
     ];
 
     postCheckPhase = ''
-      
       cmp print.dump ${srcTextFilePath}
       mkdir -p $out 
       touch $out/pass
