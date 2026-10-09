@@ -31,11 +31,11 @@
     inputs.flake-utils.lib.eachSystem allSystems (
       system:
       let
-        gpkgs = {
-          llvm-mos-sdk = inputs.dotfiles-llamato.packages.${system}.llvm-mos-sdk;
-          psid = inputs.dotfiles-llamato.packages.${system}.psid;
-          vchar64 = inputs.dotfiles-llamato.packages.${system}.vchar64;
-          multipaint = inputs.dotfiles-llamato.packages.${system}.multipaint;
+        gpkgs = with inputs.dotfiles-llamato.packages.${system}; {
+          llvm-mos-sdk = llvm-mos-sdk;
+          psid = psid;
+          vchar64 = vchar64;
+          multipaint = multipaint;
         };
         pkgs = import nixpkgs { inherit system; } // gpkgs;
         lib = pkgs.lib;
@@ -57,6 +57,10 @@
           printing = [
             cbmNix.buildAcmePrg
             cbmNix.buildPetsciiTextFiles
+          ];
+          conway = [
+            cbmNix.buildBasicPrgs
+            cbmNix.buildAcmePrg
           ];
         };
 
