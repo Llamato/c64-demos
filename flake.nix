@@ -16,10 +16,10 @@
   };
 
   outputs =
-    { 
-      self, 
+    {
+      self,
       nixpkgs,
-        ... 
+      ...
     }@inputs:
     let
       darwinSystem = [
@@ -67,7 +67,7 @@
             cbmNix.buildBasicPrgs
           ];
         };
- 
+
         findDemoArtifactCommandFor =
           name: drv: ''find ${drv}/ -name "${name}.prg" -o -name "${name}.d64" | head -1'';
         demoMeta = {
@@ -95,8 +95,8 @@
             "-o ${name}.prg"
           ]
           ++ lib.optional debug "--vicelabels ${name}.vicelabels"
-          ++ [ 
-            "main.asm" 
+          ++ [
+            "main.asm"
           ];
         };
         makeDemo =
@@ -104,22 +104,26 @@
           if builtins.isList builders then
             let
               d64 = cbmNix.buildD64 {
-              name = demoAttrs.name;
-              paths = (map (builder: builder demoAttrs)) builders;
-              debug = demoAttrs.debug;
-              starfile = demoAttrs.starfile;
-            };
-            sourceFiles = pkgs.runCommand "collect-debug-artifacts" demoAttrs ''
-              mkdir -p $out
-              cp -R $src/* $out
-            '';
-            in if demoAttrs.debug then pkgs.symlinkJoin {
-              name = "${demoAttrs.name}-debug";
-              paths = [
-                d64
-                sourceFiles
-              ];
-            } else d64
+                name = demoAttrs.name;
+                paths = (map (builder: builder demoAttrs)) builders;
+                debug = demoAttrs.debug;
+                starfile = demoAttrs.starfile;
+              };
+              sourceFiles = pkgs.runCommand "collect-debug-artifacts" demoAttrs ''
+                mkdir -p $out
+                cp -R $src/* $out
+              '';
+            in
+            if demoAttrs.debug then
+              pkgs.symlinkJoin {
+                name = "${demoAttrs.name}-debug";
+                paths = [
+                  d64
+                  sourceFiles
+                ];
+              }
+            else
+              d64
           else
             builders demoAttrs;
         demoPackages = builtins.foldl' (
@@ -152,19 +156,27 @@
             checksFilePath = ./${drvname}/${checksFilename};
             drvattrs = attrsOf drvname true;
             drv = makeDemo builders drvattrs;
-          in pkgs.linkFarm "${drvname}-checks" (lib.optionals (builtins.pathExists checksFilePath) (
-                lib.mapAttrsToList
-                  (tname: tdrv: {
-                    name = tname;
-                    path = tdrv;
-                  })
-                  (
-                    import checksFilePath {
-                      inherit pkgs cbmNix drvname drv;
-                    }
-                  )
-              )
-        )) demos;
+          in
+          pkgs.linkFarm "${drvname}-checks" (
+            lib.optionals (builtins.pathExists checksFilePath) (
+              lib.mapAttrsToList
+                (tname: tdrv: {
+                  name = tname;
+                  path = tdrv;
+                })
+                (
+                  import checksFilePath {
+                    inherit
+                      pkgs
+                      cbmNix
+                      drvname
+                      drv
+                      ;
+                  }
+                )
+            )
+          )
+        ) demos;
 
         devShells =
           let
