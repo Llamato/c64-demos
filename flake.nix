@@ -79,6 +79,8 @@
           version = "0.0.1";
           src = ./${name};
           meta = demoMeta;
+          includedFiles = [ "*.bin" ];
+          removeFileExtension = true;
           targetSystem = "c64";
           starfile = "${name}.prg";
           clangFlags = [
