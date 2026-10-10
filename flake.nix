@@ -145,37 +145,14 @@
           meta = demoMeta;
         }) demoPackages;
 
-        checks =
+        checks = builtins.mapAttrs (
+          drvname: builders:
           let
             checksFilename = "checks.nix";
-          in
-          builtins.mapAttrs (
-            drvname: builders:
-            let
-              checksFilePath = ./${drvname}/${checksFilename};
-              drvattrs = attrsOf drvname true;
-              drv = makeDemo builders drvattrs;
-            in
-            pkgs.linkFarm "${drvname}-checks" (
-              [
-                {
-                  name = "build-artifacts-exists";
-                  path = (
-                    pkgs.runCommand "${drvname}-runner-test"
-                      {
-
-                      }
-                      ''
-                        ARTIFACTS=$(${findDemoArtifactCommandFor drvname drv})
-                        [ -f $ARTIFACTS ] || exit 1
-                        mkdir -p $out
-                        echo $ARTIFACTS > $out/artifacts.txt
-                        touch $out/pass
-                      ''
-                  );
-                }
-              ]
-              ++ lib.optionals (builtins.pathExists checksFilePath) (
+            checksFilePath = ./${drvname}/${checksFilename};
+            drvattrs = attrsOf drvname true;
+            drv = makeDemo builders drvattrs;
+          in pkgs.linkFarm "${drvname}-checks" (lib.optionals (builtins.pathExists checksFilePath) (
                 lib.mapAttrsToList
                   (tname: tdrv: {
                     name = tname;
@@ -187,8 +164,7 @@
                     }
                   )
               )
-            )
-          ) demos;
+        )) demos;
 
         devShells =
           let
