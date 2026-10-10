@@ -16,7 +16,11 @@
   };
 
   outputs =
-    { self, nixpkgs, ... }@inputs:
+    { 
+      self, 
+      nixpkgs,
+        ... 
+    }@inputs:
     let
       darwinSystem = [
         "aarch64-darwin"
@@ -59,11 +63,11 @@
             cbmNix.buildPetsciiTextFiles
           ];
           conway = [
-            cbmNix.buildBasicPrgs
             cbmNix.buildAcmePrg
+            cbmNix.buildBasicPrgs
           ];
         };
-
+ 
         findDemoArtifactCommandFor =
           name: drv: ''find ${drv}/ -name "${name}.prg" -o -name "${name}.d64" | head -1'';
         demoMeta = {
@@ -76,6 +80,7 @@
           src = ./${name};
           meta = demoMeta;
           targetSystem = "c64";
+          starfile = "${name}.prg";
           clangFlags = [
             "-Os"
             "main.c"
@@ -100,6 +105,7 @@
               name = demoAttrs.name;
               paths = (map (builder: builder demoAttrs)) builders;
               debug = demoAttrs.debug;
+              starfile = demoAttrs.starfile;
             };
             sourceFiles = pkgs.runCommand "collect-debug-artifacts" demoAttrs ''
               mkdir -p $out

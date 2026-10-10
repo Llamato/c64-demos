@@ -41,11 +41,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1791468224,
-        "narHash": "sha256-RkkHqHGd/GN8/a8+gBRhb1RAvswrWoWUsq85mP+/tmU=",
+        "lastModified": 1791626743,
+        "narHash": "sha256-MZFucCU71/NJbSaKuDCHW/xr3ti1HH4OTEGdxU1broE=",
         "owner": "llamato",
         "repo": "cbmNix",
-        "rev": "43b647e3cf200305b184f466c2ff9ee11f75f50d",
+        "rev": "17fb7afc6d8bd6aa3812ed396b55d9a0597fda76",
         "type": "github"
       },
       "original": {
