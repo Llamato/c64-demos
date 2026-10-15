@@ -15,9 +15,24 @@ petsciiBlank = 32
 ;Vic Colors
 vicColorBlack = 0
 vicColorWhite = 1
+vicColorRed = 2
+vicColorCyan = 3
+vicColorPurple = 4
+vicColorGreen = 5
+vicColorBlue = 6
+vicColorYellow = 7
+vicColorLightBrown = 8
+vicColorDarkBrown = 9
+vicColorVeryLightBrown = 10
+vicColorDarkGray = 11
+vicColorGray = 12
+vicColorLightGreen = 13
+vicColorLightBlue = 14
+vicColorLightGray = 15
 
 ;Vic Registers
 screen = $400 ;4*256 = 1024
+vicAcknowlageInterruptRegister = $d019
 vicBorderColorRegister = $d020
 vicBackgroundColorRegister = $d021
 vicControlRegister = $d01a
@@ -40,7 +55,7 @@ kernelrqVector = $0314 ;$0314-0315
 kernelTextColor = $0286
 kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
-;Program
+;Program constants
 sprite0block = 128
 sprite1block = 129
 sprite2block = 130
@@ -49,6 +64,30 @@ sprite4block = 132
 sprite5block = 133
 sprite6block = 134
 sprite7block = 135
+
+;Programm memory
+rExtra = 2
+r0 = 251
+r1 = 252
+r2 = 253
+r3 = 254
+sprite0lowerPositionX = $c000
+sprite0lowerPositionY = $c001
+sprite0higherPositionX = $c002
+sprite0higherPositionY = $c003
+
+lowerSpritesPositionXhighBits = $cffe
+higherSpritesPositionXhighBites = $cfff
+
+!macro poke .addr, .value {
+    lda #.value
+    sta .addr
+}
+
+!macro ldi16 .addr, .value {
+    +poke .addr, <.value
+    +poke .addr+1, >.value
+}
 
 *=$080d
 ;set colors
@@ -81,15 +120,10 @@ sta cia2ControlRegister
 lda #$7f
 and vicInterruptControlRegister
 sta vicInterruptControlRegister
-lda #100 ;line 100
-sta vicRasterInterruptScanlineSelectRegister
++poke vicRasterInterruptScanlineSelectRegister, 100
 
 ;set IRQ handler pointer to ISR
-lda #<rasterISR100
-sta kernelrqVector ;low byte set
-lda #>rasterISR100
-sta kernelrqVector+1 ;high byte set
-
++ldi16 kernelrqVector. rasterISR100
 
 ;enable raster interrupt
 lda vicControlRegister
@@ -97,29 +131,35 @@ ora #$01 ; set raster interrupt enable bit to 1
 sta vicControlRegister
 cli ;Reenable interrupts
 
-;setup sprite
-lda #sprite0block
-sta vicSprite0bitmapBlockPointerRegister ;sprite one bitmap block set to 100*64
+;setup sprites
 lda #0
 sta vicSpriteMultiColorRegister ;disable multicolor for all sprites
-lda #1 ;(1 << 0) = 1
-sta vicSpriteEnableRegister ;enable sprite 1
-lda #vicColorWhite
-sta vicSprite0colorRegister
++poke vicSprite0bitmapBlockPointerRegister, sprite0block ;sprite one bitmap block set to 100*64
++poke vicSpriteEnableRegister, 3 ;enable sprites 1 and 2 though bits 0 and 1
+
+;set sprite colors
++poke vicSprite0colorRegister, vicColorWhite
++poke vicSprite1colorRegister, vicColorRed
++poke vicSprite2colorRegister, vicColorCyan
++poke vicSprite3colorRegister, vicColorPurple
++poke vicSprite4colorRegister, vicColorGreen
++poke vicSprite5colorRegister, vicColorBlue
++poke vicSprite6colorRegister, vicColorYellow
++poke vicSprite7colorRegister, vicColorBrown
 
 
 ;animation code starts here
 
 ;set sprite positions
 lda #0
-sta $cffe ;lower sprites x position high bits
-sta $cfff ;higher sprites x position high bits
+sta lowerSpritesPositionXhighBits
+sta higherSpritesPositionXhighBites
 lda #50
-sta $c000 ;sprite 0 lower position x = 50
-sta $c001 ;sprite 0 lower position y = 50
+sta sprite0lowerPositionX
+sta sprite0lowerPositionY
 lda #150
-sta $c002 ;sprite 0 higher position x = 150
-sta $c003 ;sprite 0 higher position y = 150
+sta sprite0higherPositionX
+sta sprite0higherPositionY
 
 ;set upper sprite positions
 gameloop:
@@ -127,27 +167,26 @@ jmp gameloop
 
 rasterISR100:
 sei
-inc $d019 ;acknowlage interrupt
+inc vicAcknowlageInterruptRegister ;acknowlage interrupt
 inc vicBorderColorRegister ;visualize screen division
-lda $c003
-sta vicSprite0positionYregister ;sprite 0 position y = sprite 0 higher position y
-lda $c002
-sta vicSprite0positionXregister ;sprite 0 position x = sprite 0 higher position x
-lda #$fe
+lda sprite0higherPositionY
+sta vicSprite0positionYregister
+lda sprite0lowerPositionX
+sta vicSprite0positionXregister
+lda #$fe ;Everything execpt the lowest bit high
 and vicSpritePositionsXhighbitRegister
-sta 254
-lda 254 ;tmp reg 1
-pha ;save temp reg 1 to stack
+sta r3
+pha ;push r3 to the stack
 lda #1
-and $cfff
-ora 254
+and higherSpritesPositionXhighBites
+ora r3
 sta vicSpritePositionsXhighbitRegister ;sprite 0 position x high bit = sprite 0 higher position x high bit
 pla
-sta 254 ;restore temp reg 1 from stack
-lda #$7f
+sta r3 ;pull r3 from the stack
+lda #$7f ;everything execpt the highest bit high
 and vicInterruptControlRegister
 sta vicInterruptControlRegister
-lda #250 ; line 250
+lda #250 ;raster line 250
 sta vicRasterInterruptScanlineSelectRegister
 lda #<rasterISR250
 sta kernelrqVector
@@ -156,30 +195,28 @@ sta kernelrqVector+1 ;setup next raster interrupt
 cli
 jmp kernelRestoreRegistersAndReturnFromInterruptRoutine ;return from interrupt, restoring regs using kernel rotinue
 
-
 rasterISR250:
 sei
-inc $d019 ;acknowlage interrupt
+inc vicAcknowlageInterruptRegister ;acknowlage interrupt
 dec vicBorderColorRegister ;visualize screen division
-lda $c001
-sta vicSprite0positionYregister ;sprite 0 position y = sprite 0 lower position y
-lda $c000
-sta vicSprite0positionXregister ;sprite 0 position x = sprite 0 lower position x
-lda $fe
+lda sprite0lowerPositionX
+sta vicSprite0positionXregister
+lda sprite0lowerPositionY
+sta vicSprite0positionYregister
+lda r3
 and vicSpritePositionsXhighbitRegister
-sta 254
-lda 254 ;tmp reg 1
-pha ;save temp reg 1 to stack
+sta r3
+pha ;push r3 to the stack
 lda #1
-and $cfff
-ora 254
+and higherSpritesPositionXhighBites
+ora r3
 sta vicSpritePositionsXhighbitRegister ;sprite 0 position x high bit = sprite 0 lower position x high bit
 pla
-sta 254 ;restore temp reg 1 from stack
-lda #$7f
+sta r3 ;pull r3 from the stack
+lda #$7f ;everything execpt the highest bit high
 and vicInterruptControlRegister
 sta vicInterruptControlRegister
-lda #100 ; line 100
+lda #100 ;raster line 100
 sta vicRasterInterruptScanlineSelectRegister
 lda #<rasterISR100
 sta kernelrqVector
