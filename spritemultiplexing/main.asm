@@ -21,9 +21,9 @@ vicColorPurple = 4
 vicColorGreen = 5
 vicColorBlue = 6
 vicColorYellow = 7
-vicColorLightBrown = 8
+vicColorBrown = 8
 vicColorDarkBrown = 9
-vicColorVeryLightBrown = 10
+vicColorLightBrown = 10
 vicColorDarkGray = 11
 vicColorGray = 12
 vicColorLightGreen = 13
@@ -31,20 +31,50 @@ vicColorLightBlue = 14
 vicColorLightGray = 15
 
 ;Vic Registers
-screen = $400 ;4*256 = 1024
+screen = $0400 ;4*256 = 1024
+vicSprite0bitmapBlockPointerRegister = $07f8
+vicSprite1bitmapBlockPointerRegister = $07f9
+vicSprite2bitmapBlockPointerRegister = $07fa
+vicSprite3bitmapBlockPointerRegister = $07fb
+vicSprite4bitmapBlockPointerRegister = $07fc
+vicSprite5bitmapBlockPointerRegister = $07fd
+vicSprite6bitmapBlockPointerRegister = $07fe
+vicSprite7bitmapBlockPointerRegister = $07ff
 vicAcknowlageInterruptRegister = $d019
 vicBorderColorRegister = $d020
 vicBackgroundColorRegister = $d021
 vicControlRegister = $d01a
 vicSpriteMultiColorRegister = $d01c
-vicSpriteEnableRegister = $d015
 vicSprite0positionXregister = $d000
 vicSprite0positionYregister = $d001
-vicSprite0bitmapBlockPointerRegister = $07f8
+vicSprite1positionXregister = $d002
+vicSprite1positionYregister = $d003
+vicSprite2positionXregister = $d004
+vicSprite2positionYregister = $d005
+vicSprite3positionXregister = $d006
+vicSprite3positionYregister = $d007
+vicSprite4positionXregister = $d008
+vicSprite4positionYregister = $d009
+vicSprite5positionXregister = $d00a
+vicSprite5positionYregister = $d00b
+vicSprite6positionXregister = $d00c
+vicSprite6positionYregister = $d00d
+vicSprite7positionXregister = $d00e
+vicSprite7positionYregister = $d00f
+vicSpriteEnableRegister = $d015
 vicSprite0colorRegister = $d027
+vicSprite1colorRegister = $d028
+vicSprite2colorRegister = $d029
+vicSprite3colorRegister = $d02a
+vicSprite4colorRegister = $d02b
+vicSprite5colorRegister = $d02c
+vicSprite6colorRegister = $d02d
+vicSprite7colorRegister = $d02e
 vicSpritePositionsXhighbitRegister = $d010
 vicRasterInterruptScanlineSelectRegister = $d012
 vicInterruptControlRegister = $d011
+vicSprite0colorRegister = $d027
+
 
 ;CIA
 cia1ControlRegister = $dc0d
@@ -63,18 +93,47 @@ sprite3block = 131
 sprite4block = 132
 sprite5block = 133
 sprite6block = 134
-sprite7block = 135
+sprite7block = 13
 
-;Programm memory
+;Program memory
 rExtra = 2
 r0 = 251
 r1 = 252
 r2 = 253
 r3 = 254
+
 sprite0lowerPositionX = $c000
 sprite0lowerPositionY = $c001
 sprite0higherPositionX = $c002
 sprite0higherPositionY = $c003
+sprite1lowerPositionX = $c004
+sprite1lowerPositionY = $c005
+sprite1higherPositionX = $c006
+sprite1higherPositionY = $c007
+sprite2lowerPositionX = $c008
+sprite2lowerPositionY = $c009
+sprite2higherPositionX = $c00a
+sprite2higherPositionY = $c00b
+sprite3lowerPositionX = $c00c
+sprite3lowerPositionY = $c00d
+sprite3higherPositionX = $c00e
+sprite3higherPositionY = $c00f
+sprite4lowerPositionX = $c010
+sprite4lowerPositionY = $c011
+sprite4higherPositionX = $c012
+sprite4higherPositionY = $c013
+sprite5lowerPositionX = $c014
+sprite5lowerPositionY = $c015
+sprite5higherPositionX = $c016
+sprite5higherPositionY = $c017
+sprite6lowerPositionX = $c018
+sprite6lowerPositionY = $c019
+sprite6higherPositionX = $c020
+sprite6higherPositionY = $c021
+sprite7lowerPositionX = $c022
+sprite7lowerPositionY = $c023
+sprite7higherPositionX = $c024
+sprite7higherPositionY = $c025
 
 lowerSpritesPositionXhighBits = $cffe
 higherSpritesPositionXhighBites = $cfff
@@ -87,6 +146,11 @@ higherSpritesPositionXhighBites = $cfff
 !macro ldi16 .addr, .value {
     +poke .addr, <.value
     +poke .addr+1, >.value
+}
+
+!macro mov .dest, .src {
+    lda .src
+    sta .dest
 }
 
 *=$080d
@@ -123,19 +187,27 @@ sta vicInterruptControlRegister
 +poke vicRasterInterruptScanlineSelectRegister, 100
 
 ;set IRQ handler pointer to ISR
-+ldi16 kernelrqVector. rasterISR100
++ldi16 kernelrqVector, rasterISRhigh
 
 ;enable raster interrupt
 lda vicControlRegister
-ora #$01 ; set raster interrupt enable bit to 1
+ora #$01 ;set raster interrupt enable bit to 1
 sta vicControlRegister
 cli ;Reenable interrupts
 
-;setup sprites
-lda #0
-sta vicSpriteMultiColorRegister ;disable multicolor for all sprites
-+poke vicSprite0bitmapBlockPointerRegister, sprite0block ;sprite one bitmap block set to 100*64
-+poke vicSpriteEnableRegister, 3 ;enable sprites 1 and 2 though bits 0 and 1
+;set sprite modes
++poke vicSpriteMultiColorRegister, 0 ;disable multicolor mode for all sprites
++poke vicSpriteEnableRegister, 255 ;enable sprites 1 and 2 though bits 0 and 1
+
+;set sprite block pointers
++poke vicSprite0bitmapBlockPointerRegister, sprite0block
++poke vicSprite1bitmapBlockPointerRegister, sprite1block
++poke vicSprite2bitmapBlockPointerRegister, sprite2block
++poke vicSprite3bitmapBlockPointerRegister, sprite3block
++poke vicSprite4bitmapBlockPointerRegister, sprite4block
++poke vicSprite5bitmapBlockPointerRegister, sprite5block
++poke vicSprite6bitmapBlockPointerRegister, sprite6block
++poke vicSprite7bitmapBlockPointerRegister, sprite7block
 
 ;set sprite colors
 +poke vicSprite0colorRegister, vicColorWhite
@@ -147,33 +219,77 @@ sta vicSpriteMultiColorRegister ;disable multicolor for all sprites
 +poke vicSprite6colorRegister, vicColorYellow
 +poke vicSprite7colorRegister, vicColorBrown
 
-
 ;animation code starts here
 
-;set sprite positions
+;set sprite position high bites
 lda #0
 sta lowerSpritesPositionXhighBits
 sta higherSpritesPositionXhighBites
+
+;set sprite y positions
+lda #50
+sta sprite0lowerPositionY
+sta sprite1lowerPositionY
+sta sprite2lowerPositionY
+sta sprite3lowerPositionY
+sta sprite4lowerPositionY
+sta sprite5lowerPositionY
+sta sprite6lowerPositionY
+sta sprite7lowerPositionY
+lda #150
+sta sprite0higherPositionY
+sta sprite1higherPositionY
+sta sprite2higherPositionY
+sta sprite3higherPositionY
+sta sprite4higherPositionY
+sta sprite5higherPositionY
+sta sprite6higherPositionY
+sta sprite7higherPositionY
+
+;set sprite x positions
 lda #50
 sta sprite0lowerPositionX
-sta sprite0lowerPositionY
-lda #150
 sta sprite0higherPositionX
-sta sprite0higherPositionY
+lda #100
+sta sprite1lowerPositionX
+sta sprite1higherPositionX
+lda #150
+sta sprite2lowerPositionX
+sta sprite2higherPositionX
+lda #200
+sta sprite3lowerPositionX
+sta sprite3higherPositionX
+lda #200
+sta sprite4lowerPositionX
+sta sprite4higherPositionX
+lda #250
+sta sprite5lowerPositionX
+sta sprite5higherPositionX
 
-;set upper sprite positions
 gameloop:
 jmp gameloop
 
-rasterISR100:
+rasterISRhigh:
 sei
 inc vicAcknowlageInterruptRegister ;acknowlage interrupt
 inc vicBorderColorRegister ;visualize screen division
-lda sprite0higherPositionY
-sta vicSprite0positionYregister
-lda sprite0lowerPositionX
-sta vicSprite0positionXregister
-lda #$fe ;Everything execpt the lowest bit high
++mov vicSprite0positionXregister, sprite0higherPositionX
++mov vicSprite0positionYregister, sprite0higherPositionY
++mov vicSprite1positionXregister, sprite1higherPositionX
++mov vicSprite1positionYregister, sprite1higherPositionY
++mov vicSprite2positionXregister, sprite2higherPositionX
++mov vicSprite2positionYregister, sprite2higherPositionY
++mov vicSprite3positionXregister, sprite3higherPositionX
++mov vicSprite3positionYregister, sprite3higherPositionY
++mov vicSprite4positionXregister, sprite4higherPositionX
++mov vicSprite4positionYregister, sprite4higherPositionY
++mov vicSprite5positionXregister, sprite5higherPositionX
++mov vicSprite5positionYregister, sprite5higherPositionY
++mov vicSprite6positionXregister, sprite6higherPositionX
++mov vicSprite6positionYregister, sprite6higherPositionY
++mov vicSprite7positionXregister, sprite7higherPositionX
++mov vicSprite7positionYregister, sprite7higherPositionY
+lda #$fe ;Everything except the lowest bit high
 and vicSpritePositionsXhighbitRegister
 sta r3
 pha ;push r3 to the stack
@@ -183,26 +299,34 @@ ora r3
 sta vicSpritePositionsXhighbitRegister ;sprite 0 position x high bit = sprite 0 higher position x high bit
 pla
 sta r3 ;pull r3 from the stack
-lda #$7f ;everything execpt the highest bit high
+lda #$7f ;everything except the highest bit high
 and vicInterruptControlRegister
 sta vicInterruptControlRegister
-lda #250 ;raster line 250
-sta vicRasterInterruptScanlineSelectRegister
-lda #<rasterISR250
-sta kernelrqVector
-lda #>rasterISR250
-sta kernelrqVector+1 ;setup next raster interrupt
++poke vicRasterInterruptScanlineSelectRegister, 250
++ldi16 kernelrqVector, rasterISRlow
 cli
 jmp kernelRestoreRegistersAndReturnFromInterruptRoutine ;return from interrupt, restoring regs using kernel rotinue
 
-rasterISR250:
+rasterISRlow:
 sei
 inc vicAcknowlageInterruptRegister ;acknowlage interrupt
 dec vicBorderColorRegister ;visualize screen division
-lda sprite0lowerPositionX
-sta vicSprite0positionXregister
-lda sprite0lowerPositionY
-sta vicSprite0positionYregister
++mov vicSprite0positionXregister, sprite0lowerPositionX
++mov vicSprite0positionYregister, sprite0lowerPositionY
++mov vicSprite1positionXregister, sprite1lowerPositionX
++mov vicSprite1positionYregister, sprite1lowerPositionY
++mov vicSprite2positionXregister, sprite2lowerPositionX
++mov vicSprite2positionYregister, sprite2lowerPositionY
++mov vicSprite3positionXregister, sprite3lowerPositionX
++mov vicSprite3positionYregister, sprite3lowerPositionY
++mov vicSprite4positionXregister, sprite4lowerPositionX
++mov vicSprite4positionYregister, sprite4lowerPositionY
++mov vicSprite5positionXregister, sprite5lowerPositionX
++mov vicSprite5positionYregister, sprite5lowerPositionY
++mov vicSprite6positionXregister, sprite6lowerPositionX
++mov vicSprite6positionYregister, sprite6lowerPositionY
++mov vicSprite7positionXregister, sprite7lowerPositionX
++mov vicSprite7positionYregister, sprite7lowerPositionY
 lda r3
 and vicSpritePositionsXhighbitRegister
 sta r3
@@ -213,15 +337,11 @@ ora r3
 sta vicSpritePositionsXhighbitRegister ;sprite 0 position x high bit = sprite 0 lower position x high bit
 pla
 sta r3 ;pull r3 from the stack
-lda #$7f ;everything execpt the highest bit high
+lda #$7f ;everything except the highest bit high
 and vicInterruptControlRegister
 sta vicInterruptControlRegister
-lda #100 ;raster line 100
-sta vicRasterInterruptScanlineSelectRegister
-lda #<rasterISR100
-sta kernelrqVector
-lda #>rasterISR100
-sta kernelrqVector+1 ;setup next raster interrupt
++poke vicRasterInterruptScanlineSelectRegister, 100
++ldi16 kernelrqVector, rasterISRhigh
 cli
 jmp kernelRestoreRegistersAndReturnFromInterruptRoutine ;return from interrupt, restoring regs using kernel rotinue
 
