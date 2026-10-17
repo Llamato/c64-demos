@@ -9,10 +9,8 @@
 next_line:
     !16 $0000       ; End of BASIC program
 
-;Petscii text
+;Hardware constants
 petsciiBlank = 32
-
-;Vic Colors
 vicColorBlack = 0
 vicColorWhite = 1
 vicColorRed = 2
@@ -29,6 +27,10 @@ vicColorGray = 12
 vicColorLightGreen = 13
 vicColorLightBlue = 14
 vicColorLightGray = 15
+highresSpriteWidth = 24
+highresSpriteHeight = 21
+screenWidth = 320
+screenHeight = 200
 
 ;Vic Registers
 screen = $0400 ;4*256 = 1024
@@ -85,6 +87,13 @@ kernelrqVector = $0314 ;$0314-0315
 kernelTextColor = $0286
 kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
+
+;Hardware constants
+spriteStartOffsetX = 25
+spriteStartOffsetY = 0
+spriteScreenCoordinateOffsetX = 25
+spriteScreenCoordinateOffsetY = 21
+
 ;Program constants
 sprite0block = 128
 sprite1block = 129
@@ -94,6 +103,7 @@ sprite4block = 132
 sprite5block = 133
 sprite6block = 134
 sprite7block = 13
+fishCount = 16
 
 ;Program memory
 rExtra = 2
@@ -103,37 +113,40 @@ r2 = 253
 r3 = 254
 
 sprite0lowerPositionX = $c000
-sprite0lowerPositionY = $c001
-sprite0higherPositionX = $c002
-sprite0higherPositionY = $c003
-sprite1lowerPositionX = $c004
-sprite1lowerPositionY = $c005
-sprite1higherPositionX = $c006
-sprite1higherPositionY = $c007
-sprite2lowerPositionX = $c008
-sprite2lowerPositionY = $c009
+sprite1lowerPositionX = $c001
+sprite2lowerPositionX = $c002
+sprite3lowerPositionX = $c003
+sprite4lowerPositionX = $c004
+sprite5lowerPositionX = $c005
+sprite6lowerPositionX = $c006
+sprite7lowerPositionX = $c007
+
+sprite0higherPositionX = $c008
+sprite1higherPositionX = $c009
 sprite2higherPositionX = $c00a
-sprite2higherPositionY = $c00b
-sprite3lowerPositionX = $c00c
-sprite3lowerPositionY = $c00d
-sprite3higherPositionX = $c00e
-sprite3higherPositionY = $c00f
-sprite4lowerPositionX = $c010
-sprite4lowerPositionY = $c011
-sprite4higherPositionX = $c012
-sprite4higherPositionY = $c013
-sprite5lowerPositionX = $c014
+sprite3higherPositionX = $c00b
+sprite4higherPositionX = $c00c
+sprite5higherPositionX = $c00d
+sprite6higherPositionX = $c00e
+sprite7higherPositionX = $c00f
+
+sprite0lowerPositionY = $c010
+sprite1lowerPositionY = $c011
+sprite2lowerPositionY = $c012
+sprite3lowerPositionY = $c013
+sprite4lowerPositionY = $c014
 sprite5lowerPositionY = $c015
-sprite5higherPositionX = $c016
-sprite5higherPositionY = $c017
-sprite6lowerPositionX = $c018
-sprite6lowerPositionY = $c019
-sprite6higherPositionX = $c020
-sprite6higherPositionY = $c021
-sprite7lowerPositionX = $c022
-sprite7lowerPositionY = $c023
-sprite7higherPositionX = $c024
-sprite7higherPositionY = $c025
+sprite6lowerPositionY = $c016
+sprite7lowerPositionY = $c017
+
+sprite0higherPositionY = $c018
+sprite1higherPositionY = $c019
+sprite2higherPositionY = $c01a
+sprite3higherPositionY = $c01b
+sprite4higherPositionY = $c01c
+sprite5higherPositionY = $c01d
+sprite6higherPositionY = $c01e
+sprite7higherPositionY = $c01f
 
 lowerSpritesPositionXhighBits = $cffe
 higherSpritesPositionXhighBites = $cfff
@@ -143,20 +156,70 @@ higherSpritesPositionXhighBites = $cfff
     sta .addr
 }
 
-!macro ldi16 .addr, .value {
-    +poke .addr, <.value
-    +poke .addr+1, >.value
-}
-
 !macro mov .dest, .src {
     lda .src
     sta .dest
 }
 
+!macro phx {
+    txa
+    pha
+}
+
+!macro phy {
+    tya
+    pha
+}
+
+!macro plx {
+    pla
+    tax
+}
+
+!macro ply {
+    pla
+    tay
+}
+
+!macro ldi16 .addr, .value {
+    +poke .addr, <.value
+    +poke .addr+1, >.value
+}
+
+!macro and16 .acc, .op {
+    lda .acc
+    and .op
+    sta .acc
+    lda .acc+1
+    and .op+1
+    sta .acc+1
+}
+
+!macro inc16 .addr {
+    inc .addr
+    bne .done
+    inc .addr+1
+.done
+}
+
+!macro msk16x .addr {
+    cpx #0
+    beq .done
+    +ldi16 .addr, 1
+    cpx #1
+    beq .done
+.loop
+    clc
+    asl .addr
+    asl .addr+1
+    dex
+    bne .loop
+.done
+}
+
 *=$080d
 ;set colors
-lda #13
-sta vicBorderColorRegister
++poke vicBorderColorRegister, vicColorLightGreen
 lda #vicColorBlack
 sta vicBackgroundColorRegister
 sta kernelTextColor
@@ -193,7 +256,7 @@ sta vicInterruptControlRegister
 lda vicControlRegister
 ora #$01 ;set raster interrupt enable bit to 1
 sta vicControlRegister
-cli ;Reenable interrupts
+cli ;reenable interrupts
 
 ;set sprite modes
 +poke vicSpriteMultiColorRegister, 0 ;disable multicolor mode for all sprites
@@ -247,27 +310,86 @@ sta sprite6higherPositionY
 sta sprite7higherPositionY
 
 ;set sprite x positions
-lda #50
+lda #spriteStartOffsetX
 sta sprite0lowerPositionX
-sta sprite0higherPositionX
-lda #100
+sta sprite0higherPositionX ;set sprite 0 x position to 25
+clc
+adc #spriteStartOffsetX
 sta sprite1lowerPositionX
-sta sprite1higherPositionX
-lda #150
+sta sprite1higherPositionX ;set sprite 1 x position to 25+25=50
+adc #spriteStartOffsetX
 sta sprite2lowerPositionX
-sta sprite2higherPositionX
-lda #200
+sta sprite2higherPositionX ;set sprite 2 x position to 25+25+25=75
+adc #spriteStartOffsetX
 sta sprite3lowerPositionX
-sta sprite3higherPositionX
-lda #200
+sta sprite3higherPositionX ;set sprite 3 x position to 25+25+25+25=100
+adc #spriteStartOffsetX
 sta sprite4lowerPositionX
-sta sprite4higherPositionX
-lda #250
+sta sprite4higherPositionX ;set sprite 4 x position to 25+25+25+25+25=125
+adc #spriteStartOffsetX
 sta sprite5lowerPositionX
-sta sprite5higherPositionX
+sta sprite5higherPositionX ;set sprite 5 x position to 25+25+25+25+25+25=150
+adc #spriteStartOffsetX
+sta sprite6lowerPositionX
+sta sprite6higherPositionX ;set sprite 6 x position to 25+25+25+25+25+25+25=175
+adc #spriteStartOffsetX
+sta sprite7lowerPositionX
+sta sprite7higherPositionX ;set sprite 7 x position to 25+25+25+25+25+25+25+25=200
 
-gameloop:
-jmp gameloop
+;set sprite y positions
+demoloop:
+jsr delay100ms
+
+;Make fish moves
+moveFish:
+ldx #0
+
+fishMoveLoopHeader:
+cpx #fishCount
+bne fishMoveLoopBody
+jmp demoloop
+
+fishMoveLoopBody:
++phx
++msk16x r0
++and16 r0, fishDirections
++plx
+lda r0
+cmp #0
+bne moveFishLeft
+lda r1
+cmp #0
+bne moveFishLeft
+
+moveFishRight:
+inc sprite0lowerPositionX, x ;8 bit only for now
+inx
+jmp fishMoveLoopHeader
+
+moveFishLeft:
+dec sprite0lowerPositionX, x ;8 bit only for now
+inx
+jmp fishMoveLoopHeader
+
+changeFishDirection:
++phx
++msk16x r0
+lda fishDirections
+eor r0
+sta fishDirections
++plx
+rts
+
+delay100ms:
+    ldy #$82          ; [2 cycles] Outer loop counter (130 decimal)
+outer_loop:
+    ldx #$9a          ; [2 cycles] Inner loop counter (154 decimal)
+inner_loop:
+    dex               ; [2 cycles] Decrement X
+    bne inner_loop    ; [3 cycles taken, 2 if not] Loop until X=0
+    dey               ; [2 cycles] Decrement Y
+    bne outer_loop    ; [3 cycles taken, 2 if not] Loop until Y=0
+    rts               ; [6 cycles] Return from subroutine
 
 rasterISRhigh:
 sei
@@ -289,7 +411,7 @@ inc vicBorderColorRegister ;visualize screen division
 +mov vicSprite6positionYregister, sprite6higherPositionY
 +mov vicSprite7positionXregister, sprite7higherPositionX
 +mov vicSprite7positionYregister, sprite7higherPositionY
-lda #$fe ;Everything except the lowest bit high
+lda #$fe ;everything except the lowest bit high
 and vicSpritePositionsXhighbitRegister
 sta r3
 pha ;push r3 to the stack
@@ -322,7 +444,7 @@ dec vicBorderColorRegister ;visualize screen division
 +mov vicSprite4positionXregister, sprite4lowerPositionX
 +mov vicSprite4positionYregister, sprite4lowerPositionY
 +mov vicSprite5positionXregister, sprite5lowerPositionX
-+mov vicSprite5positionYregister, sprite5lowerPositionY
++mov vicSprite5positionYregister, sprite5lowerPositionY 
 +mov vicSprite6positionXregister, sprite6lowerPositionX
 +mov vicSprite6positionYregister, sprite6lowerPositionY
 +mov vicSprite7positionXregister, sprite7lowerPositionX
@@ -344,6 +466,9 @@ sta vicInterruptControlRegister
 +ldi16 kernelrqVector, rasterISRhigh
 cli
 jmp kernelRestoreRegistersAndReturnFromInterruptRoutine ;return from interrupt, restoring regs using kernel rotinue
+
+fishDirections:
+!fill 16, $00
 
 *=sprite0block*64 
 ;Deepseek told me this is a fish. I will let you be the judge...
