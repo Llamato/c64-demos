@@ -115,6 +115,8 @@ kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 ;Program constants
 spriteBitmapsStartingBlock = 128
 fishCount = 16
+lowToHighRasterline = 125
+highToLowRasterline = 250
 
 ;Program memory
 rExtra = 2
@@ -208,6 +210,7 @@ r3 = 254
 }
 
 !macro msk16x .addr {
+    +phx
     +ldi16 .addr, 1
     cpx #0
     beq .done
@@ -217,6 +220,14 @@ r3 = 254
     dex
     bne .loop
 .done
+    +plx
+}
+
+!macro changeDirection .direction {
+    +phx
+    +msk16x r0
+    +eor16 .direction, r0
+    +plx
 }
 
 *=$080d
@@ -255,7 +266,7 @@ screenclearloop:
     lda #$7f
     and vicInterruptControlRegister
     sta vicInterruptControlRegister
-    +poke vicRasterInterruptScanlineSelectRegister, 100
+    +poke vicRasterInterruptScanlineSelectRegister, highToLowRasterline
 
 ;set IRQ handler pointer to ISR
     +ldi16 kernelrqVector, rasterISRhigh
@@ -292,7 +303,6 @@ screenclearloop:
 }
 
 demoloop:
-    inc frameCounter
     ldx #0
 
 fishMoveLoopHeader:
@@ -309,13 +319,38 @@ fishShouldMove:
     lda fishSpeeds, x
     sta fishMovementCounters, x
 
-moveFish:
-    +phx
+moveFishUpOrDown:
     +msk16x r0
-    +plx
-    lda r2
-    ora r3
-    +and16 r0, fishDirections
+    +and16 r0, fishDirectionsY
+    lda r0
+    ora r1
+    beq moveFishDown
+    jmp moveFishUp
+    
+moveFishDown:
+    lda lowerFishPositionsY, x
+    cmp fishBobDownLimits, x
+    bcs bounceUp
+    inc lowerFishPositionsY, x
+    jmp shouldFishMoveLeftOrRight
+
+bounceUp:
+    +changeDirection fishDirectionsY
+    jmp shouldFishMoveLeftOrRight
+
+moveFishUp:
+    lda lowerFishPositionsY, x
+    cmp fishBobUpLimits, x
+    bcc bounceDown
+    dec lowerFishPositionsY, x
+    jmp shouldFishMoveLeftOrRight
+
+bounceDown:
+    +changeDirection fishDirectionsY
+
+shouldFishMoveLeftOrRight:
+    +msk16x r0
+    +and16 r0, fishDirectionsX
     lda r0
     ora r1
     beq moveFishLeft
@@ -323,31 +358,23 @@ moveFish:
 moveFishRight:
     lda lowerFishPositionsX, x
     cmp #255
-    beq .bounceRight
+    beq bounceRight
     inc lowerFishPositionsX, x
     jmp moveNextFish
 
-.bounceRight:
-    jsr changeFishDirection
+bounceRight:
+    +changeDirection fishDirectionsX
     jmp moveNextFish
 
 moveFishLeft:
     lda lowerFishPositionsX, x
     cmp #spriteScreenCoordinateOffsetX
-    beq .bounceLeft
+    beq bounceLeft
     dec lowerFishPositionsX, x
     jmp moveNextFish
 
-.bounceLeft:
-    jsr changeFishDirection
-    jmp moveNextFish
-
-changeFishDirection:
-    +phx
-    +msk16x r0
-    +eor16 fishDirections, r0
-    +plx
-    rts
+bounceLeft:
+    +changeDirection fishDirectionsX
 
 moveNextFish:
     inx
@@ -387,7 +414,7 @@ rasterISRhigh:
     lda #$7f ;everything except the highest bit high
     and vicInterruptControlRegister
     sta vicInterruptControlRegister
-    +poke vicRasterInterruptScanlineSelectRegister, 250
+    +poke vicRasterInterruptScanlineSelectRegister, highToLowRasterline
     +ldi16 kernelrqVector, rasterISRlow
     +pull r3
     +pull r2
@@ -417,14 +444,17 @@ rasterISRlow:
     lda #$7f ;everything except the highest bit high
     and vicInterruptControlRegister
     sta vicInterruptControlRegister
-    +poke vicRasterInterruptScanlineSelectRegister, 100
+    +poke vicRasterInterruptScanlineSelectRegister, lowToHighRasterline
     +ldi16 kernelrqVector, rasterISRhigh
     +pull r3
     +pull r2
     cli
     jmp kernelRestoreRegistersAndReturnFromInterruptRoutine ;return from interrupt, restoring regs using kernel rotinue
 
-fishDirections:
+fishDirectionsX:
+!fill fishCount, 0
+
+fishDirectionsY:
 !fill fishCount, 0
 
 lowerFishPositionsX:
@@ -438,10 +468,18 @@ higherFishPositionsX:
 }
 
 lowerFishPositionsY:
-!fill vicHardwareSpriteCount, 50
+!fill vicHardwareSpriteCount, 75
 
 higherFishPositionsY:
 !fill vicHardwareSpriteCount, 150
+
+fishBobUpLimits:
+!fill vicHardwareSpriteCount, 50
+!fill vicHardwareSpriteCount, 140
+
+fishBobDownLimits:
+!fill vicHardwareSpriteCount, 90
+!fill vicHardwareSpriteCount, 160
 
 lowerSpritesPositionXhighBits:
 !byte 0
@@ -450,31 +488,10 @@ higherSpritesPositionXhighBits:
 !byte 0
 
 fishSpeeds:
-!fill fishCount , 128
+!fill fishCount, 128
 
 fishMovementCounters:
 !fill fishCount, 0
-
-frameCounter:
-!byte 0
-
-sinTable:
-!word 0, 6, 12, 18, 25, 31, 37, 43, 49, 56, 62, 68, 74, 80, 86, 92
-!word 97, 103, 109, 115, 120, 126, 131, 136, 142, 147, 152, 157, 162, 167, 171, 176
-!word 181, 185, 189, 193, 197, 201, 205, 209, 212, 216, 219, 222, 225, 228, 231, 234
-!word 236, 239, 241, 243, 245, 247, 248, 250, 251, 252, 253, 254, 255, 255, 255, 255
-!word 255, 255, 255, 255, 254, 253, 252, 251, 250, 248, 247, 245, 243, 241, 239, 236
-!word 234, 231, 228, 225, 222, 219, 216, 212, 209, 205, 201, 197, 193, 189, 185, 181
-!word 176, 171, 167, 162, 157, 152, 147, 142, 136, 131, 126, 120, 115, 109, 103, 97
-!word 92, 86, 80, 74, 68, 62, 56, 49, 43, 37, 31, 25, 18, 12, 6, 0
-!word -6, -12, -18, -25, -31, -37, -43, -49, -56, -62, -68, -74, -80, -86, -92, -97
-!word -103, -109, -115, -120, -126, -131, -136, -142, -147, -152, -157, -162, -167, -171, -176, -181
-!word -185, -189, -193, -197, -201, -205, -209, -212, -216, -219, -222, -225, -228, -231, -234, -236
-!word -239, -241, -243, -245, -247, -248, -250, -251, -252, -253, -254, -255, -255, -255, -255, -255
-!word -255, -255, -255, -254, -253, -252, -251, -250, -248, -247, -245, -243, -241, -239, -236, -234
-!word -231, -228, -225, -222, -219, -216, -212, -209, -205, -201, -197, -193, -189, -185, -181, -176
-!word -171, -167, -162, -157, -152, -147, -142, -136, -131, -126, -120, -115, -109, -103, -97, -92
-!word -86, -80, -74, -68, -62, -56, -49, -43, -37, -31, -25, -18, -12, -6, 0
 
 *=spriteBitmapsStartingBlock*64 
 ;Deepseek told me this is a fish. I will let you be the judge...
@@ -632,3 +649,6 @@ sinTable:
 !byte $00, $00, $00, $00, $00, $00, $00, $00 ; Bottom border (empty)
 !byte $00, $00, $00, $00, $00, $00, $00, $00
 !byte 0 ;padding
+
+mirroredSpriteBitmaps:
+!fill fishCount*spriteSize, $00
