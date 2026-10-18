@@ -10,7 +10,6 @@ next_line:
     !16 $0000       ; End of BASIC program
 
 ;Hardware constants
-petsciiBlank = 32
 vicColorBlack = 0
 vicColorWhite = 1
 vicColorRed = 2
@@ -36,7 +35,27 @@ spriteStartOffsetX = 25
 spriteStartOffsetY = 0
 spriteScreenCoordinateOffsetX = 25
 spriteScreenCoordinateOffsetY = 21
+sidVoiceControlWaveformTriangleMask = 16
+sidVoiceControlWaveformSawtoothMask = 32
+sidVoiceControlWaveformPulseMask = 64
+sidVoiceControlWaveformNoiseMask = 128
+sidVoiceMaxValue = $0fff
+sidVoiceControlWaveformTriangleMask = 16
+sidVoiceControlWaveformSawtoothMask = 32
+sidVoiceControlWaveformPulseMask = 64
+sidVoiceControlWaveformNoiseMask = 128
+sidVoice3Frequency = 4096 ; = maxRngN | max seed
+sidVoice3DutyCycle = $800 ; = 50%
 registersPerSpritePosition = 2
+petsciiBlank = 32
+
+;sid Registers
+sidVoice3FrequencyRegisterLow = $d40e
+sidVoice3FrequencyRegisterHigh = $d40f
+sidVoice3DutyCycleRegisterLow = $d410
+sidVoice3DutyCycleRegisterHigh = $d411
+sidVoice3ControlRegister = $d412
+sidVoice3ValueRegister = $d41b
 
 ;Vic Registers
 screen = $0400 ;4*256 = 1024
@@ -83,7 +102,7 @@ vicRasterInterruptScanlineSelectRegister = $d012
 vicInterruptControlRegister = $d011
 vicSprite0colorRegister = $d027
 
-;CIA
+;CIA registers
 cia1ControlRegister = $dc0d
 cia2ControlRegister = $dd0d
 
@@ -100,7 +119,7 @@ sprite3block = 131
 sprite4block = 132
 sprite5block = 133
 sprite6block = 134
-sprite7block = 13
+sprite7block = 135
 fishCount = 16
 
 ;Program memory
@@ -193,6 +212,12 @@ r3 = 254
 }
 
 *=$080d
+
+;Setup sid voice 3 for random number generation (seeding)
+    +ldi16 sidVoice3FrequencyRegisterLow, sidVoice3Frequency ;Set frequency
+    +ldi16 sidVoice3DutyCycleRegisterLow, sidVoice3DutyCycle ;Set duty cycle
+    +poke sidVoice3ControlRegister, sidVoiceControlWaveformNoiseMask ;Set wave shape to noise
+
 ;set colors
     +poke vicBorderColorRegister, vicColorLightGreen
     lda #vicColorBlack
