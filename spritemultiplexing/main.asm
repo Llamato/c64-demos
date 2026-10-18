@@ -35,6 +35,7 @@ spriteStartOffsetX = 25
 spriteStartOffsetY = 0
 spriteScreenCoordinateOffsetX = 25
 spriteScreenCoordinateOffsetY = 21
+spriteSize = 64
 sidVoiceControlWaveformTriangleMask = 16
 sidVoiceControlWaveformSawtoothMask = 32
 sidVoiceControlWaveformPulseMask = 64
@@ -112,14 +113,7 @@ kernelTextColor = $0286
 kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
 ;Program constants
-sprite0block = 128
-sprite1block = 129
-sprite2block = 130
-sprite3block = 131
-sprite4block = 132
-sprite5block = 133
-sprite6block = 134
-sprite7block = 135
+spriteBitmapsStartingBlock = 128
 fishCount = 16
 
 ;Program memory
@@ -172,6 +166,20 @@ r3 = 254
 !macro ldi16 .addr, .value {
     +poke .addr, <.value
     +poke .addr+1, >.value
+}
+
+!macro mov16 .dest, .src {
+    +mov .dest, .src
+    +mov .dest+1, .src+1
+}
+
+!macro eori16 .acc, .value {
+    lda .acc
+    eor #<.value
+    sta .acc
+    lda .acc+1
+    eor #>.value
+    sta .acc+1
 }
 
 !macro and16 .acc, .op {
@@ -263,14 +271,9 @@ screenclearloop:
     +poke vicSpriteEnableRegister, 255 ;enable sprites 1 and 2 though bits 0 and 1
 
 ;set sprite block pointers
-    +poke vicSprite0bitmapBlockPointerRegister, sprite0block
-    +poke vicSprite1bitmapBlockPointerRegister, sprite1block
-    +poke vicSprite2bitmapBlockPointerRegister, sprite2block
-    +poke vicSprite3bitmapBlockPointerRegister, sprite3block
-    +poke vicSprite4bitmapBlockPointerRegister, sprite4block
-    +poke vicSprite5bitmapBlockPointerRegister, sprite5block
-    +poke vicSprite6bitmapBlockPointerRegister, sprite6block
-    +poke vicSprite7bitmapBlockPointerRegister, sprite7block
+!for currentSprite, 0, vicHardwareSpriteCount-1 {
+    +poke vicSprite0bitmapBlockPointerRegister+currentSprite, spriteBitmapsStartingBlock+currentSprite
+}
 
 ;set sprite colors
     +poke vicSprite0colorRegister, vicColorWhite
@@ -282,47 +285,69 @@ screenclearloop:
     +poke vicSprite6colorRegister, vicColorYellow
     +poke vicSprite7colorRegister, vicColorBrown
 
-demoloop:
+;get random values to derive fish speeds from
+!for currentFish, 0, fishCount-1 {
+    +mov fishSpeeds+currentFish, sidVoice3ValueRegister
     jsr delay100ms
+}
 
-;Make fish moves
-moveFish:
+demoloop:
+    inc frameCounter
     ldx #0
 
 fishMoveLoopHeader:
     cpx #fishCount
-    bne fishMoveLoopBody
+    bne checkFishSpeed
     jmp demoloop
 
-fishMoveLoopBody:
+checkFishSpeed:
+    dec fishMovementCounters, x
+    beq fishShouldMove
+    jmp moveNextFish
+
+fishShouldMove:
+    lda fishSpeeds, x
+    sta fishMovementCounters, x
+
+moveFish:
     +phx
     +msk16x r0
-    +and16 r0, fishDirections
     +plx
+    lda r2
+    ora r3
+    +and16 r0, fishDirections
     lda r0
     ora r1
     beq moveFishLeft
-    lda r0
 
 moveFishRight:
     lda lowerFishPositionsX, x
     cmp #255
-    beq changeFishDirection
+    beq .bounceRight
     inc lowerFishPositionsX, x
+    jmp moveNextFish
+
+.bounceRight:
+    jsr changeFishDirection
     jmp moveNextFish
 
 moveFishLeft:
     lda lowerFishPositionsX, x
     cmp #spriteScreenCoordinateOffsetX
-    beq changeFishDirection
+    beq .bounceLeft
     dec lowerFishPositionsX, x
+    jmp moveNextFish
+
+.bounceLeft:
+    jsr changeFishDirection
     jmp moveNextFish
 
 changeFishDirection:
     +phx
     +msk16x r0
-    +eor16 fishDirections, r0 
+    +eor16 fishDirections, r0
     +plx
+    rts
 
 moveNextFish:
     inx
@@ -424,6 +449,15 @@ lowerSpritesPositionXhighBits:
 higherSpritesPositionXhighBits:
 !byte 0
 
+fishSpeeds:
+!fill fishCount , 128
+
+fishMovementCounters:
+!fill fishCount, 0
+
+frameCounter:
+!byte 0
+
 sinTable:
 !word 0, 6, 12, 18, 25, 31, 37, 43, 49, 56, 62, 68, 74, 80, 86, 92
 !word 97, 103, 109, 115, 120, 126, 131, 136, 142, 147, 152, 157, 162, 167, 171, 176
@@ -442,7 +476,7 @@ sinTable:
 !word -171, -167, -162, -157, -152, -147, -142, -136, -131, -126, -120, -115, -109, -103, -97, -92
 !word -86, -80, -74, -68, -62, -56, -49, -43, -37, -31, -25, -18, -12, -6, 0
 
-*=sprite0block*64 
+*=spriteBitmapsStartingBlock*64 
 ;Deepseek told me this is a fish. I will let you be the judge...
 !byte $00,$3C,$00
 !byte $01,$42,$80
@@ -465,8 +499,8 @@ sinTable:
 !byte $00,$00,$00
 !byte $00,$00,$00
 !byte $00,$00,$00
+!byte 0 ;padding
 
-*=sprite1block*64
 ;Claude told me this is a fish. I will let you be the judge...
 !byte $00,$00,$00  ; ........................
 !byte $00,$70,$00  ; .........XXX............
@@ -489,8 +523,8 @@ sinTable:
 !byte $00,$70,$00  ; .........XXX............
 !byte $00,$00,$00  ; ........................
 !byte $00,$00,$00  ; ........................
+!byte 0 ;padding
 
-*=sprite2block*64
 ;Github copilot told me this is a fish. I will let you be the judge...
 !byte %00000000, %00000000, %00000000
 !byte %00000000, %00000000, %00000000
@@ -513,8 +547,8 @@ sinTable:
 !byte %00000000, %00011100, %00000000
 !byte %00000000, %00001000, %00000000
 !byte %00000000, %00000000, %00000000
+!byte 0 ;padding
 
-*=sprite3block*64
 ;Chatgpt told me this is a fish. I will let you be the judge...
 !byte %00000000,%00000000,%00000000
 !byte %00000000,%00011000,%00000000
@@ -537,8 +571,8 @@ sinTable:
 !byte %00000000,%00011000,%00000000
 !byte %00000000,%00100100,%00000000
 !byte %00000000,%01000010,%00000000
+!byte 0 ;padding
 
-*=sprite4block*64
 ;Gamini told me this is a fish. I will let you be the judge...
 !byte %00000000, %00001100, %00000000
 !byte %00000000, %00011110, %00000000
@@ -561,8 +595,8 @@ sinTable:
 !byte %00000000, %00011110, %00000000
 !byte %00000000, %00001100, %00000000
 !byte %00000000, %00000000, %00000000
+!byte 0 ;padding
 
-*=sprite5block*64
 ;Grok told me this is a fish. I will let you be the judge...
 !byte %00000000, %00000000, %00000000   ; row 0
 !byte %00000000, %00000000, %00000000   ; row 1
@@ -585,8 +619,8 @@ sinTable:
 !byte %00000111, %10000000, %00000000   ; row 18
 !byte %00000000, %00000000, %00000000   ; row 19
 !byte %00000000, %00000000, %00000000   ; row 20
+!byte 0 ;padding
 
-*=sprite6block*64
 ;Mistral told me this is a fish. I will let you be the judge...
 !byte $00, $00, $00, $00, $00, $00, $00, $00 ; Top border (empty)
 !byte $00, $00, $00, $00, $00, $00, $00, $00
@@ -597,3 +631,4 @@ sinTable:
 !byte $00, $00, $00, $18, $18, $00, $00, $00 ; Fish tail
 !byte $00, $00, $00, $00, $00, $00, $00, $00 ; Bottom border (empty)
 !byte $00, $00, $00, $00, $00, $00, $00, $00
+!byte 0 ;padding
