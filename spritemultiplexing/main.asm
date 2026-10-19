@@ -237,12 +237,6 @@ r3 = 254
     +ldi16 sidVoice3DutyCycleRegisterLow, sidVoice3DutyCycle ;Set duty cycle
     +poke sidVoice3ControlRegister, sidVoiceControlWaveformNoiseMask ;Set wave shape to noise
 
-;set colors
-    +poke vicBorderColorRegister, vicColorLightGreen
-    lda #vicColorBlack
-    sta vicBackgroundColorRegister
-    sta kernelTextColor
-
 ;clear screen
     ldy #0
     lda #petsciiBlank
@@ -287,14 +281,22 @@ screenclearloop:
 }
 
 ;set sprite colors
-    +poke vicSprite0colorRegister, vicColorWhite
-    +poke vicSprite1colorRegister, vicColorRed
-    +poke vicSprite2colorRegister, vicColorCyan
-    +poke vicSprite3colorRegister, vicColorPurple
-    +poke vicSprite4colorRegister, vicColorGreen
+    +poke vicSprite0colorRegister, vicColorCyan
+    +poke vicSprite1colorRegister, vicColorLightBrown
+    +poke vicSprite2colorRegister, vicColorLightBlue
+    +poke vicSprite3colorRegister, vicColorBrown
+    +poke vicSprite4colorRegister, vicColorRed
     +poke vicSprite5colorRegister, vicColorBlue
     +poke vicSprite6colorRegister, vicColorYellow
     +poke vicSprite7colorRegister, vicColorBrown
+    lda #vicColorBlack
+    sta vicBackgroundColorRegister
+    sta kernelTextColor
+    lda #$03 ; sprite multicolor 1
+    sta $d025
+    lda #$01 ; sprite multicolor 2
+    sta $d026
+    +poke vicSpriteMultiColorRegister, %00110000 
 
 ;get random values to derive fish speeds from
 !for currentFish, 0, fishCount-1 {
@@ -319,35 +321,17 @@ fishShouldMove:
     lda fishSpeeds, x
     sta fishMovementCounters, x
 
+!zone upDownMovement {
 moveFishUpOrDown:
-    +msk16x r0
-    +and16 r0, fishDirectionsY
-    lda r0
-    ora r1
-    beq moveFishDown
-    jmp moveFishUp
-    
-moveFishDown:
-    lda lowerFishPositionsY, x
-    cmp fishBobDownLimits, x
-    bcs bounceUp
-    inc lowerFishPositionsY, x
-    jmp shouldFishMoveLeftOrRight
+    txa
+    and #1
+    beq .sinejumppad
+    jmp triangleUpDownMovement
+.sinejumppad:
+    jmp sineUpDownMovement
+}
 
-bounceUp:
-    +changeDirection fishDirectionsY
-    jmp shouldFishMoveLeftOrRight
-
-moveFishUp:
-    lda lowerFishPositionsY, x
-    cmp fishBobUpLimits, x
-    bcc bounceDown
-    dec lowerFishPositionsY, x
-    jmp shouldFishMoveLeftOrRight
-
-bounceDown:
-    +changeDirection fishDirectionsY
-
+!zone leftRightMovement {
 shouldFishMoveLeftOrRight:
     +msk16x r0
     +and16 r0, fishDirectionsX
@@ -375,10 +359,49 @@ moveFishLeft:
 
 bounceLeft:
     +changeDirection fishDirectionsX
+}
 
 moveNextFish:
     inx
     jmp fishMoveLoopHeader
+
+
+triangleUpDownMovement:
+!zone triangleUpDownMovement {
+    +msk16x r0
+    +and16 r0, fishDirectionsY
+    lda r0
+    ora r1
+    beq .moveFishDown
+    jmp .moveFishUp
+    
+.moveFishDown:
+    lda lowerFishPositionsY, x
+    cmp fishBobDownLimits, x
+    bcs .bounceUp
+    inc lowerFishPositionsY, x
+    jmp shouldFishMoveLeftOrRight
+
+.bounceUp:
+    +changeDirection fishDirectionsY
+    jmp shouldFishMoveLeftOrRight
+
+.moveFishUp:
+    lda lowerFishPositionsY, x
+    cmp fishBobUpLimits, x
+    bcc .bounceDown
+    dec lowerFishPositionsY, x
+    jmp shouldFishMoveLeftOrRight
+
+.bounceDown:
+    +changeDirection fishDirectionsY
+    jmp shouldFishMoveLeftOrRight
+}
+
+sineUpDownMovement:
+!zone sineUpDownMovement {
+    jmp triangleUpDownMovement
+}
 
 delay100ms:
     ldy #$82          ; [2 cycles] Outer loop counter (130 decimal)
@@ -394,7 +417,7 @@ inner_loop:
 rasterISRhigh:
     sei
     inc vicAcknowlageInterruptRegister ;acknowlage interrupt
-    inc vicBorderColorRegister ;visualize screen division
+    +poke vicBorderColorRegister, vicColorYellow ;visualize screen division
     +push r2
     +push r3
 !for currentSprite, 0, vicHardwareSpriteCount-1 {
@@ -424,7 +447,7 @@ rasterISRhigh:
 rasterISRlow:
     sei
     inc vicAcknowlageInterruptRegister ;acknowlage interrupt
-    dec vicBorderColorRegister ;visualize screen division
+    +poke vicBorderColorRegister, vicColorBlue ;visualize screen division
     +push r2
     +push r3
 !for currentSprite, 0, vicHardwareSpriteCount-1 {
@@ -493,162 +516,28 @@ fishSpeeds:
 fishMovementCounters:
 !fill fishCount, 0
 
+sinTable:
+!word 0, 6, 12, 18, 25, 31, 37, 43, 49, 56, 62, 68, 74, 80, 86, 92
+!word 97, 103, 109, 115, 120, 126, 131, 136, 142, 147, 152, 157, 162, 167, 171, 176
+!word 181, 185, 189, 193, 197, 201, 205, 209, 212, 216, 219, 222, 225, 228, 231, 234
+!word 236, 239, 241, 243, 245, 247, 248, 250, 251, 252, 253, 254, 255, 255, 255, 255
+!word 255, 255, 255, 255, 254, 253, 252, 251, 250, 248, 247, 245, 243, 241, 239, 236
+!word 234, 231, 228, 225, 222, 219, 216, 212, 209, 205, 201, 197, 193, 189, 185, 181
+!word 176, 171, 167, 162, 157, 152, 147, 142, 136, 131, 126, 120, 115, 109, 103, 97
+!word 92, 86, 80, 74, 68, 62, 56, 49, 43, 37, 31, 25, 18, 12, 6, 0
+!word -6, -12, -18, -25, -31, -37, -43, -49, -56, -62, -68, -74, -80, -86, -92, -97
+!word -103, -109, -115, -120, -126, -131, -136, -142, -147, -152, -157, -162, -167, -171, -176, -181
+!word -185, -189, -193, -197, -201, -205, -209, -212, -216, -219, -222, -225, -228, -231, -234, -236
+!word -239, -241, -243, -245, -247, -248, -250, -251, -252, -253, -254, -255, -255, -255, -255, -255
+!word -255, -255, -255, -254, -253, -252, -251, -250, -248, -247, -245, -243, -241, -239, -236, -234
+!word -231, -228, -225, -222, -219, -216, -212, -209, -205, -201, -197, -193, -189, -185, -181, -176
+!word -171, -167, -162, -157, -152, -147, -142, -136, -131, -126, -120, -115, -109, -103, -97, -92
+!word -86, -80, -74, -68, -62, -56, -49, -43, -37, -31, -25, -18, -12, -6, 0
+
+
 *=spriteBitmapsStartingBlock*64 
-;Deepseek told me this is a fish. I will let you be the judge...
-!byte $00,$3C,$00
-!byte $01,$42,$80
-!byte $02,$99,$40
-!byte $06,$24,$60
-!byte $08,$18,$10
-!byte $18,$3C,$18
-!byte $30,$7E,$3C
-!byte $60,$FF,$7E
-!byte $C0,$FF,$FF
-!byte $C0,$FD,$FF
-!byte $BF,$FC,$FF
-!byte $9F,$7F,$FF
-!byte $3F,$FE,$7C
-!byte $1F,$F8,$78
-!byte $0F,$F0,$30
-!byte $07,$E0,$00
-!byte $03,$C0,$00
-!byte $01,$80,$00
-!byte $00,$00,$00
-!byte $00,$00,$00
-!byte $00,$00,$00
-!byte 0 ;padding
-
-;Claude told me this is a fish. I will let you be the judge...
-!byte $00,$00,$00  ; ........................
-!byte $00,$70,$00  ; .........XXX............
-!byte $00,$f8,$00  ; ........XXXXX...........
-!byte $00,$00,$00  ; ........................
-!byte $00,$20,$00  ; ..........X.............
-!byte $03,$ff,$00  ; ......XXXXXXXXXX........
-!byte $07,$ff,$c0  ; .....XXXXXXXXXXXXX......
-!byte $0f,$ff,$f0  ; ....XXXXXXXXXXXXXXXX....
-!byte $1b,$ff,$fc  ; ...XX.XXXXXXXXXXXXXXXX..   <- eye
-!byte $1f,$ff,$fe  ; ...XXXXXXXXXXXXXXXXXXXX.
-!byte $1f,$ff,$ff  ; ...XXXXXXXXXXXXXXXXXXXXX
-!byte $1f,$ff,$fe  ; ...XXXXXXXXXXXXXXXXXXXX.
-!byte $1f,$ff,$fc  ; ...XXXXXXXXXXXXXXXXXXX..
-!byte $0f,$ff,$f0  ; ....XXXXXXXXXXXXXXXX....
-!byte $07,$ff,$c0  ; .....XXXXXXXXXXXXX......
-!byte $03,$ff,$00  ; ......XXXXXXXXXX........
-!byte $00,$20,$00  ; ..........X.............
-!byte $00,$f8,$00  ; ........XXXXX...........
-!byte $00,$70,$00  ; .........XXX............
-!byte $00,$00,$00  ; ........................
-!byte $00,$00,$00  ; ........................
-!byte 0 ;padding
-
-;Github copilot told me this is a fish. I will let you be the judge...
-!byte %00000000, %00000000, %00000000
-!byte %00000000, %00000000, %00000000
-!byte %00000000, %00011100, %00000000
-!byte %00000000, %00111110, %00000000
-!byte %00000000, %01111111, %00000000
-!byte %00000000, %11111111, %10000000
-!byte %00000001, %11111111, %11000000
-!byte %00000011, %11111111, %11100000
-!byte %00000111, %11111111, %11110000
-!byte %00001111, %11011111, %11111000   ; eye gap hint
-!byte %00011111, %10111111, %11111100   ; eye pixel region
-!byte %00001111, %11011111, %11111000
-!byte %00000111, %11111111, %11110000
-!byte %00000011, %11111111, %11100000
-!byte %00000001, %11111111, %11000000
-!byte %00000000, %11111111, %10000000
-!byte %00000000, %01111111, %00000000
-!byte %00000000, %00111110, %00000000
-!byte %00000000, %00011100, %00000000
-!byte %00000000, %00001000, %00000000
-!byte %00000000, %00000000, %00000000
-!byte 0 ;padding
-
-;Chatgpt told me this is a fish. I will let you be the judge...
-!byte %00000000,%00000000,%00000000
-!byte %00000000,%00011000,%00000000
-!byte %00000000,%00111100,%00000000
-!byte %00000000,%01111110,%00000000
-!byte %00000111,%11111111,%00000000
-!byte %00011111,%11111111,%10000000
-!byte %00111111,%11111111,%11100000
-!byte %01111111,%11111111,%11110000
-!byte %11111111,%10111111,%11111000
-!byte %11111111,%11111111,%11111100
-!byte %11111111,%11111111,%11111000
-!byte %01111111,%11111111,%11110000
-!byte %00111111,%11111111,%11100000
-!byte %00011111,%11111111,%10000000
-!byte %00000111,%11111111,%00000000
-!byte %00000000,%01111110,%00000000
-!byte %00000000,%00111100,%00000000
-!byte %00000000,%00011000,%00000000
-!byte %00000000,%00011000,%00000000
-!byte %00000000,%00100100,%00000000
-!byte %00000000,%01000010,%00000000
-!byte 0 ;padding
-
-;Gamini told me this is a fish. I will let you be the judge...
-!byte %00000000, %00001100, %00000000
-!byte %00000000, %00011110, %00000000
-!byte %00000000, %00111111, %00000000
-!byte %00000001, %11111111, %10000000
-!byte %00000111, %11111111, %11000000
-!byte %00001111, %11111111, %11100000
-!byte %00011111, %11011111, %11110000   ; Contains eye space
-!byte %00111111, %10011111, %01111000
-!byte %01111111, %11111111, %00111100   ; Tail narrows
-!byte %01111111, %11111110, %00011110   ; Tail tip 1
-!byte %01111111, %11111100, %00001111   ; Tail split
-!byte %01111111, %11111110, %00011110   ; Tail tip 2
-!byte %00111111, %11111111, %00111100
-!byte %00011111, %11111111, %01111000
-!byte %00001111, %11111111, %11100000
-!byte %00000111, %11111111, %11000000
-!byte %00000001, %11111111, %10000000
-!byte %00000000, %00111111, %00000000
-!byte %00000000, %00011110, %00000000
-!byte %00000000, %00001100, %00000000
-!byte %00000000, %00000000, %00000000
-!byte 0 ;padding
-
-;Grok told me this is a fish. I will let you be the judge...
-!byte %00000000, %00000000, %00000000   ; row 0
-!byte %00000000, %00000000, %00000000   ; row 1
-!byte %00001110, %00000000, %00000000   ; row 2  .. dorsal fin
-!byte %00011111, %00000000, %00000000   ; row 3
-!byte %00111111, %10000000, %00000000   ; row 4
-!byte %01111111, %11000000, %00000000   ; row 5
-!byte %01111111, %11100000, %00000000   ; row 6
-!byte %11111111, %11110000, %00000000   ; row 7  .. body
-!byte %11111111, %11111000, %00000000   ; row 8
-!byte %11111111, %11111100, %00000000   ; row 9  .. eye area (you can set a pixel for eye)
-!byte %11111111, %11111110, %00000000   ; row 10
-!byte %11111111, %11111111, %00000000   ; row 11
-!byte %11111111, %11111111, %10000000   ; row 12
-!byte %01111111, %11111111, %11000000   ; row 13
-!byte %01111111, %11111111, %10000000   ; row 14
-!byte %00111111, %11111111, %00000000   ; row 15
-!byte %00011111, %11111100, %00000000   ; row 16
-!byte %00001111, %11100000, %00000000   ; row 17  .. tail
-!byte %00000111, %10000000, %00000000   ; row 18
-!byte %00000000, %00000000, %00000000   ; row 19
-!byte %00000000, %00000000, %00000000   ; row 20
-!byte 0 ;padding
-
-;Mistral told me this is a fish. I will let you be the judge...
-!byte $00, $00, $00, $00, $00, $00, $00, $00 ; Top border (empty)
-!byte $00, $00, $00, $00, $00, $00, $00, $00
-!byte $00, $00, $00, $18, $18, $00, $00, $00 ; Fish body starts
-!byte $00, $00, $3C, $7E, $7E, $3C, $00, $00 ; Fish body (widest part)
-!byte $00, $00, $7E, $FF, $FF, $7E, $00, $00 ; Fish body (middle)
-!byte $00, $00, $3C, $7E, $7E, $3C, $00, $00 ; Fish body (end)
-!byte $00, $00, $00, $18, $18, $00, $00, $00 ; Fish tail
-!byte $00, $00, $00, $00, $00, $00, $00, $00 ; Bottom border (empty)
-!byte $00, $00, $00, $00, $00, $00, $00, $00
-!byte 0 ;padding
+!src "dragonbirdssprites.asm"
+!src "aisprites.asm"
 
 mirroredSpriteBitmaps:
 !fill fishCount*spriteSize, $00
