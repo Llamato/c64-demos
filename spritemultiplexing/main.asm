@@ -113,10 +113,18 @@ kernelTextColor = $0286
 kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
 ;Program constants
-spriteBitmapsStartingBlock = 128
-fishCount = 16
+fishCount = vicHardwareSpriteCount*2
+lowerSpriteBitmapsStartingBlock = 128
+higherSpriteBitmapsStartingBlock = lowerSpriteBitmapsStartingBlock + vicHardwareSpriteCount
+lowerMirroredSpriteBitmapsStartingBlock = higherSpriteBitmapsStartingBlock + vicHardwareSpriteCount
+higherMirroredSpriteBitmapsStartingBlock = lowerMirroredSpriteBitmapsStartingBlock + vicHardwareSpriteCount
 lowToHighRasterline = 125
 highToLowRasterline = 250
+bitmapFlipDelta = lowerMirroredSpriteBitmapsStartingBlock - lowerSpriteBitmapsStartingBlock
+lowerSpriteBitmapsStart = lowerSpriteBitmapsStartingBlock * spriteSize
+higherSpriteBitmapsStart = higherSpriteBitmapsStartingBlock * spriteSize
+lowerMirroredSpriteBitmapsStart = lowerMirroredSpriteBitmapsStartingBlock * spriteSize
+higherMirroredSpriteBitmapsStart = higherMirroredSpriteBitmapsStartingBlock * spriteSize
 
 ;Program memory
 rExtra = 2
@@ -165,6 +173,59 @@ r3 = 254
     tay
 }
 
+!macro rev .src, .dest {
+    lda #0
+    sta .dest
+    lda .src
+    ldy #8
+.bitloop
+    asl
+    ror .dest
+    dey
+    bne .bitloop
+}
+
+!macro revpairwise .src, .dest {
+;pair 0-1 -> 6-7 : left shift 6
+    lda .src
+    and #$03
+    asl
+    asl
+    asl
+    asl
+    asl
+    asl
+    sta .dest
+
+;pair 2-3 -> 4-5 : left shift 2
+    lda .src
+    and #$0C
+    asl
+    asl
+    ora .dest
+    sta .dest
+
+;pair 4-5 -> 2-3 : right shift 2
+    lda .src
+    and #$30
+    lsr
+    lsr
+    ora .dest
+    sta .dest
+
+;pair 6-7 -> 0-1 : right shift 6
+    lda .src
+    and #$C0
+    lsr
+    lsr
+    lsr
+    lsr
+    lsr
+    lsr
+    ora .dest
+    sta .dest
+}
+
 !macro ldi16 .addr, .value {
     +poke .addr, <.value
     +poke .addr+1, >.value
@@ -173,15 +234,6 @@ r3 = 254
 !macro mov16 .dest, .src {
     +mov .dest, .src
     +mov .dest+1, .src+1
-}
-
-!macro eori16 .acc, .value {
-    lda .acc
-    eor #<.value
-    sta .acc
-    lda .acc+1
-    eor #>.value
-    sta .acc+1
 }
 
 !macro and16 .acc, .op {
@@ -223,6 +275,20 @@ r3 = 254
     +plx
 }
 
+!macro mirrorHighresSprite .src, .dest {
+    !for .currentRow, 0, highresSpriteHeight -1 {
+        +rev .src+3*.currentRow, .dest+2+3*.currentRow
+        +rev .src+1+3*.currentRow, .dest+1+3*.currentRow
+        +rev .src+2+3*.currentRow, .dest+3*.currentRow
+    }
+}
+
+!macro mirrorMulticolorSprite .src, .dest {
+    +revpairwise .src, .dest+2
+    +revpairwise .src+1, dest+1
+    +revpairwise .src+2, .dest
+}
+
 !macro changeDirection .direction {
     +phx
     +msk16x r0
@@ -251,7 +317,7 @@ screenclearloop:
 
 ;setup raster interrupt
     sei ;disable interrupts globally
-    ;disable CIA's
+;disable CIA's
     lda #$7f ;everything except highest bit
     sta cia1ControlRegister
     sta cia2ControlRegister
@@ -277,32 +343,25 @@ screenclearloop:
 
 ;set sprite block pointers
 !for currentSprite, 0, vicHardwareSpriteCount-1 {
-    +poke vicSprite0bitmapBlockPointerRegister+currentSprite, spriteBitmapsStartingBlock+currentSprite
+    +poke vicSprite0bitmapBlockPointerRegister+currentSprite, lowerSpriteBitmapsStartingBlock+currentSprite   
+}
+
+;Mirror Fish
+!for .currentFish, 0, fishCount -1 {
+    +ldi16 r0, lowerSpriteBitmapsStart+.currentFish*spriteSize
+    +ldi16 r2, lowerMirroredSpriteBitmapsStart+.currentFish*spriteSize
+    jsr mirrorHighresSprite
 }
 
 ;set sprite colors
-    +poke vicSprite0colorRegister, vicColorCyan
-    +poke vicSprite1colorRegister, vicColorLightBrown
-    +poke vicSprite2colorRegister, vicColorLightBlue
-    +poke vicSprite3colorRegister, vicColorBrown
-    +poke vicSprite4colorRegister, vicColorRed
-    +poke vicSprite5colorRegister, vicColorBlue
-    +poke vicSprite6colorRegister, vicColorYellow
-    +poke vicSprite7colorRegister, vicColorBrown
     lda #vicColorBlack
     sta vicBackgroundColorRegister
     sta kernelTextColor
-    lda #$03 ; sprite multicolor 1
+    lda #$03 ;sprite multicolor 1
     sta $d025
-    lda #$01 ; sprite multicolor 2
+    lda #$01 ;sprite multicolor 2
     sta $d026
     +poke vicSpriteMultiColorRegister, %00110000 
-
-;get random values to derive fish speeds from
-!for currentFish, 0, fishCount-1 {
-    +mov fishSpeeds+currentFish, sidVoice3ValueRegister
-    jsr delay100ms
-}
 
 demoloop:
     ldx #0
@@ -328,7 +387,7 @@ moveFishUpOrDown:
     beq .sinejumppad
     jmp triangleUpDownMovement
 .sinejumppad:
-    jmp sineUpDownMovement
+    jmp triangleUpDownMovement
 }
 
 !zone leftRightMovement {
@@ -347,6 +406,7 @@ moveFishRight:
     jmp moveNextFish
 
 bounceRight:
+    jsr changeHeading
     +changeDirection fishDirectionsX
     jmp moveNextFish
 
@@ -358,13 +418,13 @@ moveFishLeft:
     jmp moveNextFish
 
 bounceLeft:
+    jsr changeHeading
     +changeDirection fishDirectionsX
 }
 
 moveNextFish:
     inx
     jmp fishMoveLoopHeader
-
 
 triangleUpDownMovement:
 !zone triangleUpDownMovement {
@@ -398,21 +458,26 @@ triangleUpDownMovement:
     jmp shouldFishMoveLeftOrRight
 }
 
-sineUpDownMovement:
-!zone sineUpDownMovement {
-    jmp triangleUpDownMovement
-}
+changeHeading:
+!zone changeHeading {
+    lda lowerFishBitmapBlockPointer, x
+    cmp #lowerSpriteBitmapsStartingBlock + fishCount
+    bcc .toMirrored
 
-delay100ms:
-    ldy #$82          ; [2 cycles] Outer loop counter (130 decimal)
-outer_loop:
-    ldx #$9a          ; [2 cycles] Inner loop counter (154 decimal)
-inner_loop:
-    dex               ; [2 cycles] Decrement X
-    bne inner_loop    ; [3 cycles taken, 2 if not] Loop until X=0
-    dey               ; [2 cycles] Decrement Y
-    bne outer_loop    ; [3 cycles taken, 2 if not] Loop until Y=0
-    rts               ; [6 cycles] Return from subroutine
+    ; currently mirrored -> go back to original
+    sec
+    sbc #bitmapFlipDelta
+    jmp .store
+
+.toMirrored:
+    ; currently original -> go to mirrored
+    clc
+    adc #bitmapFlipDelta
+
+.store:
+    sta lowerFishBitmapBlockPointer, x
+    rts
+}
 
 rasterISRhigh:
     sei
@@ -423,6 +488,8 @@ rasterISRhigh:
 !for currentSprite, 0, vicHardwareSpriteCount-1 {
     +mov vicSprite0positionXregister+registersPerSpritePosition*currentSprite, higherFishPositionsX+currentSprite
     +mov vicSprite0positionYregister+registersPerSpritePosition*currentSprite, higherFishPositionsY+currentSprite
+    +mov vicSprite0colorRegister+currentSprite, higherFishStatusBits+currentSprite
+    +mov vicSprite0bitmapBlockPointerRegister+currentSprite, higherFishBitmapBlockPointer+currentSprite
 }
     lda #$fe ;everything except the lowest bit high
     and vicSpritePositionsXhighbitRegister
@@ -453,6 +520,8 @@ rasterISRlow:
 !for currentSprite, 0, vicHardwareSpriteCount-1 {
     +mov vicSprite0positionXregister+registersPerSpritePosition*currentSprite, lowerFishPositionsX+currentSprite
     +mov vicSprite0positionYregister+registersPerSpritePosition*currentSprite, lowerFishPositionsY+currentSprite
+    +mov vicSprite0colorRegister+currentSprite, lowerFishStatusBits+currentSprite
+    +mov vicSprite0bitmapBlockPointerRegister+currentSprite, lowerFishBitmapBlockPointer+currentSprite
 }
     lda r3
     and vicSpritePositionsXhighbitRegister
@@ -474,6 +543,223 @@ rasterISRlow:
     cli
     jmp kernelRestoreRegistersAndReturnFromInterruptRoutine ;return from interrupt, restoring regs using kernel rotinue
 
+
+; ------------------------------------------------------------
+; revByte: reverse the 8 bits of one byte.
+;   in : A = byte
+;   out: A = reversed byte
+;   clobbers: Y
+; ------------------------------------------------------------
+revByte:
+!zone revByte {
+    ldy #8
+    sta rExtra          ; save original byte
+    lda #0
+.loop:
+    asl rExtra
+    ror
+    dey
+    bne .loop
+    rts
+}
+
+; ------------------------------------------------------------
+; revHighresRow: reverse one 3-byte high-res row.
+;   in : r0/r1 = source address (3 bytes)
+;        r2/r3 = destination address (3 bytes)
+;   out: 3 reversed-and-swapped bytes at (r2),y
+;        r0/r1 and r2/r3 advanced by 3
+;   clobbers: A, Y
+; ------------------------------------------------------------
+revHighresRow:
+    ldy #0
+    lda (r0),y          ; src byte 0 -> dest byte 2
+    jsr revByte
+    ldy #2
+    sta (r2),y
+
+    ldy #1
+    lda (r0),y          ; src byte 1 -> dest byte 1
+    jsr revByte
+    ldy #1
+    sta (r2),y
+
+    ldy #2
+    lda (r0),y          ; src byte 2 -> dest byte 0
+    jsr revByte
+    ldy #0
+    sta (r2),y
+
+    ; advance both pointers by 3
+    clc
+    lda r0
+    adc #3
+    sta r0
+    bcc +
+    inc r1
++
+    clc
+    lda r2
+    adc #3
+    sta r2
+    bcc +
+    inc r3
++
+    rts
+
+; ------------------------------------------------------------
+; revPairwiseByte: reverse the bit-pairs of one byte (multicolor).
+;   in : A = byte
+;   out: A = pairwise-reversed byte
+;   clobbers: Y, r0, r1
+; ------------------------------------------------------------
+revPairwiseByte:
+    +push r0
+    +push r1
+    sta r0
+
+    lda r0
+    and #$03
+    asl
+    asl
+    asl
+    asl
+    asl
+    asl
+    sta r1
+
+    lda r0
+    and #$0C
+    asl
+    asl
+    ora r1
+    sta r1
+
+    lda r0
+    and #$30
+    lsr
+    lsr
+    ora r1
+    sta r1
+
+    lda r0
+    and #$c0
+    lsr
+    lsr
+    lsr
+    lsr
+    lsr
+    lsr
+    ora r1
+
+    +pull r0
+    lda r1
+    tay
+    +pull r1
+    tya
+    rts
+
+; ------------------------------------------------------------
+; revMulticolorRow: reverse one 3-byte multicolor row.
+;   in : r0/r1 = source address (3 bytes)
+;        r2/r3 = destination address (3 bytes)
+;   out: 3 pairwise-reversed-and-swapped bytes at (r2),y
+;        r0/r1 and r2/r3 advanced by 3
+;   clobbers: A, Y
+; ------------------------------------------------------------
+revMulticolorRow:
+    ldy #0
+    lda (r0),y
+    jsr revPairwiseByte
+    ldy #2
+    sta (r2),y
+
+    ldy #1
+    lda (r0),y
+    jsr revPairwiseByte
+    ldy #1
+    sta (r2),y
+
+    ldy #2
+    lda (r0),y
+    jsr revPairwiseByte
+    ldy #0
+    sta (r2),y
+
+    clc
+    lda r0
+    adc #3
+    sta r0
+    bcc +
+    inc r1
++
+    clc
+    lda r2
+    adc #3
+    sta r2
+    bcc +
+    inc r3
++
+    rts
+
+mirrorHighresSprite:
+    ldx #highresSpriteHeight
+.rowLoop
+    ldy #0
+    lda (r0),y
+    jsr revByte
+    ldy #2
+    sta (r2),y
+
+    ldy #1
+    lda (r0),y
+    jsr revByte
+    ldy #1
+    sta (r2),y
+
+    ldy #2
+    lda (r0),y 
+    jsr revByte
+    ldy #0
+    sta (r2),y
+
+    clc
+    lda r0
+    adc #3
+    sta r0
+    bcc +
+    inc r1
++
+    clc
+    lda r2
+    adc #3
+    sta r2
+    bcc +
+    inc r3
++
+    dex
+    bne .rowLoop
+
+    ldy #0
+    lda (r0),y
+    sta (r2),y
+
+    clc
+    lda r0
+    adc #1
+    sta r0
+    bcc +
+    inc r1
++
+    clc
+    lda r2
+    adc #1
+    sta r2
+    bcc +
+    inc r3
++
+    rts
+
 fishDirectionsX:
 !fill fishCount, 0
 
@@ -481,13 +767,13 @@ fishDirectionsY:
 !fill fishCount, 0
 
 lowerFishPositionsX:
-!for .n, 1, 8 {
-    !byte .n * 25
+!for .currentSprite, 1, vicHardwareSpriteCount {
+    !byte .currentSprite * 25
 }
 
 higherFishPositionsX:
-!for .n, 1, 8 {
-    !byte .n * 25
+!for .currentSprite, 1, vicHardwareSpriteCount {
+    !byte .currentSprite * 25
 }
 
 lowerFishPositionsY:
@@ -495,6 +781,30 @@ lowerFishPositionsY:
 
 higherFishPositionsY:
 !fill vicHardwareSpriteCount, 150
+
+;128 = double height
+;64 = double width
+;32 = multicolor
+;8-1 = color
+lowerFishStatusBits:
+!for .currentSprite, 1, vicHardwareSpriteCount {
+    !byte .currentSprite
+}
+
+higherFishStatusBits:
+!for .currentSprite, 1, vicHardwareSpriteCount {
+    !byte .currentSprite
+}
+
+lowerFishBitmapBlockPointer:
+!for .currentSprite, 0, vicHardwareSpriteCount -1 {
+    !byte lowerSpriteBitmapsStartingBlock+.currentSprite
+}
+
+higherFishBitmapBlockPointer:
+!for .currentSprite, 0, vicHardwareSpriteCount -1 {
+    !byte higherSpriteBitmapsStartingBlock+.currentSprite
+}
 
 fishBobUpLimits:
 !fill vicHardwareSpriteCount, 50
@@ -534,10 +844,16 @@ sinTable:
 !word -171, -167, -162, -157, -152, -147, -142, -136, -131, -126, -120, -115, -109, -103, -97, -92
 !word -86, -80, -74, -68, -62, -56, -49, -43, -37, -31, -25, -18, -12, -6, 0
 
-
-*=spriteBitmapsStartingBlock*64 
+*=lowerSpriteBitmapsStart
+lowerSpriteBitmaps:
 !src "dragonbirdssprites.asm"
+
+*=higherSpriteBitmapsStart
+higherSpriteBitmaps:
 !src "aisprites.asm"
 
-mirroredSpriteBitmaps:
-!fill fishCount*spriteSize, $00
+*=lowerMirroredSpriteBitmapsStart
+lowerMirroredSpriteBitmaps:
+
+*=higherMirroredSpriteBitmapsStart
+higherMirroredSPriteBitmaps:
