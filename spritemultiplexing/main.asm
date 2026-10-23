@@ -128,6 +128,7 @@ higherMirroredSpriteBitmapsStart = higherMirroredSpriteBitmapsStartingBlock * sp
 
 ;Program memory
 rExtra = 2
+rExtra2 = 250
 r0 = 251
 r1 = 252
 r2 = 253
@@ -275,6 +276,21 @@ r3 = 254
     +plx
 }
 
+!macro setSpriteStatus .spriteNr, .status {
+    lda .status
+    and #$10
+    beq +
+    lda vicSpriteMultiColorRegister
+    ora #(1 << .spriteNr)
+    sta vicSpriteMultiColorRegister
+    jmp ++
++
+    lda vicSpriteMultiColorRegister
+    and #(1 << .spriteNr) XOR $ff
+    sta vicSpriteMultiColorRegister
+++
+}
+
 !macro mirrorHighresSprite .src, .dest {
     !for .currentRow, 0, highresSpriteHeight -1 {
         +rev .src+3*.currentRow, .dest+2+3*.currentRow
@@ -283,7 +299,7 @@ r3 = 254
     }
 }
 
-!macro mirrorMulticolorSprite .src, .dest {
+!macro mirrorMultiColorSprite .src, .dest {
     +revpairwise .src, .dest+2
     +revpairwise .src+1, dest+1
     +revpairwise .src+2, .dest
@@ -342,15 +358,26 @@ screenclearloop:
     +poke vicSpriteEnableRegister, 255 ;enable sprites 1 and 2 though bits 0 and 1
 
 ;set sprite block pointers
-!for currentSprite, 0, vicHardwareSpriteCount-1 {
-    +poke vicSprite0bitmapBlockPointerRegister+currentSprite, lowerSpriteBitmapsStartingBlock+currentSprite   
+!for .currentSprite, 0, vicHardwareSpriteCount-1 {
+    +poke vicSprite0bitmapBlockPointerRegister+.currentSprite, lowerSpriteBitmapsStartingBlock+.currentSprite   
 }
 
-;Mirror Fish
+;setup individual fish
 !for .currentFish, 0, fishCount -1 {
-    +ldi16 r0, lowerSpriteBitmapsStart+.currentFish*spriteSize
-    +ldi16 r2, lowerMirroredSpriteBitmapsStart+.currentFish*spriteSize
+    +mov fishSpeeds+.currentFish, sidVoice3ValueRegister
+    +ldi16 r0, lowerSpriteBitmapsStart+spriteSize*.currentFish
+    +ldi16 r2, lowerMirroredSpriteBitmapsStart+spriteSize*.currentFish
+    lda lowerSpriteBitmapsStart+spriteSize-1+spriteSize*.currentFish
+    and #$f0
+    ora lowerFishStatusBits+.currentFish
+    sta lowerFishStatusBits+.currentFish
+    and #$10
+    bne +
     jsr mirrorHighresSprite
+    jmp ++
++
+    jsr mirrorMultiColorSprite
+++
 }
 
 ;set sprite colors
@@ -361,7 +388,6 @@ screenclearloop:
     sta $d025
     lda #$01 ;sprite multicolor 2
     sta $d026
-    +poke vicSpriteMultiColorRegister, %00110000 
 
 demoloop:
     ldx #0
@@ -485,11 +511,12 @@ rasterISRhigh:
     +poke vicBorderColorRegister, vicColorYellow ;visualize screen division
     +push r2
     +push r3
-!for currentSprite, 0, vicHardwareSpriteCount-1 {
-    +mov vicSprite0positionXregister+registersPerSpritePosition*currentSprite, higherFishPositionsX+currentSprite
-    +mov vicSprite0positionYregister+registersPerSpritePosition*currentSprite, higherFishPositionsY+currentSprite
-    +mov vicSprite0colorRegister+currentSprite, higherFishStatusBits+currentSprite
-    +mov vicSprite0bitmapBlockPointerRegister+currentSprite, higherFishBitmapBlockPointer+currentSprite
+!for .currentSprite, 0, vicHardwareSpriteCount-1 {
+    +mov vicSprite0positionXregister+registersPerSpritePosition*.currentSprite, higherFishPositionsX+.currentSprite
+    +mov vicSprite0positionYregister+registersPerSpritePosition*.currentSprite, higherFishPositionsY+.currentSprite
+    +mov vicSprite0colorRegister+.currentSprite, higherFishStatusBits+.currentSprite
+    +mov vicSprite0bitmapBlockPointerRegister+.currentSprite, higherFishBitmapBlockPointer+.currentSprite
+    +setSpriteStatus .currentSprite, higherFishStatusBits+.currentSprite
 }
     lda #$fe ;everything except the lowest bit high
     and vicSpritePositionsXhighbitRegister
@@ -517,18 +544,19 @@ rasterISRlow:
     +poke vicBorderColorRegister, vicColorBlue ;visualize screen division
     +push r2
     +push r3
-!for currentSprite, 0, vicHardwareSpriteCount-1 {
-    +mov vicSprite0positionXregister+registersPerSpritePosition*currentSprite, lowerFishPositionsX+currentSprite
-    +mov vicSprite0positionYregister+registersPerSpritePosition*currentSprite, lowerFishPositionsY+currentSprite
-    +mov vicSprite0colorRegister+currentSprite, lowerFishStatusBits+currentSprite
-    +mov vicSprite0bitmapBlockPointerRegister+currentSprite, lowerFishBitmapBlockPointer+currentSprite
+!for .currentSprite, 0, vicHardwareSpriteCount-1 {
+    +mov vicSprite0positionXregister+registersPerSpritePosition*.currentSprite, lowerFishPositionsX+.currentSprite
+    +mov vicSprite0positionYregister+registersPerSpritePosition*.currentSprite, lowerFishPositionsY+.currentSprite
+    +mov vicSprite0colorRegister+.currentSprite, lowerFishStatusBits+.currentSprite
+    +mov vicSprite0bitmapBlockPointerRegister+.currentSprite, lowerFishBitmapBlockPointer+.currentSprite
+    +setSpriteStatus .currentSprite, lowerFishStatusBits+.currentSprite
 }
     lda r3
     and vicSpritePositionsXhighbitRegister
     sta r3
     pha ;push r3 to the stack
     lda #1
-    and higherSpritesPositionXhighBits
+    and lowerSpritesPositionXhighBits
     ora r3
     sta vicSpritePositionsXhighbitRegister ;sprite 0 position x high bit = sprite 0 lower position x high bit
     pla
@@ -548,12 +576,12 @@ rasterISRlow:
 ; revByte: reverse the 8 bits of one byte.
 ;   in : A = byte
 ;   out: A = reversed byte
-;   clobbers: Y
+;   clobbers: Y, rExtra
 ; ------------------------------------------------------------
 revByte:
 !zone revByte {
     ldy #8
-    sta rExtra          ; save original byte
+    sta rExtra
     lda #0
 .loop:
     asl rExtra
@@ -613,12 +641,10 @@ revHighresRow:
 ;   out: A = pairwise-reversed byte
 ;   clobbers: Y, r0, r1
 ; ------------------------------------------------------------
-revPairwiseByte:
-    +push r0
-    +push r1
-    sta r0
 
-    lda r0
+revPairwiseByte:
+!zone revPairwiseByte {
+    sta rExtra
     and #$03
     asl
     asl
@@ -626,23 +652,23 @@ revPairwiseByte:
     asl
     asl
     asl
-    sta r1
+    sta rExtra2
 
-    lda r0
-    and #$0C
+    lda rExtra
+    and #$0c
     asl
     asl
-    ora r1
-    sta r1
+    ora rExtra2
+    sta rExtra2
 
-    lda r0
+    lda rExtra
     and #$30
     lsr
     lsr
-    ora r1
-    sta r1
+    ora rExtra2
+    sta rExtra2
 
-    lda r0
+    lda rExtra
     and #$c0
     lsr
     lsr
@@ -650,14 +676,9 @@ revPairwiseByte:
     lsr
     lsr
     lsr
-    ora r1
-
-    +pull r0
-    lda r1
-    tay
-    +pull r1
-    tya
+    ora rExtra2      ; result stays in A
     rts
+}
 
 ; ------------------------------------------------------------
 ; revMulticolorRow: reverse one 3-byte multicolor row.
@@ -703,6 +724,7 @@ revMulticolorRow:
     rts
 
 mirrorHighresSprite:
+!zone mirrorHighresSprite {
     ldx #highresSpriteHeight
 .rowLoop
     ldy #0
@@ -759,6 +781,67 @@ mirrorHighresSprite:
     inc r3
 +
     rts
+}
+
+mirrorMultiColorSprite:
+!zone mirrorMultiColorSprite {
+    ldx #highresSpriteHeight
+.rowLoop
+    ldy #0
+    lda (r0),y
+    jsr revPairwiseByte
+    ldy #2
+    sta (r2),y
+
+    ldy #1
+    lda (r0),y
+    jsr revPairwiseByte
+    ldy #1
+    sta (r2),y
+
+    ldy #2
+    lda (r0),y 
+    jsr revPairwiseByte
+    ldy #0
+    sta (r2),y
+
+    clc
+    lda r0
+    adc #3
+    sta r0
+    bcc +
+    inc r1
++
+    clc
+    lda r2
+    adc #3
+    sta r2
+    bcc +
+    inc r3
++
+    dex
+    bne .rowLoop
+
+    ldy #0
+    lda (r0),y
+    sta (r2),y
+
+    clc
+    lda r0
+    adc #1
+    sta r0
+    bcc +
+    inc r1
++
+    clc
+    lda r2
+    adc #1
+    sta r2
+    bcc +
+    inc r3
++
+    rts
+}
 
 fishDirectionsX:
 !fill fishCount, 0
