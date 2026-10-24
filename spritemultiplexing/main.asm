@@ -71,6 +71,10 @@ vicSprite7bitmapBlockPointerRegister = $07ff
 vicAcknowlageInterruptRegister = $d019
 vicBorderColorRegister = $d020
 vicBackgroundColorRegister = $d021
+vicBackgroundMulticolorPrimeryColorRegister = $d022
+vicBackgroundMulticolorSecondaryColorRegister = $d023
+vicSpriteMulticolorPrimeryColorRegister = $d025
+vicSpriteMulticolorSecondaryColorRegister = $d026
 vicControlRegister = $d01a
 vicSpriteMultiColorRegister = $d01c
 vicSprite0positionXregister = $d000
@@ -113,6 +117,9 @@ kernelTextColor = $0286
 kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
 ;Program constants
+backgroundScreenStart=$2600
+backgroundColorStart=$4000
+backgroundCharsetStart=$3000
 fishCount = vicHardwareSpriteCount*2
 lowerSpriteBitmapsStartingBlock = 128
 higherSpriteBitmapsStartingBlock = lowerSpriteBitmapsStartingBlock + vicHardwareSpriteCount
@@ -313,7 +320,6 @@ r3 = 254
 }
 
 *=$080d
-
 ;Setup sid voice 3 for random number generation (seeding)
     +ldi16 sidVoice3FrequencyRegisterLow, sidVoice3Frequency ;Set frequency
     +ldi16 sidVoice3DutyCycleRegisterLow, sidVoice3DutyCycle ;Set duty cycle
@@ -367,11 +373,8 @@ screenclearloop:
     +mov fishSpeeds+.currentFish, sidVoice3ValueRegister
     +ldi16 r0, lowerSpriteBitmapsStart+spriteSize*.currentFish
     +ldi16 r2, lowerMirroredSpriteBitmapsStart+spriteSize*.currentFish
-    lda lowerSpriteBitmapsStart+spriteSize-1+spriteSize*.currentFish
-    and #$f0
-    ora lowerFishStatusBits+.currentFish
-    sta lowerFishStatusBits+.currentFish
-    and #$10
+    +mov lowerFishStatusBits+.currentFish, lowerSpriteBitmapsStart+spriteSize-1+spriteSize*.currentFish
+    and #$10                             
     bne +
     jsr mirrorHighresSprite
     jmp ++
@@ -381,13 +384,14 @@ screenclearloop:
 }
 
 ;set sprite colors
-    lda #vicColorBlack
-    sta vicBackgroundColorRegister
-    sta kernelTextColor
-    lda #$03 ;sprite multicolor 1
-    sta $d025
-    lda #$01 ;sprite multicolor 2
-    sta $d026
+    +poke vicSpriteMulticolorPrimeryColorRegister, vicColorCyan
+    +poke vicSpriteMulticolorSecondaryColorRegister, vicColorWhite
+
+;set background colors
+    sta vicBackgroundMulticolorPrimeryColorRegister
+    +poke vicBackgroundMulticolorSecondaryColorRegister, vicColorRed
+    +poke vicBackgroundColorRegister, vicColorBlack
+
 
 demoloop:
     ldx #0
@@ -939,4 +943,14 @@ higherSpriteBitmaps:
 lowerMirroredSpriteBitmaps:
 
 *=higherMirroredSpriteBitmapsStart
-higherMirroredSPriteBitmaps:
+higherMirroredSpriteBitmaps:
+
+
+;*=backgroundCharsetStart
+;!src "backgroundcharset.asm"
+
+;*=backgroundColorStart
+;!src "backgroundcolors.asm"
+
+;*=backgroundScreenStart
+;!src "backgroundscreen.asm"
