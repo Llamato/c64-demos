@@ -20,7 +20,7 @@
 !byte $00,$00,$00
 !byte $00,$00,$00
 !byte $00,$00,$00
-!byte 0 ;padding
+!byte $01 ;Color and attributes
 
 ;Claude told me this is a fish. I will let you be the judge...
 !byte $00,$00,$00  ; ........................
@@ -44,7 +44,7 @@
 !byte $00,$70,$00  ; .........XXX............
 !byte $00,$00,$00  ; ........................
 !byte $00,$00,$00  ; ........................
-!byte 0 ;padding
+!byte $02 ;Color and attributes
 
 ;Github copilot told me this is a fish. I will let you be the judge...
 !byte %00000000, %00000000, %00000000
@@ -68,7 +68,7 @@
 !byte %00000000, %00011100, %00000000
 !byte %00000000, %00001000, %00000000
 !byte %00000000, %00000000, %00000000
-!byte 0 ;padding
+!byte $03 ;Color and attributes
 
 ;Chatgpt told me this is a fish. I will let you be the judge...
 !byte %00000000,%00000000,%00000000
@@ -92,7 +92,7 @@
 !byte %00000000,%00011000,%00000000
 !byte %00000000,%00100100,%00000000
 !byte %00000000,%01000010,%00000000
-!byte 0 ;padding
+!byte $04 ;Color and attributes
 
 ;Gamini told me this is a fish. I will let you be the judge...
 !byte %00000000, %00001100, %00000000
@@ -116,7 +116,7 @@
 !byte %00000000, %00011110, %00000000
 !byte %00000000, %00001100, %00000000
 !byte %00000000, %00000000, %00000000
-!byte 0 ;padding
+!byte $05 ;Color and attributes
 
 ;Grok told me this is a fish. I will let you be the judge...
 !byte %00000000, %00000000, %00000000   ; row 0
@@ -140,7 +140,7 @@
 !byte %00000111, %10000000, %00000000   ; row 18
 !byte %00000000, %00000000, %00000000   ; row 19
 !byte %00000000, %00000000, %00000000   ; row 20
-!byte 0 ;padding
+!byte $06 ;Color and attributes
 
 ;Mistral told me this is a fish. I will let you be the judge...
 !byte $00, $00, $00, $00, $00, $00, $00, $00 ; Top border (empty)
@@ -152,4 +152,4 @@
 !byte $00, $00, $00, $18, $18, $00, $00, $00 ; Fish tail
 !byte $00, $00, $00, $00, $00, $00, $00, $00 ; Bottom border (empty)
 !byte $00, $00, $00, $00, $00, $00, $00, $00
-!byte 0 ;padding
+!byte $07 ;Color and attributes
