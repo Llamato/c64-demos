@@ -10,6 +10,7 @@ next_line:
     !16 $0000       ; End of BASIC program
 
 ;Hardware constants
+pageSize = 256
 vicColorBlack = 0
 vicColorWhite = 1
 vicColorRed = 2
@@ -59,7 +60,7 @@ sidVoice3ControlRegister = $d412
 sidVoice3ValueRegister = $d41b
 
 ;Vic Registers
-screen = $0400 ;4*256 = 1024
+screen = $0400
 vicSprite0bitmapBlockPointerRegister = $07f8
 vicSprite1bitmapBlockPointerRegister = $07f9
 vicSprite2bitmapBlockPointerRegister = $07fa
@@ -68,6 +69,8 @@ vicSprite4bitmapBlockPointerRegister = $07fc
 vicSprite5bitmapBlockPointerRegister = $07fd
 vicSprite6bitmapBlockPointerRegister = $07fe
 vicSprite7bitmapBlockPointerRegister = $07ff
+vicMultiColorModeRegister = $d016
+vicMemoryPointersRegister = $d018
 vicAcknowlageInterruptRegister = $d019
 vicBorderColorRegister = $d020
 vicBackgroundColorRegister = $d021
@@ -107,6 +110,9 @@ vicRasterInterruptScanlineSelectRegister = $d012
 vicInterruptControlRegister = $d011
 vicSprite0colorRegister = $d027
 
+;Color Ram
+colorRam = $d800
+
 ;CIA registers
 cia1ControlRegister = $dc0d
 cia2ControlRegister = $dd0d
@@ -117,9 +123,9 @@ kernelTextColor = $0286
 kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
 ;Program constants
-backgroundScreenStart=$2600
-backgroundColorStart=$4000
-backgroundCharsetStart=$3000
+backgroundCharsetStart=$3800
+backgroundColorStart=backgroundCharsetStart+pageSize*8
+backgroundScreenStart=backgroundColorStart+pageSize*8
 fishCount = vicHardwareSpriteCount*2
 lowerSpriteBitmapsStartingBlock = 128
 higherSpriteBitmapsStartingBlock = lowerSpriteBitmapsStartingBlock + vicHardwareSpriteCount
@@ -308,7 +314,7 @@ r3 = 254
 
 !macro mirrorMultiColorSprite .src, .dest {
     +revpairwise .src, .dest+2
-    +revpairwise .src+1, dest+1
+    +revpairwise .src+1, .dest+1
     +revpairwise .src+2, .dest
 }
 
@@ -325,17 +331,18 @@ r3 = 254
     +ldi16 sidVoice3DutyCycleRegisterLow, sidVoice3DutyCycle ;Set duty cycle
     +poke sidVoice3ControlRegister, sidVoiceControlWaveformNoiseMask ;Set wave shape to noise
 
-;clear screen
-    ldy #0
-    lda #petsciiBlank
+;clear screen and setup color ram
+    ldx #0
 
-screenclearloop:
-    sta screen+0*256, y ;Screen page 0
-    sta screen+1*256, y ;Screen page 1
-    sta screen+2*256, y ;Screen page 2
-    sta screen+3*256, y ;Screen page 3
-    iny
-    bne screenclearloop
+screenmemoryloop:
+!for .currentPage, 0, 3 {
+    lda backgroundColorStart+.currentPage*pageSize, x
+    sta colorRam+.currentPage*pageSize, x
+    lda backgroundScreenStart+.currentPage*pageSize, x
+    sta screen+.currentPage*pageSize, x
+}
+    inx
+    bne screenmemoryloop
 
 ;setup raster interrupt
     sei ;disable interrupts globally
@@ -390,8 +397,9 @@ screenclearloop:
 ;set background colors
     sta vicBackgroundMulticolorPrimeryColorRegister
     +poke vicBackgroundMulticolorSecondaryColorRegister, vicColorRed
-    +poke vicBackgroundColorRegister, vicColorBlack
-
+    +poke vicBackgroundColorRegister, vicColorBlue
+    +poke vicMultiColorModeRegister, $d8 ;Enable multicolor character mode
+    +poke vicMemoryPointersRegister, %00011110
 
 demoloop:
     ldx #0
@@ -521,6 +529,7 @@ rasterISRhigh:
     +mov vicSprite0colorRegister+.currentSprite, higherFishStatusBits+.currentSprite
     +mov vicSprite0bitmapBlockPointerRegister+.currentSprite, higherFishBitmapBlockPointer+.currentSprite
     +setSpriteStatus .currentSprite, higherFishStatusBits+.currentSprite
+    ;+poke vicSprite6colorRegister, vicColorYellow
 }
     lda #$fe ;everything except the lowest bit high
     and vicSpritePositionsXhighbitRegister
@@ -545,7 +554,7 @@ rasterISRhigh:
 rasterISRlow:
     sei
     inc vicAcknowlageInterruptRegister ;acknowlage interrupt
-    +poke vicBorderColorRegister, vicColorBlue ;visualize screen division
+    +poke vicBorderColorRegister, vicColorLightBlue ;visualize screen division
     +push r2
     +push r3
 !for .currentSprite, 0, vicHardwareSpriteCount-1 {
@@ -554,6 +563,7 @@ rasterISRlow:
     +mov vicSprite0colorRegister+.currentSprite, lowerFishStatusBits+.currentSprite
     +mov vicSprite0bitmapBlockPointerRegister+.currentSprite, lowerFishBitmapBlockPointer+.currentSprite
     +setSpriteStatus .currentSprite, lowerFishStatusBits+.currentSprite
+    ;+poke vicSprite6colorRegister, vicColorYellow
 }
     lda r3
     and vicSpritePositionsXhighbitRegister
@@ -945,12 +955,11 @@ lowerMirroredSpriteBitmaps:
 *=higherMirroredSpriteBitmapsStart
 higherMirroredSpriteBitmaps:
 
+*=backgroundCharsetStart
+!src "backgroundcharset.asm"
 
-;*=backgroundCharsetStart
-;!src "backgroundcharset.asm"
+*=backgroundColorStart
+!src "backgroundcolors.asm"
 
-;*=backgroundColorStart
-;!src "backgroundcolors.asm"
-
-;*=backgroundScreenStart
-;!src "backgroundscreen.asm"
+*=backgroundScreenStart
+!src "backgroundscreen.asm"6
