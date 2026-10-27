@@ -962,4 +962,4 @@ higherMirroredSpriteBitmaps:
 !src "backgroundcolors.asm"
 
 *=backgroundScreenStart
-!src "backgroundscreen.asm"6
+!src "backgroundscreen.asm"
