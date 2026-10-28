@@ -93,19 +93,6 @@ sprite0block = 250 ;(*64=16000)
     tax
 }
 
-!macro msk8x {
-    +phx
-    lda #1
-    cpx #0
-    beq .done
-.loop
-    asl
-    dex
-    bne .loop
-.done
-    +plx
-}
-
 !macro ldi16 .addr, .value {
     +poke .addr, <.value
     +poke .addr+1, >.value
@@ -172,53 +159,47 @@ getMuliSpritePosition:
     rts
 }
 
-;Input: r0=XposLow, r1=XposHigh, r2=Ypos
-;Output: spritePositions 0 though 5 set
-;clobbers: r3=mask
+;Input:  r0=XposLow, r1=XposHigh (0 or 1), r2=Ypos
+;Output: sprites 0..spriteCount-1 positioned,
+;Clobbers: A, X, Y, r3
 setMultiSpritePosition:
 !zone setMultiSpritePosition {
-    +poke r3, 0 ;r3 = high bit mask
-    ldx #0 ;X = currentSprite
-.moveSpriteLoopHeader: ;if currentSprite != spriteCount then goto moveSpriteLoopBody else goto .done
-    cpx #spriteCount
-    beq .done
-.moveSpriteLoopBody:
-    txa ;A = currentSprite
-    and #1 ; A = currentSprite & 1
-    beq .spriteIsOnLeftSide ;if A=0 (currentSprite is even) then goto spriteIsOnLeftSide
-.spriteIsOnRightSide ;else goto spriteIsOnRightSide
-    lda r0
-    adc #48
-    sta r0
-.spriteIsOnLeftSide:
-    bvc .noOverflow
-    lda r1
+    +poke r3, 0
+    ldx #0                  ; X = current sprite
+.loop:
+    txa
     and #1
-    beq .noOverflow
-.yesOverflow:
-    +msk8x
-    ora spritesXhighRegister
-    sta spritesXhighRegister ;spritesXhighRegister = spritesXhighRegister | (1 << currentSprite)
-    jmp .handleXlowByte
-.noOverflow:
-    +msk8x
-    eor #$ff
-    and spritesXhighRegister
-    sta spritesXhighRegister ;spritesXhighRegister = spritesXhighRegister & ~(1 << currentSprite)
-.handleXlowByte:
-    txa ;A=X=currentSprite
-    asl ;A=A*2
-    tax ;X=A=currentSprite*2
-    lda r0 ;A=r2
-    sta sprite0positionX, x
+    beq .left
+    lda #48                 ; right half: offset 48
+    bne .add                ; always taken (A<>0)
+.left:
+    lda #0                  ; left half: offset 0
+.add:
+    clc
+    adc r0                  ; A = low byte, C = carry out
+    pha                     ; save low byte
+    lda r1
+    adc #0                  ; A = high byte + carry
+    and #1                  ; bit 8 of this sprite's X
+    beq .noHigh
+    lda .bitMask,x
+    ora r3
+    sta r3
+.noHigh:
+    txa
+    asl                     ; A = sprite*2
+    tay                     ; Y = register offset, X stays the sprite number
+    pla
+    sta sprite0positionX, y
     lda r2
-    sta sprite0positionX+1, x
-    txa ;A=X=currentSprite*2
-    lsr ;A=A/2
-    tax ;X=A/2=currentSprite
-    inx ;X=X+1
-.done
+    sta sprite0positionX+1, y
+    inx
+    cpx #spriteCount
+    bne .loop
+    +mov spritesXhighRegister, r3
     rts
+.bitMask:
+    !byte 1,2,4,8,16,32,64,128
 }
 
 moveRight:
