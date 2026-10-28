@@ -67,7 +67,8 @@ vicColorLightGreen = 13
 vicColorLightPurple = 14
 vicColorLightGray = 15
 spriteWidth = 24
-spriteHeight = 21 
+spriteHeight = 21
+spriteSize = 64
 
 ;application constants
 spriteCount = 6
@@ -99,10 +100,11 @@ sprite0block = 250 ;(*64=16000)
 }
 
 ;set background and border color
-+poke vicBackgroundColorRegister, vicColorBlack
++poke vicBackgroundColorRegister, vicColorGreen
++poke vicBorderColorRegister, vicColorLightGreen
 
 ;screen clear loop
-lda #32
+lda #32 ; 32 = clear / empty char
 screenclearloop:
 sta screen+0*256, y ;Screen page 0
 sta screen+1*256, y ;Screen page 1
@@ -164,30 +166,30 @@ getMuliSpritePosition:
 setMultiSpritePosition:
 !zone setMultiSpritePosition {
     +poke r3, 0
-    ldx #0                  ; X = current sprite
+    ldx #0 ;X = current sprite
 .loop:
     txa
     and #1
     beq .left
-    lda #48                 ; right half: offset 48
-    bne .add                ; always taken (A<>0)
+    lda #spriteWidth ;right half: offset 24
+    bne .add ;always taken (A<>0)
 .left:
-    lda #0                  ; left half: offset 0
+    lda #0 ;left half: offset 0
 .add:
     clc
-    adc r0                  ; A = low byte, C = carry out
-    pha                     ; save low byte
+    adc r0 ;A = low byte, C = carry out
+    pha ;save low byte
     lda r1
-    adc #0                  ; A = high byte + carry
-    and #1                  ; bit 8 of this sprite's X
+    adc #0 ;A = high byte + carry
+    and #1 ;bit 8 of this sprite's X
     beq .noHigh
     lda .bitMask,x
     ora r3
     sta r3
 .noHigh:
     txa
-    asl                     ; A = sprite*2
-    tay                     ; Y = register offset, X stays the sprite number
+    asl ;A = sprite*2
+    tay ;Y = register offset, X stays the sprite number
     pla
     sta sprite0positionX, y
     lda r2
@@ -242,7 +244,7 @@ moveUp:
     rts
 }
 
-*=$3e80   ; block 250 (250*64 = 16000)
+*=sprite0block*spriteSize
 
 ; --- sprite 0: wheels, left half (block 250) ---
 !byte %00000000,%00000000,%00000000
@@ -266,7 +268,7 @@ moveUp:
 !byte %00000001,%11111111,%00000000
 !byte %00000000,%11111110,%00000000
 !byte %00000000,%01111100,%00000000
-!byte 0   ; padding: sprite blocks are 64 bytes
+!byte 0 ;padding
 
 ; --- sprite 1: wheels, right half (block 251) ---
 !byte %00000000,%00000000,%00000000
@@ -290,7 +292,7 @@ moveUp:
 !byte %00000000,%11111111,%10000000
 !byte %00000000,%01111111,%00000000
 !byte %00000000,%00111110,%00000000
-!byte 0   ; padding: sprite blocks are 64 bytes
+!byte 0 ;padding
 
 ; --- sprite 2: windows, left half (block 252) ---
 !byte %00000000,%00000000,%00000000
@@ -314,7 +316,7 @@ moveUp:
 !byte %00000000,%00000000,%00000000
 !byte %00000000,%00000000,%00000000
 !byte %00000000,%00000000,%00000000
-!byte 0   ; padding: sprite blocks are 64 bytes
+!byte 0 ;padding
 
 ; --- sprite 3: windows, right half (block 253) ---
 !byte %00000000,%00000000,%00000000
@@ -338,7 +340,7 @@ moveUp:
 !byte %00000000,%00000000,%00000000
 !byte %00000000,%00000000,%00000000
 !byte %00000000,%00000000,%00000000
-!byte 0   ; padding: sprite blocks are 64 bytes
+!byte 0 ;padding
 
 ; --- sprite 4: body, left half (block 254) ---
 !byte %00000000,%00000000,%00000000
@@ -386,4 +388,4 @@ moveUp:
 !byte %00000000,%00000000,%00000000
 !byte %00000000,%00000000,%00000000
 !byte %00000000,%00000000,%00000000
-!byte 0   ; padding: sprite blocks are 64 bytes
+!byte 0 ;padding
