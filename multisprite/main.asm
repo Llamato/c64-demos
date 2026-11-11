@@ -53,6 +53,7 @@ r2 = $fd
 r3 = $fe
 
 ;system constants
+pageSize = 256
 vicColorBlack = 0
 vicColorWhite = 1
 vicColorRed = 2
@@ -81,6 +82,9 @@ joystick2positionRight = $77
 ;application constants
 spriteCount = 6
 sprite0block = 250 ;(*64=16000)
+backgroundCharsetStart=$3800
+backgroundColorStart=backgroundCharsetStart+pageSize*8
+backgroundScreenStart=backgroundColorStart+pageSize*8
 
 !macro poke .addr, .value {
     lda #.value
@@ -432,3 +436,14 @@ setMultiSpritePosition:
 !byte %00000000,%00000000,%00000000
 !byte %00000000,%00000000,%00000000
 !byte 0 ;padding
+
+*=backgroundCharsetStart
+; --- tile 1: grass ---
+!byte 72,76,76,72,108,44,104,72
+; --- tile 2: grass ---
+!byte 64,72,200,136,140,196,68,68
+; --- tile 3: grass ---
+!byte 0,0,0,0,0,144,176,160
+
+*=backgroundColorStart
+!fill 1000, 

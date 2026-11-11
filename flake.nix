@@ -188,7 +188,7 @@
                 acme
                 psid
                 vchar64
-                #multipaint
+                multipaint
               ];
               cc = default ++ [ pkgs.llvm-mos-sdk ];
             };
