@@ -43,6 +43,9 @@ sprite3blockPointer = $07fb
 sprite4blockPointer = $07fc
 sprite5blockPointer = $07fd
 
+;cia registers
+ciaJoystick2register = $dc00
+
 ;program registers
 r0 = $fb
 r1 = $fc
@@ -69,6 +72,11 @@ vicColorLightGray = 15
 spriteWidth = 24
 spriteHeight = 21
 spriteSize = 64
+joystick2positionNeutral = $7f
+joystick2positionUp = $7e
+joystick2positionDown = $7d
+joystick2positionLeft = $7b
+joystick2positionRight = $77
 
 ;application constants
 spriteCount = 6
@@ -146,7 +154,83 @@ jsr setMultiSpritePosition
 
 ;movement loop
 demoloop:
-jmp demoloop
+;Wait for 100ms to slow down program
+    jsr delay100ms
+;Read joystick 2 input
+    lda ciaJoystick2register
+checkJoystickY:
+    and #joystick2positionUp xor $ff
+    beq moveUp
+    lda ciaJoystick2register
+    and #joystick2positionDown xor $ff
+    beq moveDown
+checkJoystickX:
+    lda ciaJoystick2register
+    and #joystick2positionLeft xor $ff
+    beq moveLeft
+    lda ciaJoystick2register
+    and #joystick2positionRight xor $ff
+    beq moveRight
+    jmp demoloop
+
+
+moveUp:
+!zone moveUp {
+    jsr getMuliSpritePosition
+    dec r2
+    jsr setMultiSpritePosition
+    jmp checkJoystickX
+}
+
+moveDown:
+!zone moveDown {
+    jsr getMuliSpritePosition
+    inc r2
+    jsr setMultiSpritePosition
+    jmp checkJoystickX
+}
+
+moveLeft:
+!zone moveLeft {
+    jsr getMuliSpritePosition
+    sec
+    lda r0
+    sbc #1
+    sta r0
+    lda r1
+    sbc #0
+    sta r1
+    jsr setMultiSpritePosition
+    jmp demoloop
+}
+
+moveRight:
+!zone moveRight {
+    jsr getMuliSpritePosition
+    clc
+    lda r0
+    adc #1
+    sta r0
+    lda r1
+    adc #0
+    sta r1
+    jsr setMultiSpritePosition
+    jmp demoloop
+}
+
+;Input: None
+;Output: None
+;Sideeffects: 100ms delay
+delay100ms:
+    ldy #$82          ; [2 cycles] Outer loop counter (130 decimal)
+outer_loop:
+    ldx #$9a          ; [2 cycles] Inner loop counter (154 decimal)
+inner_loop:
+    dex               ; [2 cycles] Decrement X
+    bne inner_loop    ; [3 cycles taken, 2 if not] Loop until X=0
+    dey               ; [2 cycles] Decrement Y
+    bne outer_loop    ; [3 cycles taken, 2 if not] Loop until Y=0
+    rts               ; [6 cycles] Return from subroutine
 
 ;Input: None
 ;Output: r0=XposLow, r1=XposHigh, r2=Ypos
@@ -201,47 +285,6 @@ setMultiSpritePosition:
     rts
 .bitMask:
     !byte 1,2,4,8,16,32,64,128
-}
-
-moveRight:
-!zone moveRight {
-    jsr getMuliSpritePosition
-    inc r0
-    beq .done
-    inc r1
-.done
-    jsr setMultiSpritePosition
-    rts
-}
-
-moveLeft:
-!zone moveLeft {
-    jsr getMuliSpritePosition
-    sec
-    lda r0
-    sbc #1
-    sta r0
-    lda r1
-    sbc #0
-    sta r1
-    jsr setMultiSpritePosition
-    rts
-}
-
-moveDown:
-!zone moveDown {
-    jsr getMuliSpritePosition
-    inc r2
-    jsr setMultiSpritePosition
-    rts
-}
-
-moveUp:
-!zone moveUp {
-    jsr getMuliSpritePosition
-    dec r2
-    jsr setMultiSpritePosition
-    rts
 }
 
 *=sprite0block*spriteSize
