@@ -190,13 +190,10 @@ qwordLength = 8 ; 8 bytes = 64 bits
 }
 
 !macro inc16 .addr {
-  clc
-  lda .addr
-  adc #1
-  sta .addr
-  lda .addr+1
-  adc #0
-  sta .addr+1
+    inc .addr
+    bne .done
+    inc .addr+1
+.done
 }
 
 !macro dec16 .addr {
