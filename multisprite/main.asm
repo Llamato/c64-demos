@@ -446,4 +446,4 @@ setMultiSpritePosition:
 !byte 0,0,0,0,0,144,176,160
 
 *=backgroundColorStart
-!fill 1000, 
+!fill 1000, vicColorGreen
