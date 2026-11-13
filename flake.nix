@@ -66,6 +66,7 @@
             cbmNix.buildAcmePrg
             cbmNix.buildBasicPrgs
           ];
+          jumpandrun = cbmNix.buildAcmePrg;
         };
 
         findDemoArtifactCommandFor =
@@ -133,23 +134,8 @@
             ${demoAttributes.name} = makeDemo demoAttributes.value (attrsOf demoAttributes.name false);
           }
         ) { } (lib.attrsToList demos);
-      in
-      {
-        packages = {
-          default = pkgs.symlinkJoin {
-            name = "c64-demos";
-            paths = builtins.attrValues demoPackages;
-          };
-        }
-        // demoPackages;
 
-        apps = builtins.mapAttrs (name: drv: {
-          type = "app";
-          program = "${pkgs.writeShellScript "run-${name}" ''exec ${pkgs.vice}/bin/x64sc $(${findDemoArtifactCommandFor name drv}) "$@"''}";
-          meta = demoMeta;
-        }) demoPackages;
-
-        checks = builtins.mapAttrs (
+        checksPerDemo = builtins.mapAttrs (
           drvname: builders:
           let
             checksFilename = "checks.nix";
@@ -177,6 +163,33 @@
             )
           )
         ) demos;
+      in
+      {
+        packages = {
+          default = pkgs.symlinkJoin {
+            name = "c64-demos";
+            paths = builtins.attrValues demoPackages;
+          };
+        }
+        // demoPackages;
+
+        apps = builtins.mapAttrs (name: drv: {
+          type = "app";
+          program = "${pkgs.writeShellScript "run-${name}" ''exec ${pkgs.vice}/bin/x64sc $(${findDemoArtifactCommandFor name drv}) "$@"''}";
+          meta = demoMeta;
+        }) demoPackages;
+
+        # nix flake check only evaluates the check derivations; building this
+        # linkFarm is what actually runs every demo's checks, so this is what
+        # ci builds. a demo without a checks.nix contributes an empty farm.
+        checks = checksPerDemo // {
+          all = pkgs.linkFarm "all-checks" (
+            lib.mapAttrsToList (name: drv: {
+              inherit name;
+              path = drv;
+            }) checksPerDemo
+          );
+        };
 
         devShells =
           let
