@@ -2,7 +2,10 @@
   description = "development environment for c64 assembly applications using acme assembler";
 
   inputs = {
-    nixpkgs.url = "github:NixOs/nixpkgs/nixos-26.05";
+    nixpkgs = {
+      url = "github:NixOs/nixpkgs/nixos-26.05";
+      flake = false;
+    };
     flake-utils = {
       url = "github:numtide/flake-utils";
     };
@@ -66,6 +69,7 @@
             cbmNix.buildAcmePrg
             cbmNix.buildBasicPrgs
           ];
+          smoothscrolling = cbmNix.buildAcmePrg;
         };
 
         findDemoArtifactCommandFor =
