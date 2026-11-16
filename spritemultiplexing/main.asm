@@ -565,7 +565,6 @@ rasterISRlow:
     +mov vicSprite0colorRegister+.currentSprite, lowerFishStatusBits+.currentSprite
     +mov vicSprite0bitmapBlockPointerRegister+.currentSprite, lowerFishBitmapBlockPointer+.currentSprite
     +setSpriteStatus .currentSprite, lowerFishStatusBits+.currentSprite
-    ;+poke vicSprite6colorRegister, vicColorYellow
 }
     lda r3
     and vicSpritePositionsXhighbitRegister
