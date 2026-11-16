@@ -11,7 +11,7 @@
   # what the demo painted matches the world it generated.
   #
   # the demo takes no raster interrupt - it polls $d019 in a loop - so there
-  # is no kernal timer to break on. the monitor stops the cpu once per frame
+  # is no kernel timer to break on. the monitor stops the cpu once per frame
   # at .updateAnimation, the last step of the main loop, which is also what
   # makes the frame counter in zero page a usable "did it keep running" check.
   demoBootsAndDrawsWorld =

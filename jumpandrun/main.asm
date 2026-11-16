@@ -75,7 +75,7 @@ petsciiSolidBlock = $a0 ;chargen full block, used for the dirt
 petsciiSurfaceBlock = $78 ;chargen top-half block: the surface line
 
 ;memory layout, everything inside the default vic bank $0000-$3fff
-;note: a prg loaded at $0801 is truncated at $3700 (the kernal cassette
+;note: a prg loaded at $0801 is truncated at $3700 (the kernel cassette
 ;buffer), so all embedded data sits below that and is copied into place at
 ;init.
 ;$d018 layout (c64-wiki 53272): bits 7-4 = screen base in 1k units, bits
