@@ -9,12 +9,13 @@
 next_line:
     !16 $0000       ; end of basic program
 
-;vic registers
+;VIC registers
 screen = $0400
 vicBorderColorRegister = $d020
 vicBackgroundColorRegister = $d021
-spritesXhighRegister = $d010
-spritesEnableRegister = $d015
+vicSpritesXhighRegister= $d010
+vicSpritesEnableRegister = $d015
+vicMemoryPointersRegister = $d018
 spritesEnableMulticolorRegister = $d01c
 spriteMultiColor1register = $d025
 spriteMultiColor2register = $d026
@@ -43,7 +44,10 @@ sprite3blockPointer = $07fb
 sprite4blockPointer = $07fc
 sprite5blockPointer = $07fd
 
-;cia registers
+;Color Ram
+colorRam = $d800
+
+;CIA registers
 ciaJoystick2register = $dc00
 
 ;program registers
@@ -54,6 +58,7 @@ r3 = $fe
 
 ;system constants
 pageSize = 256
+screenSize = 1000
 vicColorBlack = 0
 vicColorWhite = 1
 vicColorRed = 2
@@ -111,34 +116,40 @@ backgroundScreenStart=backgroundColorStart+pageSize*8
     +poke .addr+1, >.value
 }
 
+;set charset location
+    +poke vicMemoryPointersRegister, %00011110
+
 ;set background and border color
-+poke vicBackgroundColorRegister, vicColorGreen
-+poke vicBorderColorRegister, vicColorLightGreen
+    +poke vicBackgroundColorRegister, vicColorGreen
+    +poke vicBorderColorRegister, vicColorLightGreen
 
-;screen clear loop
-lda #32 ; 32 = clear / empty char
-screenclearloop:
-sta screen+0*256, y ;Screen page 0
-sta screen+1*256, y ;Screen page 1
-sta screen+2*256, y ;Screen page 2
-sta screen+3*256, y ;Screen page 3
-iny
-bne screenclearloop
-
-;setting shared colors
-+poke spriteMultiColor1register, vicColorBrown
-+poke spriteMultiColor2register, vicColorBlue
+;set shared colors
+    +poke spriteMultiColor1register, vicColorBrown
+    +poke spriteMultiColor2register, vicColorBlue
 !for .currentSprite, 0, spriteCount-1 {
     +poke vicSprite0colorRegister+.currentSprite, .currentSprite
 }
 
-;setting sprite pointers
+;set background charset, background color, and background screen locations
+    ldx #0
+
+screenmemoryloop:
+!for .currentPage, 0, 3 {
+    lda backgroundColorStart+.currentPage*pageSize, x
+    sta colorRam+.currentPage*pageSize, x
+    lda backgroundScreenStart+.currentPage*pageSize, x
+    sta screen+.currentPage*pageSize, x
+}
+    inx
+    bne screenmemoryloop
+
+;set sprite pointers
 !for .currentSprite, 0, spriteCount-1 {
     +poke sprite0blockPointer+.currentSprite, sprite0block+.currentSprite
 }
 
 ;enable sprites (1+2+3+4+5+6)
-+poke spritesEnableRegister, (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5)
++poke vicSpritesEnableRegister, (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5)
 
 ;disable multicolor mode for all sprites
 +poke spritesEnableMulticolorRegister, 0
@@ -241,7 +252,7 @@ inner_loop:
 getMuliSpritePosition:
 !zone getMuliSpritePosition {
     +mov r0, sprite0positionX
-    lda spritesXhighRegister
+    lda vicSpritesXhighRegister
     and #1
     sta r1
     +mov r2, sprite0positionY
@@ -285,7 +296,7 @@ setMultiSpritePosition:
     inx
     cpx #spriteCount
     bne .loop
-    +mov spritesXhighRegister, r3
+    +mov vicSpritesXhighRegister, r3
     rts
 .bitMask:
     !byte 1,2,4,8,16,32,64,128
@@ -438,12 +449,48 @@ setMultiSpritePosition:
 !byte 0 ;padding
 
 *=backgroundCharsetStart
+; --- tile 0: empty ---
+!byte %00000000
+!byte %00000000
+!byte %00000000
+!byte %00000000
+!byte %00000000
+!byte %00000000
+!byte %00000000
+!byte %00000000
+
 ; --- tile 1: grass ---
-!byte 72,76,76,72,108,44,104,72
+!byte %01001000 
+!byte %01001100 
+!byte %01001100 
+!byte %01001000 
+!byte %01101100 
+!byte %00101100 
+!byte %01101000 
+!byte %01001000
+
 ; --- tile 2: grass ---
-!byte 64,72,200,136,140,196,68,68
+!byte %01000000 
+!byte %01001000 
+!byte %11001000 
+!byte %10001000 
+!byte %10001100 
+!byte %11000100 
+!byte %01000100 
+!byte %01000100
+
 ; --- tile 3: grass ---
-!byte 0,0,0,0,0,144,176,160
+!byte %00000000 
+!byte %00000000 
+!byte %00000000 
+!byte %00000000 
+!byte %00000000 
+!byte %10010000 
+!byte %10110000 
+!byte %10100000
 
 *=backgroundColorStart
-!fill 1000, vicColorGreen
+!fill screenSize, vicColorLightGreen
+
+*=backgroundScreenStart
+!fill screenSize, 0

@@ -51,7 +51,7 @@ sidVoice3DutyCycle = $800 ; = 50%
 registersPerSpritePosition = 2
 petsciiBlank = 32
 
-;sid Registers
+;SID Registers
 sidVoice3FrequencyRegisterLow = $d40e
 sidVoice3FrequencyRegisterHigh = $d40f
 sidVoice3DutyCycleRegisterLow = $d410
@@ -59,7 +59,7 @@ sidVoice3DutyCycleRegisterHigh = $d411
 sidVoice3ControlRegister = $d412
 sidVoice3ValueRegister = $d41b
 
-;Vic Registers
+;VIC Registers
 screen = $0400
 vicSprite0bitmapBlockPointerRegister = $07f8
 vicSprite1bitmapBlockPointerRegister = $07f9
@@ -399,6 +399,8 @@ screenmemoryloop:
     +poke vicBackgroundMulticolorSecondaryColorRegister, vicColorRed
     +poke vicBackgroundColorRegister, vicColorBlue
     +poke vicMultiColorModeRegister, $d8 ;Enable multicolor character mode
+
+;set charset location
     +poke vicMemoryPointersRegister, %00011110
 
 demoloop:
@@ -963,3 +965,6 @@ higherMirroredSpriteBitmaps:
 
 *=backgroundScreenStart
 !src "backgroundscreen.asm"
+
+lda $d020
+bit
