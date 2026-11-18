@@ -12,69 +12,73 @@ next_line:
 ;Assembly options
 visualize = 1
 
-;CIA Registers
-cia1ControlRegister = $dc0d
-cia2ControlRegister = $dd0d
-cia1portA = $dc00 ;Bit 6 = Control port 1 paddles selected, Bit 7 = Control port 2 paddels selected.
-cia1portB = $dc01
-cia1ddrA = $dc02
-cia1ddrB = $dc03
-cia1interruptControlRegister = $dc0d
+;Vic Registers
+    vicScreenControl1Register                            = $d011  ; bits 0-2 = y scroll, bit 5 = 40/80 columns, bit 7 = 9th bit of the raster compare line
+    vicRasterInterruptScanlineSelectRegister             = $d012  ; low 8 bits of the raster compare line, the 9th bit lives in $d011 bit 7
+    vicScreenControl2Register                            = $d016  ; bit 5 = multicolor mode, bits 0-2 = x scroll
+    vicMemoryPointersRegister                            = $d018  ; screen, charset and sprite expansion blocks
+    vicAcknowledgeInterruptRegister                      = $d019  ; read: interrupt flags, write: acknowledge them
+    vicInterruptControlRegister                          = $d01a  ; interrupt enable bits, bit 0 = raster
+    vicBorderColorRegister                               = $d020
+    vicBackgroundColorRegister                           = $d021
 
-;VIC Registers
-vicScreenControl1Register = $d011
-vicRasterInterruptScanlineSelectRegister = $d012
-vicScreenControl2Register = $d016
-vicMemoryPointersRegister = $d018
-vicAcknowlageInterruptRegister = $d019
-vicInterruptControlRegister = $d01a
-vicBorderColorRegister = $d020
-vicBackgroundColorRegister = $d021
-vicScreenAndChargenMemoryPointersRegister = $d018
-colorRam = $d800 ;d800-dbe7 = 1000 * 4 bit (lower byte only)
+;Vic Colors
+    vicColorBlack                                        = 0
+    vicColorWhite                                        = 1
+    vicColorRed                                          = 2
+    vicColorCyan                                         = 3
+    vicColorViolet                                       = 4
+    vicColorGreen                                        = 5
+    vicColorBlue                                         = 6
+    vicColorYellow                                       = 7
+    vicColorOrange                                       = 8
+    vicColorBrown                                        = 9
+    vicColorLightRed                                     = 10
+    vicColorDarkGray                                     = 11
+    vicColorMiddleGray                                   = 12
+    vicColorLightGreen                                   = 13
+    vicColorLightBlue                                    = 14
+    vicColorLightGray                                    = 15
+
+;C64 Memory
+    screen                                               = $0400  ; 4*256 = 1024
+    colorRam                                             = $d800  ; d800-dbe7 = 1000 * 4 bit (lower byte only)
+    screenColumns                                        = 40
+    screenRows                                           = 25
+
+;Cia Registers
+    cia1portA                                            = $dc00  ; bit 6 = control port 1 paddles selected, bit 7 = control port 2 paddles selected
+    cia1portB                                            = $dc01
+    cia1ddrA                                             = $dc02
+    cia1ddrB                                             = $dc03
+    cia1ControlRegister                                  = $dc0d  ; interrupt control register, bit 7 = all interrupts off
+    cia2ControlRegister                                  = $dd0d  ; interrupt control register, bit 7 = all interrupts off
+
+;Kernel Registers
+    kernelSaveDataStartPointer                           = $fb    ; $fb:$fc
+    kernelLastUsedIoId                                   = $ba
+    kernelIrqVector                                      = $0314  ; $0314-0315
+
+;Kernel Routines
+    kernelIrqHandler                                     = $ea31
+    kernelRestoreRegistersAndReturnFromInterruptRoutine  = $ea81
+    kernelKeyboardScanRoutine                            = $ea87
+    kernelSetLfs                                         = $ffba
+    kernelSetName                                        = $ffbd
+    kernelGetChar                                        = $ffcf
+    kernelCharOut                                        = $ffd2
+    kernelLoad                                           = $ffd5
+    kernelSave                                           = $ffd8
+
+;Basic Routines
+    basicPlot                                            = $fff0
+    basicCls                                             = $e544
 
 ;Hardware constants
 pageSize = 256
 bitmapPages = 32 ;32=8192/256
 vicBitmapSize = 8000
-vicColorBlack = 0
-vicColorWhite = 1
-vicColorRed = 2
-vicColorViolet = 4
-vicColorGreen = 5
-vicColorBlue = 6
-vicColorYellow = 7
-vicColorOrange = 8
-vicColorBrown = 9
-vicColorLightRed = 10
-vicColorDarkGray = 11
-vicColorMiddleGray = 12
-vicColorLightGreen = 13
-vicColorLightBlue = 14
-vicColorLightGray = 15
-screenColumns = 40
-screenRows = 25
 
-;Kernel registers
-kernelLastUsedIoId = $ba
-kernelSaveDataStartPointer = $fb ;$fb:$fc
-kernelIrqVector = $0314 ;$0314-0315
-
-
-;Kernel rotines
-kernelIrqHandler = $ea31
-kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
-kernelKeyboardScanRoutine = $ea87
-kernelGetChar = $ffcf
-kernelCharOut = $ffd2
-kernelSetLfs = $ffba
-kernelSetName = $ffbd
-kernelLoad = $ffd5
-kernelSave = $ffd8
-
-;Basic rotines
-basicPlot = $fff0
-basicCls = $e544
 
 ;Basic constants
 basicBytesFree = 38911
@@ -104,7 +108,6 @@ filenameSize = diskFilenameMaxLength + diskFileNameExtensionLength +1 ;+1 tradit
 ;Program memory
 userInputBuffer = $c000
 bitmapStart = $2000
-textScreen = $400 ;4*256 = 1024 = $400
 inputCharset1start = bitmapStart
 inputCharset2start = bitmapStart+charsetSize
 outputCharsetStart = bitmapStart+charsetSize*2
@@ -630,8 +633,8 @@ jmp holdAndCatchFire
 ISRbitmap:
 sei
 lda #$01
-ora vicAcknowlageInterruptRegister
-sta vicAcknowlageInterruptRegister
+ora vicAcknowledgeInterruptRegister
+sta vicAcknowledgeInterruptRegister
 +setBitmapDisplayMode
 +ldi16 kernelIrqVector, ISRtext
 +poke vicRasterInterruptScanlineSelectRegister, textRasterline
@@ -641,8 +644,8 @@ jmp kernelIrqHandler
 ISRtext:
 sei
 lda #$01
-ora vicAcknowlageInterruptRegister
-sta vicAcknowlageInterruptRegister
+ora vicAcknowledgeInterruptRegister
+sta vicAcknowledgeInterruptRegister
 +setTextDisplayMode
 +ldi16 kernelIrqVector, ISRbitmap
 +poke vicRasterInterruptScanlineSelectRegister, bitmapRasterline
@@ -715,9 +718,9 @@ takeUntilPrompt:
 
 !if visualize == 1 {
 setColors:
-    +fillMemoryBlock textScreen, 0, vicColorWhite
-    +fillMemoryBlock textScreen+pageSize, 0, vicColorGreen
-    +fillMemoryBlock textScreen+pageSize*2, 0, vicColorViolet
+    +fillMemoryBlock screen, 0, vicColorWhite
+    +fillMemoryBlock screen+pageSize, 0, vicColorGreen
+    +fillMemoryBlock screen+pageSize*2, 0, vicColorViolet
     rts
 }
 

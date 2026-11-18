@@ -21,30 +21,57 @@ next_line:
     !16 $0000       ; End of BASIC program
 
 ;Vic Registers
-vicControlRegister1 = $d011
-vicControlRegister2 = $d016
-vicMemoryPointersRegister = $d018
-vicRasterInterruptScanlineSelectRegister = $d012
-vicAcknowlageInterruptRegister = $d019
-vicInterruptControlRegister = $d01a
-vicBorderColorRegister = $d020
-vicBackgroundColorRegister = $d021
-vicSpriteEnableRegister = $d015
-vicSpritePositionsXhighbitRegister = $d010
-vicSprite0positionXregister = $d000
-vicSprite0positionYregister = $d001
-vicSprite0colorRegister = $d027
-vicSprite0bitmapBlockPointerRegister = $07f8
+    vicSprite0positionXregister                          = $d000
+    vicSprite0positionYregister                          = $d001
+    vicSpritePositionsXhighbitRegister                   = $d010  ; bit n = x bit 8 of sprite n
+    vicScreenControl1Register                            = $d011  ; bits 0-2 = y scroll, bit 5 = 40/80 columns, bit 7 = 9th bit of the raster compare line
+    vicRasterInterruptScanlineSelectRegister             = $d012  ; low 8 bits of the raster compare line, the 9th bit lives in $d011 bit 7
+    vicSpriteEnableRegister                              = $d015  ; bit n enables sprite n
+    vicScreenControl2Register                            = $d016  ; bit 5 = multicolor mode, bits 0-2 = x scroll
+    vicMemoryPointersRegister                            = $d018  ; screen, charset and sprite expansion blocks
+    vicAcknowledgeInterruptRegister                      = $d019  ; read: interrupt flags, write: acknowledge them
+    vicInterruptControlRegister                          = $d01a  ; interrupt enable bits, bit 0 = raster
+    vicBorderColorRegister                               = $d020
+    vicBackgroundColorRegister                           = $d021
+    vicSprite0colorRegister                              = $d027
+    vicSprite0bitmapBlockPointerRegister                 = $07f8
 
-;Screen and Color Ram
-screen = $0400
-colorRam = $d800
+;Vic Colors
+    vicColorBlack                                        = 0
+    vicColorWhite                                        = 1
+    vicColorRed                                          = 2
+    vicColorCyan                                         = 3
+    vicColorViolet                                       = 4
+    vicColorGreen                                        = 5
+    vicColorBlue                                         = 6
+    vicColorYellow                                       = 7
+    vicColorOrange                                       = 8
+    vicColorBrown                                        = 9
+    vicColorLightRed                                     = 10
+    vicColorDarkGray                                     = 11
+    vicColorMiddleGray                                   = 12
+    vicColorLightGreen                                   = 13
+    vicColorLightBlue                                    = 14
+    vicColorLightGray                                    = 15
 
-;CIA registers
-cia1ControlRegister = $dc0d
-cia2ControlRegister = $dd0d
-cia1TimerControlRegister = $dc05
-cia2TimerControlRegister = $dd05
+;C64 Memory
+    screen                                               = $0400  ; 4*256 = 1024
+    colorRam                                             = $d800  ; d800-dbe7 = 1000 * 4 bit (lower byte only)
+    screenColumns                                        = 40
+    screenRows                                           = 25
+    chargenRom                                           = $e000  ; character rom, visible to the cpu here while romsel=0
+
+;Cia Registers
+    cia1TimerControlRegister                             = $dc05
+    cia1ControlRegister                                  = $dc0d  ; interrupt control register, bit 7 = all interrupts off
+    cia2TimerControlRegister                             = $dd05
+    cia2ControlRegister                                  = $dd0d  ; interrupt control register, bit 7 = all interrupts off
+
+;Kernel Registers
+    kernelIrqVector                                      = $0314  ; $0314-0315
+
+;Cpu Registers
+    cpuBankRegister                                      = $01    ; cpu ram/rom select, bit 3 = romsel
 
 ;CIA input ports: the joysticks sit on cia PORT B (the keyboard rows):
 ;joystick 1 on $dc01, joystick 2 on $dd01. port A carries the matrix columns
@@ -52,21 +79,6 @@ cia2TimerControlRegister = $dd05
 ;($3f), which is why reading it made the runner jump constantly.
 joystickPort1 = $dc01
 joystickPort2 = $dd01
-
-;Kernel
-kernelrqVector = $0314 ;$0314-0315
-chargenRom = $e000 ;character rom, visible to the cpu here while romsel=0
-cpuBankRegister = $01
-
-;vic colors
-vicColorBlack = 0
-vicColorWhite = 1
-vicColorRed = 2
-vicColorBlue = 6
-vicColorYellow = 7
-vicColorBrown = 8
-vicColorDarkBrown = 9
-vicColorLightBlue = 14
 
 ;petscii characters
 petsciiSpace = $20
@@ -102,8 +114,6 @@ runnerSpriteBlockRunB = 241
 runnerSpriteBlockJump = 242
 
 ;application constants
-screenColumns = 40
-screenRows = 25
 hudRows = 2 ;rows 0-1 are the hud and never shift
 refillColumn = 39 ;new terrain enters here when scrolling left
 maxScrollSpeed = 2 ;pixels per frame of the fine scroll
@@ -279,7 +289,7 @@ fireDown = $3c ;fire held on either joystick this frame
     +poke vicBackgroundColorRegister, vicColorBlue
 
 ;40 column mode (bit 3 set) with fine scroll starting at 7
-    +poke vicControlRegister2, %00001111
+    +poke vicScreenControl2Register, %00001111
     +poke fineScroll, 7
 
 ;sprite 0 setup: the runner
@@ -345,7 +355,7 @@ fireDown = $3c ;fire held on either joystick this frame
 ;a re-latched flag cannot storm because nothing ever takes the interrupt.
     +poke cia1TimerControlRegister, $00 ;stop the jiffy timers: no cia flags,
     +poke cia2TimerControlRegister, $00 ;so no nmi either (cia2 timer a drives nmi)
-    lda vicAcknowlageInterruptRegister ;clear whatever the kernal latched
+    lda vicAcknowledgeInterruptRegister ;clear whatever the kernal latched
     lda cia1ControlRegister
     lda cia2ControlRegister
     +poke vicInterruptControlRegister, %00000010 ;vic raster flag latching on
@@ -353,7 +363,7 @@ fireDown = $3c ;fire held on either joystick this frame
     ;bit 5 must stay set: it selects C64 mode, clearing it blanks the whole
     ;display (the screen goes solid background colour). keep it, clear only
     ;bit 1 (raster irq enable - we poll $d019 instead).
-    +poke vicControlRegister1, %00011011 ;C64 mode, 40 columns, normal screen, raster irq off
+    +poke vicScreenControl1Register, %00011011 ;C64 mode, 40 columns, normal screen, raster irq off
 
 ;paint the starting world with the display switched off ($d011 bit 4 = 0):
 ;the vic keeps scanning the screen while we write, and painting 40 columns
@@ -362,7 +372,7 @@ fireDown = $3c ;fire held on either joystick this frame
 ;first screen and vanished once the main loop started. with the display off
 ;the vic fetches nothing, and we switch it back on only after the whole
 ;world is in place and the beam has completed a frame.
-    +poke vicControlRegister1, %00001011 ;display off
+    +poke vicScreenControl1Register, %00001011 ;display off
 
     +poke scrollX, 0
     ldx #0
@@ -393,11 +403,11 @@ fireDown = $3c ;fire held on either joystick this frame
 ;wait for the raster flag: the frame that started while we were painting is
 ;over, the beam is in the lower border, safe to show the screen
 .initialwait
-    lda vicAcknowlageInterruptRegister
+    lda vicAcknowledgeInterruptRegister
     and #%00010000 ;raster flag
     beq .initialwait
-    +poke vicAcknowlageInterruptRegister, %00010000
-    +poke vicControlRegister1, %00011011 ;display on
+    +poke vicAcknowledgeInterruptRegister, %00010000
+    +poke vicScreenControl1Register, %00011011 ;display on
 
 ;main loop: one game step per frame
 mainLoop:
@@ -405,10 +415,10 @@ mainLoop:
     ;bottom border, do the whole frame's writes there (no bad lines), then
     ;re-arm on a line the beam has already passed so the flag can only latch
     ;once per frame, and wait out that one too.
-    lda vicAcknowlageInterruptRegister
+    lda vicAcknowledgeInterruptRegister
     and #%00010000 ;raster flag
     beq mainLoop
-    +poke vicAcknowlageInterruptRegister, %00010000
+    +poke vicAcknowledgeInterruptRegister, %00010000
     +poke vicRasterInterruptScanlineSelectRegister, 100
 
     jsr readInput
@@ -419,10 +429,10 @@ mainLoop:
     jsr updateScore
     jsr drawScore
 
-    lda vicAcknowlageInterruptRegister
+    lda vicAcknowledgeInterruptRegister
     and #%00010000
     beq .rearm
-    +poke vicAcknowlageInterruptRegister, %00010000
+    +poke vicAcknowledgeInterruptRegister, %00010000
 .rearm
     +poke vicRasterInterruptScanlineSelectRegister, rasterline
     jmp mainLoop
@@ -621,7 +631,7 @@ updateScroll:
 .writeFineScroll
     lda fineScroll ;drawWorldColumn clobbers a, so reload the fine scroll value
     ora #%00001000 ;keep 40 column mode
-    sta vicControlRegister2
+    sta vicScreenControl2Register
 .noScroll
     rts
 }
@@ -737,7 +747,7 @@ drawWorldColumn:
     ldy #0
     lda #petsciiSolidBlock
     sta (ptr), y
-    lda #vicColorBrown
+    lda #vicColorOrange
     sta (ptr2), y
     lda #25
     sec
@@ -747,7 +757,7 @@ drawWorldColumn:
     +advance ptr, 40
     +advance ptr2, 40
     dex
-    lda #vicColorDarkBrown
+    lda #vicColorBrown
     sta dirtColor
 .terrainloop
     ldy #0
