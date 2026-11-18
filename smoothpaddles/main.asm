@@ -83,33 +83,50 @@ next_line:
   sta .quotient
 }
 
-;Hardware constants
-vicColorBlack = 0
-vicColorWhite = 1
-vicColorRed = 2
-vicColorViolet = 4
-vicColorGreen = 5
-vicColorBlue = 6
-screenColumns = 40
-screenRows = 25
+;Vic Registers
+    vicMemoryPointersRegister                            = $d018  ; screen, charset and sprite expansion blocks
+    vicBorderColorRegister                               = $d020
+    vicBackgroundColorRegister                           = $d021
+
+;Vic Colors
+    vicColorBlack                                        = 0
+    vicColorWhite                                        = 1
+    vicColorRed                                          = 2
+    vicColorCyan                                         = 3
+    vicColorViolet                                       = 4
+    vicColorGreen                                        = 5
+    vicColorBlue                                         = 6
+    vicColorYellow                                       = 7
+    vicColorOrange                                       = 8
+    vicColorBrown                                        = 9
+    vicColorLightRed                                     = 10
+    vicColorDarkGray                                     = 11
+    vicColorMiddleGray                                   = 12
+    vicColorLightGreen                                   = 13
+    vicColorLightBlue                                    = 14
+    vicColorLightGray                                    = 15
+
+;C64 Memory
+    screen                                               = $0400  ; 4*256 = 1024
+    colorRam                                             = $d800  ; d800-dbe7 = 1000 * 4 bit (lower byte only)
+    screenColumns                                        = 40
+    screenRows                                           = 25
+
+;Cia Registers
+    cia1portA                                            = $dc00  ; bit 6 = control port 1 paddles selected, bit 7 = control port 2 paddles selected
+    cia1portB                                            = $dc01
+    cia1ddrA                                             = $dc02
+    cia1ddrB                                             = $dc03
+    cia1ControlRegister                                  = $dc0d  ; interrupt control register, bit 7 = all interrupts off
+
+;Sid Registers
+    sidADC0                                              = $d419  ; analog value paddle x can be read here
+    sidADC1                                              = $d41a  ; analog value paddle y can be read here
+
+;Kernel Registers
+    kernelTextColorRegister                              = $0286
+
 screenSize = screenColumns * screenRows
-
-;Hardware registers
-screen = $400 ;4*256 = 1024 = $400
-vicBorderColorRegister = $d020
-vicBackgroundColorRegister = $d021
-vicScreenAndChargenMemoryPointersRegister = $d018
-colorRam = $d800 ;d800-dbe7 = 1000 * 4 bit (lower byte only)
-cia1portA = $dc00 ;Bit 6 = Control port 1 paddles selected, Bit 7 = Control port 2 paddels selected.
-cia1portB = $dc01
-cia1ddrA = $dc02
-cia1ddrB = $dc03
-cia1interruptControlRegister = $dc0d
-sidADC0 = $d419 ;Analog value padel x is set to can be read here
-sidADC1 = $d41a ;Analog value padel y is set to can be read here
-
-;Kernel registers
-kernelTextColorRegister = $286
 
 ;Program constants
 chargenAddress = $3800 ;7 * 2048 = 14336 = $3800
@@ -120,9 +137,9 @@ chargenAddress = $3800 ;7 * 2048 = 14336 = $3800
 +poke kernelTextColorRegister, vicColorWhite
 
 ;Setup custom character set
-lda vicScreenAndChargenMemoryPointersRegister
+lda vicMemoryPointersRegister
 ora #14 ;(7<<1) ;7 * 2048 = 14336 = $3800. Shift by 1 to hit bits 1-3
-sta vicScreenAndChargenMemoryPointersRegister
+sta vicMemoryPointersRegister
 
 ;Setup paddel input
 lda cia1portA

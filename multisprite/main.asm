@@ -9,10 +9,37 @@
 next_line:
     !16 $0000       ; end of basic program
 
-;vic registers
-screen = $0400
-vicBorderColorRegister = $d020
-vicBackgroundColorRegister = $d021
+;Vic Registers
+    vicBorderColorRegister                               = $d020
+    vicBackgroundColorRegister                           = $d021
+    vicSprite0colorRegister                              = $d027
+    vicSprite1colorRegister                              = $d028
+    vicSprite2colorRegister                              = $d029
+    vicSprite3colorRegister                              = $d02a
+    vicSprite4colorRegister                              = $d02b
+    vicSprite5colorRegister                              = $d02c
+
+;Vic Colors
+    vicColorBlack                                        = 0
+    vicColorWhite                                        = 1
+    vicColorRed                                          = 2
+    vicColorCyan                                         = 3
+    vicColorViolet                                       = 4
+    vicColorGreen                                        = 5
+    vicColorBlue                                         = 6
+    vicColorYellow                                       = 7
+    vicColorOrange                                       = 8
+    vicColorBrown                                        = 9
+    vicColorLightRed                                     = 10
+    vicColorDarkGray                                     = 11
+    vicColorMiddleGray                                   = 12
+    vicColorLightGreen                                   = 13
+    vicColorLightBlue                                    = 14
+    vicColorLightGray                                    = 15
+
+;C64 Memory
+    screen                                               = $0400  ; 4*256 = 1024
+
 spritesXhighRegister = $d010
 spritesEnableRegister = $d015
 spritesEnableMulticolorRegister = $d01c
@@ -30,12 +57,6 @@ sprite4positionX = $d008
 sprite4positionY = $d009
 sprite5positionX = $d00a
 sprite5positionY = $d00b
-vicSprite0colorRegister = $d027
-vicSprite1colorRegister = $d028
-vicSprite2colorRegister = $d029
-vicSprite3colorRegister = $d02a
-vicSprite4colorRegister = $d02b
-vicSprite5colorRegister = $d02c
 sprite0blockPointer = $07f8
 sprite1blockPointer = $07f9
 sprite2blockPointer = $07fa
@@ -126,7 +147,7 @@ iny
 bne screenclearloop
 
 ;setting shared colors
-+poke spriteMultiColor1register, vicColorBrown
++poke spriteMultiColor1register, vicColorOrange
 +poke spriteMultiColor2register, vicColorBlue
 !for .currentSprite, 0, spriteCount-1 {
     +poke vicSprite0colorRegister+.currentSprite, .currentSprite
@@ -146,8 +167,8 @@ bne screenclearloop
 ;set sprite colors
 +poke vicSprite0colorRegister, vicColorBlack
 +poke vicSprite1colorRegister, vicColorBlack
-+poke vicSprite2colorRegister, vicColorThile
-+poke vicSprite3colorRegister, vicColorThile
++poke vicSprite2colorRegister, vicColorCyan
++poke vicSprite3colorRegister, vicColorCyan
 +poke vicSprite4colorRegister, vicColorRed
 +poke vicSprite5colorRegister, vicColorRed
 

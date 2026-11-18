@@ -9,22 +9,26 @@
 next_line:
     !16 $0000       ; End of BASIC program
 
-;CIA Registers
-cia1ControlRegister = $dc0d
-cia2ControlRegister = $dd0d
+;Vic Registers
+    vicScreenControl1Register                            = $d011  ; bits 0-2 = y scroll, bit 5 = 40/80 columns, bit 7 = 9th bit of the raster compare line
+    vicRasterInterruptScanlineSelectRegister             = $d012  ; low 8 bits of the raster compare line, the 9th bit lives in $d011 bit 7
+    vicInterruptControlRegister                          = $d01a  ; interrupt enable bits, bit 0 = raster
+    vicBorderColorRegister                               = $d020
 
-;VIC Registers
-vicInterruptControlRegister = $d011
-vicRasterInterruptScanlineSelectRegister = $d012
-vicControlRegister = $d01a
-vicBorderColorRegister = $d020
+;Cia Registers
+    cia1ControlRegister                                  = $dc0d  ; interrupt control register, bit 7 = all interrupts off
+    cia2ControlRegister                                  = $dd0d  ; interrupt control register, bit 7 = all interrupts off
 
-;SID Registers
-sidVoice3ValueRegister = $d41b
+;Sid Registers
+    sidVoice3ValueRegister                               = $d41b
 
 ;Kernel Registers
-kernelrqVector = $0314 ;$0314-0315
-kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
+    kernelIrqVector                                      = $0314  ; $0314-0315
+
+;Kernel Routines
+    kernelRestoreRegistersAndReturnFromInterruptRoutine  = $ea81
+
+
 
 ;Sid file constants
 sidFileStartAddress = $1200
@@ -39,21 +43,21 @@ sta cia2ControlRegister
 
 ;set rasterline for interrupt to fire on
 lda #$7f
-and vicInterruptControlRegister
-sta vicInterruptControlRegister
+and vicScreenControl1Register
+sta vicScreenControl1Register
 lda #100 ;line 100
 sta vicRasterInterruptScanlineSelectRegister
 
 ;set IRQ handler pointer to ISR
 lda #<rasterISR100
-sta kernelrqVector ;low byte set
+sta kernelIrqVector ;low byte set
 lda #>rasterISR100
-sta kernelrqVector+1 ;high byte set
+sta kernelIrqVector+1 ;high byte set
 
 ;enable raster interrupt
-lda vicControlRegister
+lda vicInterruptControlRegister
 ora #$01 ;set raster interrupt enable bit to 1
-sta vicControlRegister
+sta vicInterruptControlRegister
 cli ;reenable interrupts
 
 ;initialize sid

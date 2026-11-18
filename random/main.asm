@@ -261,44 +261,50 @@ qwordLength = 8 ; 8 bytes = 64 bits
   }
 }
 
-;Hardware registers
-sidVoice3FrequencyRegisterLow = $d40e
-sidVoice3FrequencyRegisterHigh = $d40f
-sidVoice3DutyCycleRegisterLow = $d410
-sidVoice3DutyCycleRegisterHigh = $d411
-sidVoice3ControlRegister = $d412
-sidVoice3ValueRegister = $d41b
-screenAndChargenMemoryPointersRegister = $d018
-vicBorderColorRegister = $d020
-vicBackgroundColorRegister = $d021
-screen = $0400
-colorRam = $d800
+;Vic Registers
+    vicMemoryPointersRegister                            = $d018  ; screen, charset and sprite expansion blocks
+    vicBorderColorRegister                               = $d020
+    vicBackgroundColorRegister                           = $d021
 
-;Hardware constants
-sidVoiceMaxValue = $0fff
-sidVoiceControlWaveformTriangleMask = 16
-sidVoiceControlWaveformSawtoothMask = 32
-sidVoiceControlWaveformPulseMask = 64
-sidVoiceControlWaveformNoiseMask = 128
-vicColorBlack = 0
-vicColorWhite = 1
-vicColorRed = 2
-vicColorTihle = 3
-vicColorPink = 4
-vicColorGreen = 5
-vicColorBlue = 6
-vicColorYellow = 7
-vicColorBrown = 8
-vicColorDarkBrown = 9
-vicColorOrange = 10
-vicColorDarkGray = 11
-vicColorGray = 12
-vicColorLightGreen = 13
-vicColorLightPurple = 14
-vicColorLightGray = 15
+;Vic Colors
+    vicColorBlack                                        = 0
+    vicColorWhite                                        = 1
+    vicColorRed                                          = 2
+    vicColorCyan                                         = 3
+    vicColorViolet                                       = 4
+    vicColorGreen                                        = 5
+    vicColorBlue                                         = 6
+    vicColorYellow                                       = 7
+    vicColorOrange                                       = 8
+    vicColorBrown                                        = 9
+    vicColorLightRed                                     = 10
+    vicColorDarkGray                                     = 11
+    vicColorMiddleGray                                   = 12
+    vicColorLightGreen                                   = 13
+    vicColorLightBlue                                    = 14
+    vicColorLightGray                                    = 15
 
-;Kernel registers
-kernelTextColorRegister = $286
+;C64 Memory
+    screen                                               = $0400  ; 4*256 = 1024
+    colorRam                                             = $d800  ; d800-dbe7 = 1000 * 4 bit (lower byte only)
+
+;Sid Registers
+    sidVoice3FrequencyRegisterLow                        = $d40e
+    sidVoice3FrequencyRegisterHigh                       = $d40f
+    sidVoice3DutyCycleRegisterLow                        = $d410
+    sidVoice3DutyCycleRegisterHigh                       = $d411
+    sidVoice3ControlRegister                             = $d412
+    sidVoice3ValueRegister                               = $d41b
+
+;Sid Constants
+    sidVoiceMaxValue                                     = $0fff
+    sidVoiceControlWaveformTriangleMask                  = 16
+    sidVoiceControlWaveformSawtoothMask                  = 32
+    sidVoiceControlWaveformPulseMask                     = 64
+    sidVoiceControlWaveformNoiseMask                     = 128
+
+;Kernel Registers
+    kernelTextColorRegister                              = $0286
 
 ;Program constants
 sidVoice3Frequency = 4096 ; = maxRngN | max seed
@@ -349,9 +355,9 @@ tagMtRandStateIndex = tagMtRandStateMt+MtStateVectorElementCount * dwordLength ;
 +poke sidVoice3ControlRegister, sidVoiceControlWaveformNoiseMask ;Set wave shape to noise
 
 ;Setup custom character set
-lda screenAndChargenMemoryPointersRegister
+lda vicMemoryPointersRegister
 ora #2*vicCharsetBlock
-sta screenAndChargenMemoryPointersRegister
+sta vicMemoryPointersRegister
 
 ;Set colors
 +poke vicBackgroundColorRegister, vicColorBlack
@@ -359,9 +365,9 @@ sta screenAndChargenMemoryPointersRegister
 +poke kernelTextColorRegister, vicColorWhite
 
 ;Setup custom character set
-lda screenAndChargenMemoryPointersRegister
+lda vicMemoryPointersRegister
 ora #14
-sta screenAndChargenMemoryPointersRegister
+sta vicMemoryPointersRegister
 
 ;Clear screen
 !zone clearscreen {

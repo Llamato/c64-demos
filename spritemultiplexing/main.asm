@@ -11,22 +11,103 @@ next_line:
 
 ;Hardware constants
 pageSize = 256
-vicColorBlack = 0
-vicColorWhite = 1
-vicColorRed = 2
-vicColorCyan = 3
-vicColorPurple = 4
-vicColorGreen = 5
-vicColorBlue = 6
-vicColorYellow = 7
-vicColorBrown = 8
-vicColorDarkBrown = 9
-vicColorLightBrown = 10
-vicColorDarkGray = 11
-vicColorGray = 12
-vicColorLightGreen = 13
-vicColorLightBlue = 14
-vicColorLightGray = 15
+;Vic Registers
+    vicSprite0positionXregister                          = $d000
+    vicSprite0positionYregister                          = $d001
+    vicSprite1positionXregister                          = $d002
+    vicSprite1positionYregister                          = $d003
+    vicSprite2positionXregister                          = $d004
+    vicSprite2positionYregister                          = $d005
+    vicSprite3positionXregister                          = $d006
+    vicSprite3positionYregister                          = $d007
+    vicSprite4positionXregister                          = $d008
+    vicSprite4positionYregister                          = $d009
+    vicSprite5positionXregister                          = $d00a
+    vicSprite5positionYregister                          = $d00b
+    vicSprite6positionXregister                          = $d00c
+    vicSprite6positionYregister                          = $d00d
+    vicSprite7positionXregister                          = $d00e
+    vicSprite7positionYregister                          = $d00f
+    vicSpritePositionsXhighbitRegister                   = $d010  ; bit n = x bit 8 of sprite n
+    vicScreenControl1Register                            = $d011  ; bits 0-2 = y scroll, bit 5 = 40/80 columns, bit 7 = 9th bit of the raster compare line
+    vicRasterInterruptScanlineSelectRegister             = $d012  ; low 8 bits of the raster compare line, the 9th bit lives in $d011 bit 7
+    vicSpriteEnableRegister                              = $d015  ; bit n enables sprite n
+    vicScreenControl2Register                            = $d016  ; bit 5 = multicolor mode, bits 0-2 = x scroll
+    vicMemoryPointersRegister                            = $d018  ; screen, charset and sprite expansion blocks
+    vicAcknowledgeInterruptRegister                      = $d019  ; read: interrupt flags, write: acknowledge them
+    vicInterruptControlRegister                          = $d01a  ; interrupt enable bits, bit 0 = raster
+    vicSpriteMultiColorRegister                          = $d01c  ; bit n = multicolor sprite n
+    vicBorderColorRegister                               = $d020
+    vicBackgroundColorRegister                           = $d021
+    vicBackgroundMulticolorPrimaryColorRegister          = $d022
+    vicBackgroundMulticolorSecondaryColorRegister        = $d023
+    vicSpriteMulticolorPrimaryColorRegister              = $d025
+    vicSpriteMulticolorSecondaryColorRegister            = $d026
+    vicSprite0colorRegister                              = $d027
+    vicSprite1colorRegister                              = $d028
+    vicSprite2colorRegister                              = $d029
+    vicSprite3colorRegister                              = $d02a
+    vicSprite4colorRegister                              = $d02b
+    vicSprite5colorRegister                              = $d02c
+    vicSprite6colorRegister                              = $d02d
+    vicSprite7colorRegister                              = $d02e
+    vicSprite0bitmapBlockPointerRegister                 = $07f8
+    vicSprite1bitmapBlockPointerRegister                 = $07f9
+    vicSprite2bitmapBlockPointerRegister                 = $07fa
+    vicSprite3bitmapBlockPointerRegister                 = $07fb
+    vicSprite4bitmapBlockPointerRegister                 = $07fc
+    vicSprite5bitmapBlockPointerRegister                 = $07fd
+    vicSprite6bitmapBlockPointerRegister                 = $07fe
+    vicSprite7bitmapBlockPointerRegister                 = $07ff
+
+;Vic Colors
+    vicColorBlack                                        = 0
+    vicColorWhite                                        = 1
+    vicColorRed                                          = 2
+    vicColorCyan                                         = 3
+    vicColorViolet                                       = 4
+    vicColorGreen                                        = 5
+    vicColorBlue                                         = 6
+    vicColorYellow                                       = 7
+    vicColorOrange                                       = 8
+    vicColorBrown                                        = 9
+    vicColorLightRed                                     = 10
+    vicColorDarkGray                                     = 11
+    vicColorMiddleGray                                   = 12
+    vicColorLightGreen                                   = 13
+    vicColorLightBlue                                    = 14
+    vicColorLightGray                                    = 15
+
+;C64 Memory
+    screen                                               = $0400  ; 4*256 = 1024
+    colorRam                                             = $d800  ; d800-dbe7 = 1000 * 4 bit (lower byte only)
+
+;Cia Registers
+    cia1ControlRegister                                  = $dc0d  ; interrupt control register, bit 7 = all interrupts off
+    cia2ControlRegister                                  = $dd0d  ; interrupt control register, bit 7 = all interrupts off
+
+;Sid Registers
+    sidVoice3FrequencyRegisterLow                        = $d40e
+    sidVoice3FrequencyRegisterHigh                       = $d40f
+    sidVoice3DutyCycleRegisterLow                        = $d410
+    sidVoice3DutyCycleRegisterHigh                       = $d411
+    sidVoice3ControlRegister                             = $d412
+    sidVoice3ValueRegister                               = $d41b
+
+;Sid Constants
+    sidVoiceMaxValue                                     = $0fff
+    sidVoiceControlWaveformTriangleMask                  = 16
+    sidVoiceControlWaveformSawtoothMask                  = 32
+    sidVoiceControlWaveformPulseMask                     = 64
+    sidVoiceControlWaveformNoiseMask                     = 128
+
+;Kernel Registers
+    kernelTextColorRegister                              = $0286
+    kernelIrqVector                                      = $0314  ; $0314-0315
+
+;Kernel Routines
+    kernelRestoreRegistersAndReturnFromInterruptRoutine  = $ea81
+
 vicHardwareSpriteCount = 8
 highresSpriteWidth = 24
 highresSpriteHeight = 21
@@ -37,90 +118,13 @@ spriteStartOffsetY = 0
 spriteScreenCoordinateOffsetX = 25
 spriteScreenCoordinateOffsetY = 21
 spriteSize = 64
-sidVoiceControlWaveformTriangleMask = 16
-sidVoiceControlWaveformSawtoothMask = 32
-sidVoiceControlWaveformPulseMask = 64
-sidVoiceControlWaveformNoiseMask = 128
-sidVoiceMaxValue = $0fff
-sidVoiceControlWaveformTriangleMask = 16
-sidVoiceControlWaveformSawtoothMask = 32
-sidVoiceControlWaveformPulseMask = 64
-sidVoiceControlWaveformNoiseMask = 128
 sidVoice3Frequency = 4096 ; = maxRngN | max seed
 sidVoice3DutyCycle = $800 ; = 50%
 registersPerSpritePosition = 2
 petsciiBlank = 32
 
-;sid Registers
-sidVoice3FrequencyRegisterLow = $d40e
-sidVoice3FrequencyRegisterHigh = $d40f
-sidVoice3DutyCycleRegisterLow = $d410
-sidVoice3DutyCycleRegisterHigh = $d411
-sidVoice3ControlRegister = $d412
-sidVoice3ValueRegister = $d41b
 
-;Vic Registers
-screen = $0400
-vicSprite0bitmapBlockPointerRegister = $07f8
-vicSprite1bitmapBlockPointerRegister = $07f9
-vicSprite2bitmapBlockPointerRegister = $07fa
-vicSprite3bitmapBlockPointerRegister = $07fb
-vicSprite4bitmapBlockPointerRegister = $07fc
-vicSprite5bitmapBlockPointerRegister = $07fd
-vicSprite6bitmapBlockPointerRegister = $07fe
-vicSprite7bitmapBlockPointerRegister = $07ff
-vicMultiColorModeRegister = $d016
-vicMemoryPointersRegister = $d018
-vicAcknowlageInterruptRegister = $d019
-vicBorderColorRegister = $d020
-vicBackgroundColorRegister = $d021
-vicBackgroundMulticolorPrimeryColorRegister = $d022
-vicBackgroundMulticolorSecondaryColorRegister = $d023
-vicSpriteMulticolorPrimeryColorRegister = $d025
-vicSpriteMulticolorSecondaryColorRegister = $d026
-vicControlRegister = $d01a
-vicSpriteMultiColorRegister = $d01c
-vicSprite0positionXregister = $d000
-vicSprite0positionYregister = $d001
-vicSprite1positionXregister = $d002
-vicSprite1positionYregister = $d003
-vicSprite2positionXregister = $d004
-vicSprite2positionYregister = $d005
-vicSprite3positionXregister = $d006
-vicSprite3positionYregister = $d007
-vicSprite4positionXregister = $d008
-vicSprite4positionYregister = $d009
-vicSprite5positionXregister = $d00a
-vicSprite5positionYregister = $d00b
-vicSprite6positionXregister = $d00c
-vicSprite6positionYregister = $d00d
-vicSprite7positionXregister = $d00e
-vicSprite7positionYregister = $d00f
-vicSpriteEnableRegister = $d015
-vicSprite0colorRegister = $d027
-vicSprite1colorRegister = $d028
-vicSprite2colorRegister = $d029
-vicSprite3colorRegister = $d02a
-vicSprite4colorRegister = $d02b
-vicSprite5colorRegister = $d02c
-vicSprite6colorRegister = $d02d
-vicSprite7colorRegister = $d02e
-vicSpritePositionsXhighbitRegister = $d010
-vicRasterInterruptScanlineSelectRegister = $d012
-vicInterruptControlRegister = $d011
-vicSprite0colorRegister = $d027
 
-;Color Ram
-colorRam = $d800
-
-;CIA registers
-cia1ControlRegister = $dc0d
-cia2ControlRegister = $dd0d
-
-;Kernel
-kernelrqVector = $0314 ;$0314-0315
-kernelTextColor = $0286
-kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
 ;Program constants
 backgroundCharsetStart=$3800
@@ -305,7 +309,7 @@ r3 = 254
 }
 
 !macro mirrorHighresSprite .src, .dest {
-    !for .currentRow, 0, highresSpriteHeight -1 {
+    !for .currentRow, 0, highresSpriteHeight-1 {
         +rev .src+3*.currentRow, .dest+2+3*.currentRow
         +rev .src+1+3*.currentRow, .dest+1+3*.currentRow
         +rev .src+2+3*.currentRow, .dest+3*.currentRow
@@ -353,17 +357,17 @@ screenmemoryloop:
 
 ;set rasterline for interrupt to fire on
     lda #$7f
-    and vicInterruptControlRegister
-    sta vicInterruptControlRegister
+    and vicScreenControl1Register
+    sta vicScreenControl1Register
     +poke vicRasterInterruptScanlineSelectRegister, highToLowRasterline
 
 ;set IRQ handler pointer to ISR
-    +ldi16 kernelrqVector, rasterISRhigh
+    +ldi16 kernelIrqVector, rasterISRhigh
 
 ;enable raster interrupt
-    lda vicControlRegister
+    lda vicInterruptControlRegister
     ora #$01 ;set raster interrupt enable bit to 1
-    sta vicControlRegister
+    sta vicInterruptControlRegister
     cli ;reenable interrupts
 
 ;set sprite modes
@@ -376,7 +380,7 @@ screenmemoryloop:
 }
 
 ;setup individual fish
-!for .currentFish, 0, fishCount -1 {
+!for .currentFish, 0, fishCount-1 {
     +mov fishSpeeds+.currentFish, sidVoice3ValueRegister
     +ldi16 r0, lowerSpriteBitmapsStart+spriteSize*.currentFish
     +ldi16 r2, lowerMirroredSpriteBitmapsStart+spriteSize*.currentFish
@@ -391,14 +395,14 @@ screenmemoryloop:
 }
 
 ;set sprite colors
-    +poke vicSpriteMulticolorPrimeryColorRegister, vicColorCyan
+    +poke vicSpriteMulticolorPrimaryColorRegister, vicColorCyan
     +poke vicSpriteMulticolorSecondaryColorRegister, vicColorWhite
 
 ;set background colors
-    sta vicBackgroundMulticolorPrimeryColorRegister
+    sta vicBackgroundMulticolorPrimaryColorRegister
     +poke vicBackgroundMulticolorSecondaryColorRegister, vicColorRed
     +poke vicBackgroundColorRegister, vicColorBlue
-    +poke vicMultiColorModeRegister, $d8 ;Enable multicolor character mode
+    +poke vicScreenControl2Register, $d8 ;Enable multicolor character mode
     +poke vicMemoryPointersRegister, %00011110
 
 demoloop:
@@ -519,7 +523,7 @@ changeHeading:
 
 rasterISRhigh:
     sei
-    inc vicAcknowlageInterruptRegister ;acknowlage interrupt
+    inc vicAcknowledgeInterruptRegister ;acknowlage interrupt
     +poke vicBorderColorRegister, vicColorYellow ;visualize screen division
     +push r2
     +push r3
@@ -542,10 +546,10 @@ rasterISRhigh:
     pla
     sta r3 ;pull r3 from the stack
     lda #$7f ;everything except the highest bit high
-    and vicInterruptControlRegister
-    sta vicInterruptControlRegister
+    and vicScreenControl1Register
+    sta vicScreenControl1Register
     +poke vicRasterInterruptScanlineSelectRegister, highToLowRasterline
-    +ldi16 kernelrqVector, rasterISRlow
+    +ldi16 kernelIrqVector, rasterISRlow
     +pull r3
     +pull r2
     cli
@@ -553,7 +557,7 @@ rasterISRhigh:
 
 rasterISRlow:
     sei
-    inc vicAcknowlageInterruptRegister ;acknowlage interrupt
+    inc vicAcknowledgeInterruptRegister ;acknowlage interrupt
     +poke vicBorderColorRegister, vicColorLightBlue ;visualize screen division
     +push r2
     +push r3
@@ -575,10 +579,10 @@ rasterISRlow:
     pla
     sta r3 ;pull r3 from the stack
     lda #$7f ;everything except the highest bit high
-    and vicInterruptControlRegister
-    sta vicInterruptControlRegister
+    and vicScreenControl1Register
+    sta vicScreenControl1Register
     +poke vicRasterInterruptScanlineSelectRegister, lowToHighRasterline
-    +ldi16 kernelrqVector, rasterISRhigh
+    +ldi16 kernelIrqVector, rasterISRhigh
     +pull r3
     +pull r2
     cli

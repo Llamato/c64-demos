@@ -9,41 +9,47 @@ next_line:
     !16 $0000       ; End of BASIC program
 
 ;Vic Registers
-vicControlRegister1 = $d011
-vicControlRegister2 = $d016
-vicMemoryPointersRegister = $d018
-vicRasterInterruptScanlineSelectRegister = $d012
-vicAcknowlageInterruptRegister = $d019
-vicInterruptControlRegister = $d01a
-vicBorderColorRegister = $d020
-vicBackgroundColorRegister = $d021
-vicSpriteEnableRegister = $d015
-vicSpritePositionsXhighbitRegister = $d010
-vicSprite0positionXregister = $d000
-vicSprite0positionYregister = $d001
-vicSprite0colorRegister = $d027
-vicSprite0bitmapBlockPointerRegister = $07f8
+    vicSprite0positionXregister                          = $d000
+    vicSprite0positionYregister                          = $d001
+    vicSpritePositionsXhighbitRegister                   = $d010  ; bit n = x bit 8 of sprite n
+    vicScreenControl1Register                            = $d011  ; bits 0-2 = y scroll, bit 5 = 40/80 columns, bit 7 = 9th bit of the raster compare line
+    vicRasterInterruptScanlineSelectRegister             = $d012  ; low 8 bits of the raster compare line, the 9th bit lives in $d011 bit 7
+    vicSpriteEnableRegister                              = $d015  ; bit n enables sprite n
+    vicScreenControl2Register                            = $d016  ; bit 5 = multicolor mode, bits 0-2 = x scroll
+    vicMemoryPointersRegister                            = $d018  ; screen, charset and sprite expansion blocks
+    vicAcknowledgeInterruptRegister                      = $d019  ; read: interrupt flags, write: acknowledge them
+    vicInterruptControlRegister                          = $d01a  ; interrupt enable bits, bit 0 = raster
+    vicBorderColorRegister                               = $d020
+    vicBackgroundColorRegister                           = $d021
+    vicSprite0colorRegister                              = $d027
+    vicSprite0bitmapBlockPointerRegister                 = $07f8
 
-;Screen and Color Ram
-screen = $0400
-colorRam = $d800
+;C64 Memory
+    screen                                               = $0400  ; 4*256 = 1024
+    colorRam                                             = $d800  ; d800-dbe7 = 1000 * 4 bit (lower byte only)
+    screenColumns                                        = 40
+    screenRows                                           = 25
+    chargenRom                                           = $e000  ; character rom, visible to the cpu here while romsel=0
 
-;CIA registers
-cia1ControlRegister = $dc0d
-cia2ControlRegister = $dd0d
-cia1TimerControlRegister = $dc05
-cia2TimerControlRegister = $dd05
+;Cia Registers
+    cia1TimerControlRegister                             = $dc05
+    cia1ControlRegister                                  = $dc0d  ; interrupt control register, bit 7 = all interrupts off
+    cia2TimerControlRegister                             = $dd05
+    cia2ControlRegister                                  = $dd0d  ; interrupt control register, bit 7 = all interrupts off
+
+;Kernel Registers
+    kernelIrqVector                                      = $0314  ; $0314-0315
+
+;Kernel Routines
+    kernelRestoreRegistersAndReturnFromInterruptRoutine  = $ea81
+
+;Cpu Registers
+    cpuBankRegister                                      = $01    ; cpu ram/rom select, bit 3 = romsel
 
 ;Joysticks
 joystickPort1 = $dc01
 joystickPort2 = $dd01
 
-;Kernel
-kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
-kernelrqVector = $0314 ;$0314-0315
-chargenRom = $e000 ;character rom, visible to the cpu here while romsel=0
-cpuBankRegister = $01
-cpuBankRegister = $01
 
 ;petscii characters
 petsciiSpace = $20
@@ -52,8 +58,6 @@ petsciiSolidBlock = $a0 ;chargen full block, used for the dirt
 petsciiSurfaceBlock = $78 ;chargen top-half block: the surface line
 
 ;application constants
-screenColumns = 40
-screenRows = 25
 hudRows = 2 ;rows 0-1 are the hud and never shift
 refillColumn = 39 ;new terrain enters here when scrolling left
 maxScrollSpeed = 2 ;pixels per frame of the fine scroll
@@ -136,13 +140,16 @@ init:
     sta cia2ControlRegister
 
 ;set rasterline for interrupt to fire on
-    lda #$7f
+    lda #$7f ;clear $d011 bit 7 (raster compare bit 8), else $d012=$ff means line 511 and the irq never fires
+    and vicScreenControl1Register
+    sta vicScreenControl1Register
+    lda #$7f ;clear $d01a bit 7
     and vicInterruptControlRegister
     sta vicInterruptControlRegister
     +poke vicRasterInterruptScanlineSelectRegister, rasterline
 
 ;set IRQ handler pointer to ISR
-    +ldi16 kernelrqVector, rasterISR
+    +ldi16 kernelIrqVector, rasterISR
 
 ;enable raster interrupt
     lda vicInterruptControlRegister
@@ -156,11 +163,11 @@ demoloop:
 
 rasterISR:
     lda #$01
-    sta vicAcknowlageInterruptRegister
+    sta vicAcknowledgeInterruptRegister
     sei
-    inc screen/
+    inc screen
     inc vicBackgroundColorRegister
-    +ldi16 kernelrqVector, rasterISR
+    +ldi16 kernelIrqVector, rasterISR
     cli
     jmp kernelRestoreRegistersAndReturnFromInterruptRoutine
 

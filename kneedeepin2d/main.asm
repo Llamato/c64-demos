@@ -10,29 +10,28 @@ next_line:
     !16 $0000       ; End of BASIC program
 
 ;Vic Registers
-vicBorderColorRegister = $d020
-vicSpritesPositionXhighRegister = $d010
-vicSpriteEnableRegister = $d015
-vicSpriteDoubleHeightRegister = $d017
-vicSpriteDoubleWidthRegister = $d01d
-vicSprite0positionXregister = $d000
-vicSprite0positionYregister = $d001
-vicSprite0bitmapBlockPointerRegister = $07f8
-vicSprite0colorRegister = $d027
-vicSprite1colorRegister = $d028
-vicSprite2colorRegister = $d029
-vicSprite3colorRegister = $d02a
-vicSprite1positionXregister = $d002
-vicSprite1positionYregister = $d003
-vicSprite1bitmapBlockPointerRegister = $07f9
-vicSprite1colorRegister = $d028
-vicSprite2positionXregister = $d004
-vicSprite2positionYregister = $d005
-vicSprite2bitmapBlockPointerRegister = $07fa
-vicSprite3colorRegister = $d02a
-vicSprite3positionXregister = $d006
-vicSprite3positionYregister = $d007
-vicSprite3bitmapBlockPointerRegister = $07fb
+    vicSprite0positionXregister                          = $d000
+    vicSprite0positionYregister                          = $d001
+    vicSprite1positionXregister                          = $d002
+    vicSprite1positionYregister                          = $d003
+    vicSprite2positionXregister                          = $d004
+    vicSprite2positionYregister                          = $d005
+    vicSprite3positionXregister                          = $d006
+    vicSprite3positionYregister                          = $d007
+    vicSpritePositionsXhighbitRegister                   = $d010  ; bit n = x bit 8 of sprite n
+    vicSpriteEnableRegister                              = $d015  ; bit n enables sprite n
+    vicSpriteDoubleHeightRegister                        = $d017  ; bit n doubles the height of sprite n
+    vicSpriteDoubleWidthRegister                         = $d01d  ; bit n doubles the width of sprite n
+    vicBorderColorRegister                               = $d020
+    vicSprite0colorRegister                              = $d027
+    vicSprite1colorRegister                              = $d028
+    vicSprite2colorRegister                              = $d029
+    vicSprite3colorRegister                              = $d02a
+    vicSprite0bitmapBlockPointerRegister                 = $07f8
+    vicSprite1bitmapBlockPointerRegister                 = $07f9
+    vicSprite2bitmapBlockPointerRegister                 = $07fa
+    vicSprite3bitmapBlockPointerRegister                 = $07fb
+
 
 ;Basic registers
 basicFac = $61 ;fac = floating point accumulator with
@@ -156,9 +155,9 @@ spriteLength = 63
 
 !macro setSpritePositionX .spriteNr, .xPosition {
     !if .xPosition > 255 {
-        +setBit vicSpritesPositionXhighRegister, .spriteNr
+        +setBit vicSpritePositionsXhighbitRegister, .spriteNr
     } else {
-        +clearBit vicSpritesPositionXhighRegister, .spriteNr
+        +clearBit vicSpritePositionsXhighbitRegister, .spriteNr
     }
     +poke vicSprite0positionXregister+2*.spriteNr, <(.xPosition & 255)
 }
