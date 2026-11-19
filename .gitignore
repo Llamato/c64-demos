@@ -6,3 +6,5 @@
 *.chrs
 result
 .vscode
+syms.txt
+*.vicelabels

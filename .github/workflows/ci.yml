@@ -28,6 +28,11 @@ jobs:
       - name: Check Nix Flake
         run: nix flake check
 
+      - name: Run Demo Checks
+        # nix flake check only evaluates the check derivations; building the
+        # all-checks linkFarm is what actually runs each demo's vice smoke test
+        run: nix build --no-link --impure --expr '(builtins.getFlake (toString ./.)).checks.${builtins.currentSystem}.all'
+
       - name: Build Default Package
         run: nix build
 
