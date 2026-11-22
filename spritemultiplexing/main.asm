@@ -965,6 +965,3 @@ higherMirroredSpriteBitmaps:
 
 *=backgroundScreenStart
 !src "backgroundscreen.asm"
-
-lda $d020
-bit
