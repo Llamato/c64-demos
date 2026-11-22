@@ -56,6 +56,8 @@
           random = cbmNix.buildAcmePrg;
           sidplayer = cbmNix.buildAcmePrg;
           kneedeepin2d = cbmNix.buildAcmePrg;
+          smoothscrolling = cbmNix.buildAcmePrg;
+          petscii = cbmNix.buildAcmePrg;
           charsets = [
             cbmNix.buildAcmePrg
             cbmNix.buildBasicPrgs
@@ -69,7 +71,6 @@
             cbmNix.buildAcmePrg
             cbmNix.buildBasicPrgs
           ];
-          smoothscrolling = cbmNix.buildAcmePrg;
         };
 
         findDemoArtifactCommandFor =
