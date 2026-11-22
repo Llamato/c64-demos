@@ -56,7 +56,6 @@
           random = cbmNix.buildAcmePrg;
           sidplayer = cbmNix.buildAcmePrg;
           kneedeepin2d = cbmNix.buildAcmePrg;
-          petscii = cbmNix.buildAcmePrg; 
           charsets = [
             cbmNix.buildAcmePrg
             cbmNix.buildBasicPrgs
@@ -193,7 +192,7 @@
                 acme
                 psid
                 vchar64
-                #multipaint
+                multipaint
               ];
               cc = default ++ [ pkgs.llvm-mos-sdk ];
             };
