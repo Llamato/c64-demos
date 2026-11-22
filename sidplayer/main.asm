@@ -1,4 +1,4 @@
-*= $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
+* = $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
 
 ; --- BASIC Upstart Stub (10 SYS 2061) ---
     !16 next_line   ; Pointer to next line
@@ -10,23 +10,23 @@ next_line:
     !16 $0000       ; End of BASIC program
 
 ;Vic Registers
-    vicScreenControl1Register                            = $d011  ; bits 0-2 = y scroll, bit 5 = 40/80 columns, bit 7 = 9th bit of the raster compare line
-    vicRasterInterruptScanlineSelectRegister             = $d012  ; low 8 bits of the raster compare line, the 9th bit lives in $d011 bit 7
-    vicInterruptControlRegister                          = $d01a  ; interrupt enable bits, bit 0 = raster
-    vicBorderColorRegister                               = $d020
+vicScreenControl1Register = $d011  ; bits 0-2 = y scroll, bit 5 = 40/80 columns, bit 7 = 9th bit of the raster compare line
+vicRasterInterruptScanlineSelectRegister = $d012  ; low 8 bits of the raster compare line, the 9th bit lives in $d011 bit 7
+vicInterruptControlRegister = $d01a  ; interrupt enable bits, bit 0 = raster
+vicBorderColorRegister = $d020
 
 ;Cia Registers
-    cia1ControlRegister                                  = $dc0d  ; interrupt control register, bit 7 = all interrupts off
-    cia2ControlRegister                                  = $dd0d  ; interrupt control register, bit 7 = all interrupts off
+cia1ControlRegister = $dc0d  ; interrupt control register, bit 7 = all interrupts off
+cia2ControlRegister = $dd0d  ; interrupt control register, bit 7 = all interrupts off
 
 ;Sid Registers
-    sidVoice3ValueRegister                               = $d41b
+sidVoice3ValueRegister = $d41b
 
 ;Kernel Registers
-    kernelIrqVector                                      = $0314  ; $0314-0315
+kernelIrqVector = $0314  ; $0314-0315
 
 ;Kernel Routines
-    kernelRestoreRegistersAndReturnFromInterruptRoutine  = $ea81
+kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
 
 
@@ -77,6 +77,6 @@ jsr sidFilePlaybackAddress ;jump to sid play address. Playing next note.
 dec vicBorderColorRegister
 jmp kernelRestoreRegistersAndReturnFromInterruptRoutine
 
-*=$1200
+* = $1200
 ;Sid file
 !bin "drdoom.sid",, $7c+2 ; Skip sid header

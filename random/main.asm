@@ -2,7 +2,7 @@
 reseedEnable = 1
 mtEnable = 0
 
-*=$0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
+* = $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
 ; --- BASIC Upstart Stub (10 SYS 2061) ---
     !16 next_line   ; Pointer to next line
     !16 10          ; Line number 10
@@ -262,49 +262,49 @@ qwordLength = 8 ; 8 bytes = 64 bits
 }
 
 ;Vic Registers
-    vicMemoryPointersRegister                            = $d018  ; screen, charset and sprite expansion blocks
-    vicBorderColorRegister                               = $d020
-    vicBackgroundColorRegister                           = $d021
+vicMemoryPointersRegister = $d018  ; screen, charset and sprite expansion blocks
+vicBorderColorRegister = $d020
+vicBackgroundColorRegister = $d021
 
 ;Vic Colors
-    vicColorBlack                                        = 0
-    vicColorWhite                                        = 1
-    vicColorRed                                          = 2
-    vicColorCyan                                         = 3
-    vicColorViolet                                       = 4
-    vicColorGreen                                        = 5
-    vicColorBlue                                         = 6
-    vicColorYellow                                       = 7
-    vicColorOrange                                       = 8
-    vicColorBrown                                        = 9
-    vicColorLightRed                                     = 10
-    vicColorDarkGray                                     = 11
-    vicColorMiddleGray                                   = 12
-    vicColorLightGreen                                   = 13
-    vicColorLightBlue                                    = 14
-    vicColorLightGray                                    = 15
+vicColorBlack = 0
+vicColorWhite = 1
+vicColorRed = 2
+vicColorCyan = 3
+vicColorViolet = 4
+vicColorGreen = 5
+vicColorBlue = 6
+vicColorYellow = 7
+vicColorOrange = 8
+vicColorBrown = 9
+vicColorLightRed = 10
+vicColorDarkGray = 11
+vicColorMiddleGray = 12
+vicColorLightGreen = 13
+vicColorLightBlue = 14
+vicColorLightGray = 15
 
 ;C64 Memory
-    screen                                               = $0400  ; 4*256 = 1024
-    colorRam                                             = $d800  ; d800-dbe7 = 1000 * 4 bit (lower byte only)
+screen = $0400  ; 4*256 = 1024
+colorRam = $d800  ; d800-dbe7 = 1000 * 4 bit (lower byte only)
 
 ;Sid Registers
-    sidVoice3FrequencyRegisterLow                        = $d40e
-    sidVoice3FrequencyRegisterHigh                       = $d40f
-    sidVoice3DutyCycleRegisterLow                        = $d410
-    sidVoice3DutyCycleRegisterHigh                       = $d411
-    sidVoice3ControlRegister                             = $d412
-    sidVoice3ValueRegister                               = $d41b
+sidVoice3FrequencyRegisterLow = $d40e
+sidVoice3FrequencyRegisterHigh = $d40f
+sidVoice3DutyCycleRegisterLow = $d410
+sidVoice3DutyCycleRegisterHigh = $d411
+sidVoice3ControlRegister = $d412
+sidVoice3ValueRegister = $d41b
 
 ;Sid Constants
-    sidVoiceMaxValue                                     = $0fff
-    sidVoiceControlWaveformTriangleMask                  = 16
-    sidVoiceControlWaveformSawtoothMask                  = 32
-    sidVoiceControlWaveformPulseMask                     = 64
-    sidVoiceControlWaveformNoiseMask                     = 128
+sidVoiceMaxValue = $0fff
+sidVoiceControlWaveformTriangleMask = 16
+sidVoiceControlWaveformSawtoothMask = 32
+sidVoiceControlWaveformPulseMask = 64
+sidVoiceControlWaveformNoiseMask = 128
 
 ;Kernel Registers
-    kernelTextColorRegister                              = $0286
+kernelTextColorRegister = $0286
 
 ;Program constants
 sidVoice3Frequency = 4096 ; = maxRngN | max seed
@@ -341,14 +341,14 @@ r20 = $c0e6
 r21 = $c0e7
 midSqState = $cfff
 lfsrState = $cffe
-mTwisterState= $c0fa ;($c0fa-$c0fd)
+mTwisterState = $c0fa ;($c0fa-$c0fd)
 
 ;Mt19937 is meant to be implemented with all values being at least 32 bits long and all counters being at least 16 bit long.
 ;Because of this 
 tagMtRandStateMt = $c000 ;(32bit / 4 byte) * MtStateVectorElementCount long
 tagMtRandStateIndex = tagMtRandStateMt+MtStateVectorElementCount * dwordLength ;(16bit / 2 bytes) long index to iterate over (32 bit / 4 byte) values
 
-*=$080d
+* = $080d
 ;Setup sid voice 3 for random number generation (seeding)
 +ldi16 sidVoice3FrequencyRegisterLow, sidVoice3Frequency ;Set frequency
 +ldi16 sidVoice3DutyCycleRegisterLow, sidVoice3DutyCycle ;Set duty cycle
@@ -405,7 +405,7 @@ mtInitForLoopHead: ;for(rand->index=1; rand->index<STATE_VECTOR_LENGTH; rand->in
   cmp #<(MtStateVectorElementCount * dwordLength)
   bne mtInitForLoopBody
   jmp mtInitForLoopEnd
-  mtInitForLoopBody:
+mtInitForLoopBody:
   +ldi16 r0, tagMtRandStateMt ;r0 = &rand->mt
   +previousdword16 tagMtRandStateIndex ;index = index-1
   +add16 r0, tagMtRandStateIndex ;r0 =  &rand->mt[rand->index-1]
@@ -556,9 +556,9 @@ mtTwistFirstForLoopFooter:
   +nextdword16 r0
   +nextdword16 r2
   jmp mtTwistFirstForLoopHead
-  mtTwistFirstForLoopEnd:
+mtTwistFirstForLoopEnd:
   +ldi16 r2, tagMtRandStateMt ;r2:r3 is now a 16 bit version of [kk+(STATE_VECTOR_M-STATE_VECTOR_LENGTH)]
-  mtTwistSecondForLoopHead: ;if [kk<STATE_VECTOR_LENGTH-1] then goto mtTwistSecondForLoopBody else goto mtTwistSecondForLoopEnd
+mtTwistSecondForLoopHead: ;if [kk<STATE_VECTOR_LENGTH-1] then goto mtTwistSecondForLoopBody else goto mtTwistSecondForLoopEnd
   lda r1
   cmp #>tagMtRandStateMt + (MtStateVectorElementCount-1) * dwordLength
   bne mtTwistSecondForLoopBody
@@ -566,7 +566,7 @@ mtTwistFirstForLoopFooter:
   cmp #<tagMtRandStateMt + (MtStateVectorElementCount-1) * dwordLength
   bne mtTwistSecondForLoopBody
   jmp mtTwistSecondForLoopFooter
-  mtTwistSecondForLoopBody:
+mtTwistSecondForLoopBody:
   jsr twistElement
 mtTwistSecondForLoopFooter:
   ;kk++
@@ -741,6 +741,6 @@ stateVectorMword: !16 MtStateVectorM
 magicRandomInitialFactorWord: !32 6069
 magicRandomIterationFactorWord: !32 $9908b0df
 
-*=vicCharsetBlock*2048
+* = vicCharsetBlock*2048
 hexcharset:
 !bin "hexcharset1.prg", 256*9,2

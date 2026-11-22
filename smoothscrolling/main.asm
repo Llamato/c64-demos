@@ -1,4 +1,4 @@
-*= $0801
+* = $0801
 ; --- BASIC Upstart Stub (10 SYS 2061) ---
     !16 next_line   ; Pointer to next line
     !16 10          ; Line number 10
@@ -9,25 +9,25 @@ next_line:
     !16 $0000       ; End of BASIC program
 
 ;Vic Registers
-    vicScreenControl1Register                            = $d011
-    vicRasterInterruptScanlineSelectRegister             = $d012
-    vicScreenControl2Register                            = $d016
-    vicAcknowledgeInterruptRegister                      = $d019
-    vicInterruptControlRegister                          = $d01a
+vicScreenControl1Register = $d011
+vicRasterInterruptScanlineSelectRegister = $d012
+vicScreenControl2Register = $d016
+vicAcknowledgeInterruptRegister = $d019
+vicInterruptControlRegister = $d01a
 
 ;C64 Memory
-    screen                                              = $0400
-    screenColumns                                        = 40
+screen = $0400
+screenColumns = 40
 
 ;Cia Registers
-    cia1ControlRegister                                  = $dc0d
-    cia2ControlRegister                                  = $dd0d
+cia1ControlRegister = $dc0d
+cia2ControlRegister = $dd0d
 
 ;Kernel Registers
-    kernelIrqVector                                      = $0314
+kernelIrqVector = $0314
 
 ;Kernel Routines
-    kernelRestoreRegistersAndReturnFromInterruptRoutine  = $ea81
+kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
 
 ;petscii characters

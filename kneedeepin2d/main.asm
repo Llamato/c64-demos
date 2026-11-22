@@ -1,4 +1,4 @@
-*= $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
+* = $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
 
 ; --- BASIC Upstart Stub (10 SYS 2061) ---
     !16 next_line   ; Pointer to next line
@@ -10,27 +10,27 @@ next_line:
     !16 $0000       ; End of BASIC program
 
 ;Vic Registers
-    vicSprite0positionXregister                          = $d000
-    vicSprite0positionYregister                          = $d001
-    vicSprite1positionXregister                          = $d002
-    vicSprite1positionYregister                          = $d003
-    vicSprite2positionXregister                          = $d004
-    vicSprite2positionYregister                          = $d005
-    vicSprite3positionXregister                          = $d006
-    vicSprite3positionYregister                          = $d007
-    vicSpritePositionsXhighbitRegister                   = $d010  ; bit n = x bit 8 of sprite n
-    vicSpriteEnableRegister                              = $d015  ; bit n enables sprite n
-    vicSpriteDoubleHeightRegister                        = $d017  ; bit n doubles the height of sprite n
-    vicSpriteDoubleWidthRegister                         = $d01d  ; bit n doubles the width of sprite n
-    vicBorderColorRegister                               = $d020
-    vicSprite0colorRegister                              = $d027
-    vicSprite1colorRegister                              = $d028
-    vicSprite2colorRegister                              = $d029
-    vicSprite3colorRegister                              = $d02a
-    vicSprite0bitmapBlockPointerRegister                 = $07f8
-    vicSprite1bitmapBlockPointerRegister                 = $07f9
-    vicSprite2bitmapBlockPointerRegister                 = $07fa
-    vicSprite3bitmapBlockPointerRegister                 = $07fb
+vicSprite0positionXregister = $d000
+vicSprite0positionYregister = $d001
+vicSprite1positionXregister = $d002
+vicSprite1positionYregister = $d003
+vicSprite2positionXregister = $d004
+vicSprite2positionYregister = $d005
+vicSprite3positionXregister = $d006
+vicSprite3positionYregister = $d007
+vicSpritePositionsXhighbitRegister = $d010  ; bit n = x bit 8 of sprite n
+vicSpriteEnableRegister = $d015  ; bit n enables sprite n
+vicSpriteDoubleHeightRegister = $d017  ; bit n doubles the height of sprite n
+vicSpriteDoubleWidthRegister = $d01d  ; bit n doubles the width of sprite n
+vicBorderColorRegister = $d020
+vicSprite0colorRegister = $d027
+vicSprite1colorRegister = $d028
+vicSprite2colorRegister = $d029
+vicSprite3colorRegister = $d02a
+vicSprite0bitmapBlockPointerRegister = $07f8
+vicSprite1bitmapBlockPointerRegister = $07f9
+vicSprite2bitmapBlockPointerRegister = $07fa
+vicSprite3bitmapBlockPointerRegister = $07fb
 
 
 ;Basic registers

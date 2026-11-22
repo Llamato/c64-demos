@@ -1,7 +1,7 @@
 ; Exported using VChar64 vn/a
 ; Total bytes: 1000
 !cpu 6510
-*= $0801           ; standard basic start memory for c64 ($0801 is 2049)
+* = $0801           ; standard basic start memory for c64 ($0801 is 2049)
 
 ; --- basic upstart stub (10 sys 2061) ---
     !16 next_line   ; pointer to next line

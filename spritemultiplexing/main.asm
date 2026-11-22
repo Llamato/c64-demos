@@ -1,4 +1,4 @@
-*= $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
+* = $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
 
 ; --- BASIC Upstart Stub (10 SYS 2061) ---
     !16 next_line   ; Pointer to next line
@@ -12,101 +12,101 @@ next_line:
 ;Hardware constants
 pageSize = 256
 ;Vic Registers
-    vicSprite0positionXregister                          = $d000
-    vicSprite0positionYregister                          = $d001
-    vicSprite1positionXregister                          = $d002
-    vicSprite1positionYregister                          = $d003
-    vicSprite2positionXregister                          = $d004
-    vicSprite2positionYregister                          = $d005
-    vicSprite3positionXregister                          = $d006
-    vicSprite3positionYregister                          = $d007
-    vicSprite4positionXregister                          = $d008
-    vicSprite4positionYregister                          = $d009
-    vicSprite5positionXregister                          = $d00a
-    vicSprite5positionYregister                          = $d00b
-    vicSprite6positionXregister                          = $d00c
-    vicSprite6positionYregister                          = $d00d
-    vicSprite7positionXregister                          = $d00e
-    vicSprite7positionYregister                          = $d00f
-    vicSpritePositionsXhighbitRegister                   = $d010  ; bit n = x bit 8 of sprite n
-    vicScreenControl1Register                            = $d011  ; bits 0-2 = y scroll, bit 5 = 40/80 columns, bit 7 = 9th bit of the raster compare line
-    vicRasterInterruptScanlineSelectRegister             = $d012  ; low 8 bits of the raster compare line, the 9th bit lives in $d011 bit 7
-    vicSpriteEnableRegister                              = $d015  ; bit n enables sprite n
-    vicScreenControl2Register                            = $d016  ; bit 5 = multicolor mode, bits 0-2 = x scroll
-    vicMemoryPointersRegister                            = $d018  ; screen, charset and sprite expansion blocks
-    vicAcknowledgeInterruptRegister                      = $d019  ; read: interrupt flags, write: acknowledge them
-    vicInterruptControlRegister                          = $d01a  ; interrupt enable bits, bit 0 = raster
-    vicSpriteMultiColorRegister                          = $d01c  ; bit n = multicolor sprite n
-    vicBorderColorRegister                               = $d020
-    vicBackgroundColorRegister                           = $d021
-    vicBackgroundMulticolorPrimaryColorRegister          = $d022
-    vicBackgroundMulticolorSecondaryColorRegister        = $d023
-    vicSpriteMulticolorPrimaryColorRegister              = $d025
-    vicSpriteMulticolorSecondaryColorRegister            = $d026
-    vicSprite0colorRegister                              = $d027
-    vicSprite1colorRegister                              = $d028
-    vicSprite2colorRegister                              = $d029
-    vicSprite3colorRegister                              = $d02a
-    vicSprite4colorRegister                              = $d02b
-    vicSprite5colorRegister                              = $d02c
-    vicSprite6colorRegister                              = $d02d
-    vicSprite7colorRegister                              = $d02e
-    vicSprite0bitmapBlockPointerRegister                 = $07f8
-    vicSprite1bitmapBlockPointerRegister                 = $07f9
-    vicSprite2bitmapBlockPointerRegister                 = $07fa
-    vicSprite3bitmapBlockPointerRegister                 = $07fb
-    vicSprite4bitmapBlockPointerRegister                 = $07fc
-    vicSprite5bitmapBlockPointerRegister                 = $07fd
-    vicSprite6bitmapBlockPointerRegister                 = $07fe
-    vicSprite7bitmapBlockPointerRegister                 = $07ff
+vicSprite0positionXregister = $d000
+vicSprite0positionYregister = $d001
+vicSprite1positionXregister = $d002
+vicSprite1positionYregister = $d003
+vicSprite2positionXregister = $d004
+vicSprite2positionYregister = $d005
+vicSprite3positionXregister = $d006
+vicSprite3positionYregister = $d007
+vicSprite4positionXregister = $d008
+vicSprite4positionYregister = $d009
+vicSprite5positionXregister = $d00a
+vicSprite5positionYregister = $d00b
+vicSprite6positionXregister = $d00c
+vicSprite6positionYregister = $d00d
+vicSprite7positionXregister = $d00e
+vicSprite7positionYregister = $d00f
+vicSpritePositionsXhighbitRegister = $d010  ; bit n = x bit 8 of sprite n
+vicScreenControl1Register = $d011  ; bits 0-2 = y scroll, bit 5 = 40/80 columns, bit 7 = 9th bit of the raster compare line
+vicRasterInterruptScanlineSelectRegister = $d012  ; low 8 bits of the raster compare line, the 9th bit lives in $d011 bit 7
+vicSpriteEnableRegister = $d015  ; bit n enables sprite n
+vicScreenControl2Register = $d016  ; bit 5 = multicolor mode, bits 0-2 = x scroll
+vicMemoryPointersRegister = $d018  ; screen, charset and sprite expansion blocks
+vicAcknowledgeInterruptRegister = $d019  ; read: interrupt flags, write: acknowledge them
+vicInterruptControlRegister = $d01a  ; interrupt enable bits, bit 0 = raster
+vicSpriteMultiColorRegister = $d01c  ; bit n = multicolor sprite n
+vicBorderColorRegister = $d020
+vicBackgroundColorRegister = $d021
+vicBackgroundMulticolorPrimaryColorRegister = $d022
+vicBackgroundMulticolorSecondaryColorRegister = $d023
+vicSpriteMulticolorPrimaryColorRegister = $d025
+vicSpriteMulticolorSecondaryColorRegister = $d026
+vicSprite0colorRegister = $d027
+vicSprite1colorRegister = $d028
+vicSprite2colorRegister = $d029
+vicSprite3colorRegister = $d02a
+vicSprite4colorRegister = $d02b
+vicSprite5colorRegister = $d02c
+vicSprite6colorRegister = $d02d
+vicSprite7colorRegister = $d02e
+vicSprite0bitmapBlockPointerRegister = $07f8
+vicSprite1bitmapBlockPointerRegister = $07f9
+vicSprite2bitmapBlockPointerRegister = $07fa
+vicSprite3bitmapBlockPointerRegister = $07fb
+vicSprite4bitmapBlockPointerRegister = $07fc
+vicSprite5bitmapBlockPointerRegister = $07fd
+vicSprite6bitmapBlockPointerRegister = $07fe
+vicSprite7bitmapBlockPointerRegister = $07ff
 
 ;Vic Colors
-    vicColorBlack                                        = 0
-    vicColorWhite                                        = 1
-    vicColorRed                                          = 2
-    vicColorCyan                                         = 3
-    vicColorViolet                                       = 4
-    vicColorGreen                                        = 5
-    vicColorBlue                                         = 6
-    vicColorYellow                                       = 7
-    vicColorOrange                                       = 8
-    vicColorBrown                                        = 9
-    vicColorLightRed                                     = 10
-    vicColorDarkGray                                     = 11
-    vicColorMiddleGray                                   = 12
-    vicColorLightGreen                                   = 13
-    vicColorLightBlue                                    = 14
-    vicColorLightGray                                    = 15
+vicColorBlack = 0
+vicColorWhite = 1
+vicColorRed = 2
+vicColorCyan = 3
+vicColorViolet = 4
+vicColorGreen = 5
+vicColorBlue = 6
+vicColorYellow = 7
+vicColorOrange = 8
+vicColorBrown = 9
+vicColorLightRed = 10
+vicColorDarkGray = 11
+vicColorMiddleGray = 12
+vicColorLightGreen = 13
+vicColorLightBlue = 14
+vicColorLightGray = 15
 
 ;C64 Memory
-    screen                                               = $0400  ; 4*256 = 1024
-    colorRam                                             = $d800  ; d800-dbe7 = 1000 * 4 bit (lower byte only)
+screen = $0400  ; 4*256 = 1024
+colorRam = $d800  ; d800-dbe7 = 1000 * 4 bit (lower byte only)
 
 ;Cia Registers
-    cia1ControlRegister                                  = $dc0d  ; interrupt control register, bit 7 = all interrupts off
-    cia2ControlRegister                                  = $dd0d  ; interrupt control register, bit 7 = all interrupts off
+cia1ControlRegister = $dc0d  ; interrupt control register, bit 7 = all interrupts off
+cia2ControlRegister = $dd0d  ; interrupt control register, bit 7 = all interrupts off
 
 ;Sid Registers
-    sidVoice3FrequencyRegisterLow                        = $d40e
-    sidVoice3FrequencyRegisterHigh                       = $d40f
-    sidVoice3DutyCycleRegisterLow                        = $d410
-    sidVoice3DutyCycleRegisterHigh                       = $d411
-    sidVoice3ControlRegister                             = $d412
-    sidVoice3ValueRegister                               = $d41b
+sidVoice3FrequencyRegisterLow = $d40e
+sidVoice3FrequencyRegisterHigh = $d40f
+sidVoice3DutyCycleRegisterLow = $d410
+sidVoice3DutyCycleRegisterHigh = $d411
+sidVoice3ControlRegister = $d412
+sidVoice3ValueRegister = $d41b
 
 ;Sid Constants
-    sidVoiceMaxValue                                     = $0fff
-    sidVoiceControlWaveformTriangleMask                  = 16
-    sidVoiceControlWaveformSawtoothMask                  = 32
-    sidVoiceControlWaveformPulseMask                     = 64
-    sidVoiceControlWaveformNoiseMask                     = 128
+sidVoiceMaxValue = $0fff
+sidVoiceControlWaveformTriangleMask = 16
+sidVoiceControlWaveformSawtoothMask = 32
+sidVoiceControlWaveformPulseMask = 64
+sidVoiceControlWaveformNoiseMask = 128
 
 ;Kernel Registers
-    kernelTextColorRegister                              = $0286
-    kernelIrqVector                                      = $0314  ; $0314-0315
+kernelTextColorRegister = $0286
+kernelIrqVector = $0314  ; $0314-0315
 
 ;Kernel Routines
-    kernelRestoreRegistersAndReturnFromInterruptRoutine  = $ea81
+kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
 
 vicHardwareSpriteCount = 8
 highresSpriteWidth = 24
@@ -127,9 +127,9 @@ petsciiBlank = 32
 
 
 ;Program constants
-backgroundCharsetStart=$3800
-backgroundColorStart=backgroundCharsetStart+pageSize*8
-backgroundScreenStart=backgroundColorStart+pageSize*8
+backgroundCharsetStart = $3800
+backgroundColorStart = backgroundCharsetStart+pageSize*8
+backgroundScreenStart = backgroundColorStart+pageSize*8
 fishCount = vicHardwareSpriteCount*2
 lowerSpriteBitmapsStartingBlock = 128
 higherSpriteBitmapsStartingBlock = lowerSpriteBitmapsStartingBlock + vicHardwareSpriteCount
@@ -329,7 +329,7 @@ r3 = 254
     +plx
 }
 
-*=$080d
+* = $080d
 ;Setup sid voice 3 for random number generation (seeding)
     +ldi16 sidVoice3FrequencyRegisterLow, sidVoice3Frequency ;Set frequency
     +ldi16 sidVoice3DutyCycleRegisterLow, sidVoice3DutyCycle ;Set duty cycle
@@ -944,25 +944,25 @@ sinTable:
 !word -171, -167, -162, -157, -152, -147, -142, -136, -131, -126, -120, -115, -109, -103, -97, -92
 !word -86, -80, -74, -68, -62, -56, -49, -43, -37, -31, -25, -18, -12, -6, 0
 
-*=lowerSpriteBitmapsStart
+* = lowerSpriteBitmapsStart
 lowerSpriteBitmaps:
 !src "dragonbirdssprites.asm"
 
-*=higherSpriteBitmapsStart
+* = higherSpriteBitmapsStart
 higherSpriteBitmaps:
 !src "aisprites.asm"
 
-*=lowerMirroredSpriteBitmapsStart
+* = lowerMirroredSpriteBitmapsStart
 lowerMirroredSpriteBitmaps:
 
-*=higherMirroredSpriteBitmapsStart
+* = higherMirroredSpriteBitmapsStart
 higherMirroredSpriteBitmaps:
 
-*=backgroundCharsetStart
+* = backgroundCharsetStart
 !src "backgroundcharset.asm"
 
-*=backgroundColorStart
+* = backgroundColorStart
 !src "backgroundcolors.asm"
 
-*=backgroundScreenStart
+* = backgroundScreenStart
 !src "backgroundscreen.asm"

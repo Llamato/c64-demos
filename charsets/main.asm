@@ -1,4 +1,4 @@
-*= $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
+* = $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
 
 ; --- BASIC Upstart Stub (10 SYS 2061) ---
     !16 next_line   ; Pointer to next line
@@ -13,66 +13,66 @@ next_line:
 visualize = 1
 
 ;Vic Registers
-    vicScreenControl1Register                            = $d011  ; bits 0-2 = y scroll, bit 5 = 40/80 columns, bit 7 = 9th bit of the raster compare line
-    vicRasterInterruptScanlineSelectRegister             = $d012  ; low 8 bits of the raster compare line, the 9th bit lives in $d011 bit 7
-    vicScreenControl2Register                            = $d016  ; bit 5 = multicolor mode, bits 0-2 = x scroll
-    vicMemoryPointersRegister                            = $d018  ; screen, charset and sprite expansion blocks
-    vicAcknowledgeInterruptRegister                      = $d019  ; read: interrupt flags, write: acknowledge them
-    vicInterruptControlRegister                          = $d01a  ; interrupt enable bits, bit 0 = raster
-    vicBorderColorRegister                               = $d020
-    vicBackgroundColorRegister                           = $d021
+vicScreenControl1Register = $d011  ; bits 0-2 = y scroll, bit 5 = 40/80 columns, bit 7 = 9th bit of the raster compare line
+vicRasterInterruptScanlineSelectRegister = $d012  ; low 8 bits of the raster compare line, the 9th bit lives in $d011 bit 7
+vicScreenControl2Register = $d016  ; bit 5 = multicolor mode, bits 0-2 = x scroll
+vicMemoryPointersRegister = $d018  ; screen, charset and sprite expansion blocks
+vicAcknowledgeInterruptRegister = $d019  ; read: interrupt flags, write: acknowledge them
+vicInterruptControlRegister = $d01a  ; interrupt enable bits, bit 0 = raster
+vicBorderColorRegister = $d020
+vicBackgroundColorRegister = $d021
 
 ;Vic Colors
-    vicColorBlack                                        = 0
-    vicColorWhite                                        = 1
-    vicColorRed                                          = 2
-    vicColorCyan                                         = 3
-    vicColorViolet                                       = 4
-    vicColorGreen                                        = 5
-    vicColorBlue                                         = 6
-    vicColorYellow                                       = 7
-    vicColorOrange                                       = 8
-    vicColorBrown                                        = 9
-    vicColorLightRed                                     = 10
-    vicColorDarkGray                                     = 11
-    vicColorMiddleGray                                   = 12
-    vicColorLightGreen                                   = 13
-    vicColorLightBlue                                    = 14
-    vicColorLightGray                                    = 15
+vicColorBlack = 0
+vicColorWhite = 1
+vicColorRed = 2
+vicColorCyan = 3
+vicColorViolet = 4
+vicColorGreen = 5
+vicColorBlue = 6
+vicColorYellow = 7
+vicColorOrange = 8
+vicColorBrown = 9
+vicColorLightRed = 10
+vicColorDarkGray = 11
+vicColorMiddleGray = 12
+vicColorLightGreen = 13
+vicColorLightBlue = 14
+vicColorLightGray = 15
 
 ;C64 Memory
-    screen                                               = $0400  ; 4*256 = 1024
-    colorRam                                             = $d800  ; d800-dbe7 = 1000 * 4 bit (lower byte only)
-    screenColumns                                        = 40
-    screenRows                                           = 25
+screen = $0400  ; 4*256 = 1024
+colorRam = $d800  ; d800-dbe7 = 1000 * 4 bit (lower byte only)
+screenColumns = 40
+screenRows = 25
 
 ;Cia Registers
-    cia1portA                                            = $dc00  ; bit 6 = control port 1 paddles selected, bit 7 = control port 2 paddles selected
-    cia1portB                                            = $dc01
-    cia1ddrA                                             = $dc02
-    cia1ddrB                                             = $dc03
-    cia1ControlRegister                                  = $dc0d  ; interrupt control register, bit 7 = all interrupts off
-    cia2ControlRegister                                  = $dd0d  ; interrupt control register, bit 7 = all interrupts off
+cia1portA = $dc00  ; bit 6 = control port 1 paddles selected, bit 7 = control port 2 paddles selected
+cia1portB = $dc01
+cia1ddrA = $dc02
+cia1ddrB = $dc03
+cia1ControlRegister = $dc0d  ; interrupt control register, bit 7 = all interrupts off
+cia2ControlRegister = $dd0d  ; interrupt control register, bit 7 = all interrupts off
 
 ;Kernel Registers
-    kernelSaveDataStartPointer                           = $fb    ; $fb:$fc
-    kernelLastUsedIoId                                   = $ba
-    kernelIrqVector                                      = $0314  ; $0314-0315
+kernelSaveDataStartPointer = $fb    ; $fb:$fc
+kernelLastUsedIoId = $ba
+kernelIrqVector = $0314  ; $0314-0315
 
 ;Kernel Routines
-    kernelIrqHandler                                     = $ea31
-    kernelRestoreRegistersAndReturnFromInterruptRoutine  = $ea81
-    kernelKeyboardScanRoutine                            = $ea87
-    kernelSetLfs                                         = $ffba
-    kernelSetName                                        = $ffbd
-    kernelGetChar                                        = $ffcf
-    kernelCharOut                                        = $ffd2
-    kernelLoad                                           = $ffd5
-    kernelSave                                           = $ffd8
+kernelIrqHandler = $ea31
+kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
+kernelKeyboardScanRoutine = $ea87
+kernelSetLfs = $ffba
+kernelSetName = $ffbd
+kernelGetChar = $ffcf
+kernelCharOut = $ffd2
+kernelLoad = $ffd5
+kernelSave = $ffd8
 
 ;Basic Routines
-    basicPlot                                            = $fff0
-    basicCls                                             = $e544
+basicPlot = $fff0
+basicCls = $e544
 
 ;Hardware constants
 pageSize = 256

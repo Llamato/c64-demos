@@ -1,4 +1,4 @@
-*= $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
+* = $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
 
 ; --- BASIC Upstart Stub (10 SYS 2061) ---
     !16 next_line   ; Pointer to next line
@@ -9,7 +9,7 @@
 next_line:
     !16 $0000       ; End of BASIC program
 
-*=$080d
+* = $080d
 
 ;Macros
 !macro poke .addr, .value {
@@ -84,54 +84,54 @@ next_line:
 }
 
 ;Vic Registers
-    vicMemoryPointersRegister                            = $d018  ; screen, charset and sprite expansion blocks
-    vicBorderColorRegister                               = $d020
-    vicBackgroundColorRegister                           = $d021
+vicMemoryPointersRegister = $d018  ; screen, charset and sprite expansion blocks
+vicBorderColorRegister = $d020
+vicBackgroundColorRegister = $d021
 
 ;Vic Colors
-    vicColorBlack                                        = 0
-    vicColorWhite                                        = 1
-    vicColorRed                                          = 2
-    vicColorCyan                                         = 3
-    vicColorViolet                                       = 4
-    vicColorGreen                                        = 5
-    vicColorBlue                                         = 6
-    vicColorYellow                                       = 7
-    vicColorOrange                                       = 8
-    vicColorBrown                                        = 9
-    vicColorLightRed                                     = 10
-    vicColorDarkGray                                     = 11
-    vicColorMiddleGray                                   = 12
-    vicColorLightGreen                                   = 13
-    vicColorLightBlue                                    = 14
-    vicColorLightGray                                    = 15
+vicColorBlack = 0
+vicColorWhite = 1
+vicColorRed = 2
+vicColorCyan = 3
+vicColorViolet = 4
+vicColorGreen = 5
+vicColorBlue = 6
+vicColorYellow = 7
+vicColorOrange = 8
+vicColorBrown = 9
+vicColorLightRed = 10
+vicColorDarkGray = 11
+vicColorMiddleGray = 12
+vicColorLightGreen = 13
+vicColorLightBlue = 14
+vicColorLightGray = 15
 
 ;C64 Memory
-    screen                                               = $0400  ; 4*256 = 1024
-    colorRam                                             = $d800  ; d800-dbe7 = 1000 * 4 bit (lower byte only)
-    screenColumns                                        = 40
-    screenRows                                           = 25
+screen = $0400  ; 4*256 = 1024
+colorRam = $d800  ; d800-dbe7 = 1000 * 4 bit (lower byte only)
+screenColumns = 40
+screenRows = 25
 
 ;Cia Registers
-    cia1portA                                            = $dc00  ; bit 6 = control port 1 paddles selected, bit 7 = control port 2 paddles selected
-    cia1portB                                            = $dc01
-    cia1ddrA                                             = $dc02
-    cia1ddrB                                             = $dc03
-    cia1ControlRegister                                  = $dc0d  ; interrupt control register, bit 7 = all interrupts off
+cia1portA = $dc00  ; bit 6 = control port 1 paddles selected, bit 7 = control port 2 paddles selected
+cia1portB = $dc01
+cia1ddrA = $dc02
+cia1ddrB = $dc03
+cia1ControlRegister = $dc0d  ; interrupt control register, bit 7 = all interrupts off
 
 ;Sid Registers
-    sidADC0                                              = $d419  ; analog value paddle x can be read here
-    sidADC1                                              = $d41a  ; analog value paddle y can be read here
+sidADC0 = $d419  ; analog value paddle x can be read here
+sidADC1 = $d41a  ; analog value paddle y can be read here
 
 ;Kernel Registers
-    kernelTextColorRegister                              = $0286
+kernelTextColorRegister = $0286
 
 screenSize = screenColumns * screenRows
 
 ;Program constants
 chargenAddress = $3800 ;7 * 2048 = 14336 = $3800
 
-*=$080d
+* = $080d
 ;Set colors
 +poke vicBackgroundColorRegister, vicColorBlack
 +poke kernelTextColorRegister, vicColorWhite
@@ -221,12 +221,12 @@ delayloop:
 ;with A=x, X=in_max and Y=out_max
 scale:
 !zone scale {
-  .xValue = $c010
-  .inMax = $c011
-  .outMax = $c012
-  .resultLow = $c013
-  .resultHigh = $c014
-  .remainder = $c015
+.xValue = $c010
+.inMax = $c011
+.outMax = $c012
+.resultLow = $c013
+.resultHigh = $c014
+.remainder = $c015
   sta .xValue
   stx .inMax
   sty .outMax
@@ -242,11 +242,11 @@ scale:
 drawGraph:
 !zone drawGraph {
 ;Input: A = value (0-255), Y = column to draw at
-  rowStartPointerLowByte = 253
-  rowStartPointerHighByte = 254
-  .tempA = $cff0
-  .tempX = $cff1
-  .tempY = $cff2
+rowStartPointerLowByte = 253
+rowStartPointerHighByte = 254
+.tempA = $cff0
+.tempX = $cff1
+.tempY = $cff2
   sta .tempA
   stx .tempX
   sty .tempY
@@ -338,7 +338,7 @@ exponentialMovingAverage:
 lda #0
 rts
 
-*=7*2048
+* = 7*2048
 customchars:
 ;0 filled 8 empty
 !byte %00000000

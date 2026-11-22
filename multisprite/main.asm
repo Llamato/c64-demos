@@ -1,4 +1,4 @@
-*= $0801           ; standard basic start memory for c64 ($0801 is 2049)
+* = $0801           ; standard basic start memory for c64 ($0801 is 2049)
 
 ; --- basic upstart stub (10 sys 2061) ---
     !16 next_line   ; pointer to next line
@@ -13,7 +13,7 @@ next_line:
 screen = $0400
 vicBorderColorRegister = $d020
 vicBackgroundColorRegister = $d021
-vicSpritesXhighRegister= $d010
+vicSpritesXhighRegister = $d010
 vicSpritesEnableRegister = $d015
 vicMemoryPointersRegister = $d018
 spritesEnableMulticolorRegister = $d01c
@@ -87,9 +87,9 @@ joystick2positionRight = $77
 ;application constants
 spriteCount = 6
 sprite0block = 250 ;(*64=16000)
-backgroundCharsetStart=$3800
-backgroundColorStart=backgroundCharsetStart+pageSize*8
-backgroundScreenStart=backgroundColorStart+pageSize*8
+backgroundCharsetStart = $3800
+backgroundColorStart = backgroundCharsetStart+pageSize*8
+backgroundScreenStart = backgroundColorStart+pageSize*8
 
 !macro poke .addr, .value {
     lda #.value
@@ -302,7 +302,7 @@ setMultiSpritePosition:
     !byte 1,2,4,8,16,32,64,128
 }
 
-*=sprite0block*spriteSize
+* = sprite0block*spriteSize
 
 ; --- sprite 0: wheels, left half (block 250) ---
 !byte %00000000,%00000000,%00000000
@@ -448,7 +448,7 @@ setMultiSpritePosition:
 !byte %00000000,%00000000,%00000000
 !byte 0 ;padding
 
-*=backgroundCharsetStart
+* = backgroundCharsetStart
 ; --- tile 0: empty ---
 !byte %00000000
 !byte %00000000
@@ -489,8 +489,8 @@ setMultiSpritePosition:
 !byte %10110000 
 !byte %10100000
 
-*=backgroundColorStart
+* = backgroundColorStart
 !fill screenSize, vicColorLightGreen
 
-*=backgroundScreenStart
+* = backgroundScreenStart
 !fill screenSize, 0

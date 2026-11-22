@@ -2,7 +2,7 @@
 printToScreen = 1
 convertToPetsciiOnTheFly = 1
 
-*= $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
+* = $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
 
 ; --- BASIC Upstart Stub (10 SYS 2061) ---
     !16 next_line   ; Pointer to next line
@@ -13,7 +13,7 @@ convertToPetsciiOnTheFly = 1
 next_line:
     !16 $0000       ; End of BASIC program
     
-*=$080d
+* = $080d
 
 ;Hardware registers
 screenRam = $400
