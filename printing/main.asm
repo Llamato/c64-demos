@@ -15,62 +15,57 @@ next_line:
     
 *=$080d
 
-;Vic Registers
-    vicBorderColorRegister                               = $d020
+;Hardware registers
+screenRam = $400
+vicBorderColorRegister = $d020
 
-;Vic Colors
-    vicColorBlack                                        = 0
-    vicColorWhite                                        = 1
-    vicColorRed                                          = 2
-    vicColorCyan                                         = 3
-    vicColorViolet                                       = 4
-    vicColorGreen                                        = 5
-    vicColorBlue                                         = 6
-    vicColorYellow                                       = 7
-    vicColorOrange                                       = 8
-    vicColorBrown                                        = 9
-    vicColorLightRed                                     = 10
-    vicColorDarkGray                                     = 11
-    vicColorMiddleGray                                   = 12
-    vicColorLightGreen                                   = 13
-    vicColorLightBlue                                    = 14
-    vicColorLightGray                                    = 15
-
-;C64 Memory
-    screen                                               = $0400  ; 4*256 = 1024
-    screenColumns                                        = 40
-    screenRows                                           = 25
-    screenSize                                           = 1000   ; screenColumns * screenRows
-
-;Kernel Registers
-    kernelSaveDataStartPointer                           = $fb    ; $fb:$fc
-    kernelLastUsedIoId                                   = $ba
-    kernelIrqVector                                      = $0314  ; $0314-0315
-
-;Kernel Routines
-    kernelIrqHandler                                     = $ea31
-    kernelRestoreRegistersAndReturnFromInterruptRoutine  = $ea81
-    kernelKeyboardScanRoutine                            = $ea87
-    readKernelIOstatus                                   = $ffb7
-    kernelSetLfs                                         = $ffba
-    kernelSetName                                        = $ffbd
-    kernelOpen                                           = $ffc0
-    kernelClose                                          = $ffc3
-    kernelSetInputChannel                                = $ffc6
-    kernelSetOutputChannel                               = $ffc9
-    kernelClearChannel                                   = $ffcc
-    kernelGetChar                                        = $ffcf
-    kernelCharOut                                        = $ffd2
-    kernelLoad                                           = $ffd5
-    kernelSave                                           = $ffd8
-
-;Basic Routines
-    basicPlot                                            = $fff0
-    basicCls                                             = $e544
-
-
+;Hardware constants
+screenColumns = 40
+screenRows = 25
+screenSize = 1000
 filenameLength = 16
+vicColorBlack = 0
+vicColorWhite = 1
+vicColorRed = 2
+vicColorViolet = 4
+vicColorGreen = 5
+vicColorBlue = 6
+vicColorYellow = 7
+vicColorOrange = 8
+vicColorBrown = 9
+vicColorLightRed = 10
+vicColorDarkGray = 11
+vicColorMiddleGray = 12
+vicColorLightGreen = 13
+vicColorLightBlue = 14
+vicColorLightGray = 15
 
+;Kernel registers
+kernelLastUsedIoId = $ba
+kernelSaveDataStartPointer = $fb ;$fb:$fc
+kernelIrqVector = $0314 ;$0314-0315
+
+;Kernel rotines
+kernelIrqHandler = $ea31
+kernelRestoreRegistersAndReturnFromInterruptRoutine = $ea81
+kernelKeyboardScanRoutine = $ea87
+kernelSetLfs = $ffba
+kernelSetName = $ffbd
+kernelOpen = $ffc0
+kernelClose = $ffc3
+kernelSetInputChannel = $ffc6
+kernelSetOutputChannel = $ffc9
+readKernelIOstatus = $ffb7
+kernelClearChannel = $ffcc
+kernelGetChar = $ffcf
+kernelCharOut = $ffd2
+kernelCharIn = $ffcf
+kernelLoad = $ffd5
+kernelSave = $ffd8
+
+;Basic rotines
+basicPlot = $fff0
+basicCls = $e544
 
 ;Software registers
 rExtra = $02
