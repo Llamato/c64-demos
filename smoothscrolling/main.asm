@@ -57,40 +57,8 @@ textIndex = $f9 ;which message character enters at the right edge next
     +poke .addr+1, >.value
 }
 
-!macro fillScrollRow {
-    ldx #0
-    ldy #0
-.loop:
-    lda scrollText,y
-    sta scrollRow,x
-    iny
-    cpy #scrollTextLength
-    bne .nowrap
-    ldy #0
-.nowrap:
-    inx
-    cpx #screenColumns
-    bne .loop
-    sty textIndex
-}
-
 !macro shiftScrollRow {
-    ldx #0
-.loop:
-    lda scrollRow+1,x
-    sta scrollRow,x
-    inx
-    cpx #refillColumn
-    bne .loop
-    ldy textIndex
-    lda scrollText,y
-    sta scrollRow+refillColumn
-    iny
-    cpy #scrollTextLength
-    bne .nowrap
-    ldy #0
-.nowrap:
-    sty textIndex
+    
 }
 
 init:
@@ -111,7 +79,6 @@ init:
 
 ;prime the marquee row and start the fine scroll at 0
     +poke scrollPixel, 0
-    +fillScrollRow
 
 ;setup raster interrupt
     sei ;disable interrupts globally
@@ -134,10 +101,7 @@ init:
     ora #$01 ;set raster interrupt enable bit to 1
     sta vicInterruptControlRegister
     cli ;reenable interrupts
-
-demoloop:
-
-    jmp demoloop
+    jmp * ;jump to self for infinite loop
 
 rasterISR:
 !zone rasterISR {
@@ -150,7 +114,22 @@ rasterISR:
     sta scrollPixel
     bcs .applyFineScroll
     +poke scrollPixel, 7
-    +shiftScrollRow
+    ldx #0
+.shiftScrollLoop:
+    lda scrollRow+1, x
+    sta scrollRow, x
+    inx
+    cpx #refillColumn
+    bne .shiftScrollLoop
+    ldy textIndex
+    lda scrollText, y
+    sta scrollRow+refillColumn
+    iny
+    cpy #scrollTextLength
+    bne .nowrap
+    ldy #0
+.nowrap:
+    sty textIndex
 .applyFineScroll:
     lda vicScreenControl2Register
     and #%11111000 ;keep everything but the three fine scroll bits
@@ -163,5 +142,5 @@ rasterISR:
 }
 
 scrollText:
-!scr "hello world!        "
+!scr "the horse does not eat mashed portatos.          heat from fire, fire from heat.          "
 scrollTextLength = *-scrollText
