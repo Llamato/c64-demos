@@ -1,9 +1,10 @@
 ;Compilation flags
-reseedEnable = 1
-
+ressedAfter = 256 ;pulled random values
+reseedSidEnable = 0
+reseedJoystickEnable = 1
 
 * = $0801           ; Standard BASIC start memory for C64 ($0801 is 2049)
-; --- BASIC Upstart Stub (10 SYS 2061) ---
+; --- BAS1IC Upstart Stub (10 SYS 2061) ---
     !16 next_line   ; Pointer to next line
     !16 10          ; Line number 10
     !byte $9e         ; BASIC token for SYS
@@ -11,11 +12,6 @@ reseedEnable = 1
     !byte $00         ; End of BASIC line
 next_line:
     !16 $0000       ; End of BASIC program
-
-;Conecptual constants
-wordLength = 2 ; 2 bytes = 16 bits
-dwordLength = 4 ; 4 bytes = 32 bits
-qwordLength = 8 ; 8 bytes = 64 bits
 
 ;Macros
 !macro poke .addr, .value {
@@ -193,7 +189,7 @@ qwordLength = 8 ; 8 bytes = 64 bits
     inc .addr
     bne .done
     inc .addr+1
-.done
+.done:
 }
 
 !macro dec16 .addr {
@@ -261,6 +257,11 @@ qwordLength = 8 ; 8 bytes = 64 bits
   }
 }
 
+;Conecptual constants
+wordLength = 2  ; 2 bytes = 16 bits
+dwordLength = 4 ; 4 bytes = 32 bits
+qwordLength = 8 ; 8 bytes = 64 bits
+
 ;Vic Registers
 vicMemoryPointersRegister = $d018  ; screen, charset and sprite expansion blocks
 vicBorderColorRegister = $d020
@@ -303,6 +304,9 @@ sidVoiceControlWaveformSawtoothMask = 32
 sidVoiceControlWaveformPulseMask = 64
 sidVoiceControlWaveformNoiseMask = 128
 
+;CIA registers
+ciaJoystick2register = $dc00
+
 ;Kernel Registers
 kernelTextColorRegister = $0286
 
@@ -311,44 +315,16 @@ sidVoice3Frequency = 4096 ; = maxRngN | max seed
 sidVoice3DutyCycle = $800 ; = 50%
 vicCharsetBlock = 7
 
-;Function constants
-MtStateVectorElementCount = 624
-MtStateVectorM = 397
-
 ;Function parameter storage
 rExtra = $02
 r0 = $fb
 r1 = $fc
 r2 = $fd
 r3 = $fe
-r4 = $c0f0
-r5 = $c0f1
-r6 = $c0f2
-r7 = $c0f3
-r8 = $c0f4
-r9 = $c0f5
-r10 = $c0f6
-r11 = $c0f7
-r12 = $c0f8
-r13 = $c0f9
-r14 = $c0e0
-r15 = $c0e1
-r16 = $c0e2
-r17 = $c0e3
-r18 = $c0e4
-r19 = $c0e5
-r20 = $c0e6
-r21 = $c0e7
 midSqState = $cfff
 lfsrState = $cffe
-mTwisterState = $c0fa ;($c0fa-$c0fd)
 
-;Mt19937 is meant to be implemented with all values being at least 32 bits long and all counters being at least 16 bit long.
-;Because of this 
-tagMtRandStateMt = $c000 ;(32bit / 4 byte) * MtStateVectorElementCount long
-tagMtRandStateIndex = tagMtRandStateMt+MtStateVectorElementCount * dwordLength ;(16bit / 2 bytes) long index to iterate over (32 bit / 4 byte) values
-
-* = $080d
+*=$080d
 ;Setup sid voice 3 for random number generation (seeding)
 +ldi16 sidVoice3FrequencyRegisterLow, sidVoice3Frequency ;Set frequency
 +ldi16 sidVoice3DutyCycleRegisterLow, sidVoice3DutyCycle ;Set duty cycle
@@ -382,18 +358,25 @@ sta vicMemoryPointersRegister
   bne .loop
 }
 
-reseed:
-;Init random middle square algorithm
-+mov midSqState, sidVoice3ValueRegister
+reseedSid:
+  +mov midSqState, sidVoice3ValueRegister
+  +mov lfsrState, midSqState
+  jmp apploop
+}
 
-;Init linear feedback shift register
-+mov lfsrState, midSqState
+!if reseedJoystickEnable == 1 {
+reseedJoystick:
+  +mov midSqState, ciaJoystick2register
+  +mov lfsrState, ciaJoystick2register
+  jmp apploop
+}
 
+apploop:
 ;Init app logic
 ldx #0; currentIteration
 ldy #0
 
-apploop:
+interrationLoop:
 ;Display sid voice
 lda sidVoice3ValueRegister
 sta screen, x
@@ -420,11 +403,13 @@ sta colorRam+512, x
 
 ;Next Round
 inx
-bne apploop
-!if reseedEnable == 0 {
-  jmp apploop
+bne interrationLoop
+!if reseedSidEnable == 1 {
+  jmp reseedSid
+} else if reseedJoystickEnable == 1 {
+  jmp reseedJoystick
 } else {
-  jmp reseed
+  jmp interrationLoop
 }
 
 randomMidSquare: ;Compute a number of n bits length by taking n bits from the middle of the bit sequence created by (f(n)-1)^2
