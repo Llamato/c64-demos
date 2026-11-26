@@ -359,6 +359,7 @@ sta vicMemoryPointersRegister
 }
 
 reseedSid:
+!if reseedSidEnable == 1 {
   +mov midSqState, sidVoice3ValueRegister
   +mov lfsrState, midSqState
   jmp apploop
@@ -377,8 +378,13 @@ ldx #0; currentIteration
 ldy #0
 
 interrationLoop:
-;Display sid voice
-lda sidVoice3ValueRegister
+
+!if reseedJoystickEnable == 1 {
+;Display current joystick state
+  lda ciaJoystick2register
+} else {
+  lda sidVoice3ValueRegister
+}
 sta screen, x
 lda kernelTextColorRegister
 sta colorRam, x
